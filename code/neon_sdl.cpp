@@ -62,7 +62,7 @@ PLATFORM_READ_FILE(ReadFile)
 	Assert(Fp != 0);
 	if(Fp != 0)
 	{
-		Platform->Log(INFO, "File: %s read sucessfully\n", Filename);
+		Platform->Log(INFO, "File: %s read sucessfully.\n", Filename);
 		//fseek(Fp, 0, SEEK_END);
 		SDL_RWseek(Fp, 0, RW_SEEK_END);
 		// long Temp = ftell(Fp);
@@ -124,7 +124,7 @@ PLATFORM_WRITE_FILE(WriteFile)
 		}
 		// fclose(Fp);
 		SDL_RWclose(Fp);
-		Platform->Log(INFO, "File: %s written sucessfully\n", Filename);
+		Platform->Log(INFO, "File: %s written sucessfully.\n", Filename);
 	}
 	else
 	{ 
@@ -193,7 +193,7 @@ void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller)
 		case SDL_MOUSEMOTION:
 		{
 			Controller->Mouse.X = Event->motion.x;
-			Controller->Mouse.Y = Event->motion.y;
+			Controller->Mouse.Y = Platform->Height - 1 - Event->motion.y;
 		} break;
 
 		case SDL_MOUSEBUTTONDOWN:
@@ -256,8 +256,11 @@ int main(int argc, char **argv)
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 2);
 		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 1);
 
+		// request SRGB enabled framebuffer
+		SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
+		// create opengl debugging context
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 
 		SDL_Window 		*Window;

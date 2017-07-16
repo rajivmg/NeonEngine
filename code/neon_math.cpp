@@ -13,46 +13,47 @@ vec2::vec2()
 	Elements[1] = 0;
 }
 
-vec2::vec2(r32 X, r32 Y)
+vec2::vec2(r32 x, r32 y)
 {
-	Elements[0] = X;
-	Elements[1] = Y;
+	Elements[0] = x;
+	Elements[1] = y;
 }
 
-vec2::vec2(s32 X, s32 Y)
+vec2::vec2(s32 x, s32 y)
 {
-	Elements[0] = (r32)X;
-	Elements[1] = (r32)Y;
+	Elements[0] = (r32)x;
+	Elements[1] = (r32)y;
 }
 
 vec2 vec2::operator+(vec2 const & V2)
 {
-	return vec2(X + V2.X, Y + V2.Y);
+	return vec2(x + V2.x, y + V2.y);
 }
 
 vec2 vec2::operator-(vec2 const & V2)
 {
-	return vec2(X - V2.X, Y - V2.Y);
+	return vec2(x - V2.x, y - V2.y);
 }
 
 vec2 vec2::operator-()
 {
-	return vec2(-X, -Y);
+	return vec2(-x, -y);
 }
 
 r32 vec2::Dot(vec2 const & V2)
 {
-	return (r32)((X * V2.X) + (Y * V2.Y));
+	return (r32)((x * V2.x) + (y * V2.y));
 }
 
-vec2 vec2::Cross(vec2 const & V2)
+r32 vec2::Cross(vec2 const & V2)
 {
-	return vec2();
+	return x * V2.y - y * V2.x;
+	// r = x1 y2 - y1 x2
 }
 
 r32 vec2::Length()
 {
-	return (r32)sqrt((X*X) + (Y*Y));
+	return (r32)sqrt((x*x) + (y*y));
 }
 
 vec2::~vec2()
@@ -73,55 +74,60 @@ vec3::vec3()
 	Elements[2] = 0;
 }
 
-vec3::vec3(r32 X, r32 Y, r32 Z)
+vec3::vec3(r32 x, r32 y, r32 z)
 {
-	Elements[0] = X;
-	Elements[1] = Y;
-	Elements[2] = Z;
+	Elements[0] = x;
+	Elements[1] = y;
+	Elements[2] = z;
 }
 
-vec3::vec3(s32 X, s32 Y, s32 Z)
+vec3::vec3(s32 x, s32 y, s32 z)
 {
-	Elements[0] = (r32)X;
-	Elements[1] = (r32)Y;
-	Elements[2] = (r32)Z;
+	Elements[0] = (r32)x;
+	Elements[1] = (r32)y;
+	Elements[2] = (r32)z;
 }
 
-vec3::vec3(vec2 V2, r32 Z)
+vec3::vec3(vec2 const & V2, r32 z)
 {
-	Elements[0] = V2.X;
-	Elements[1] = V2.Y;
-	Elements[2] = Z;
+	Elements[0] = V2.x;
+	Elements[1] = V2.y;
+	Elements[2] = z;
 }
 
 vec3 vec3::operator+(vec3 const & V3)
 {
-	return vec3(X + V3.X, Y + V3.Y, Z + V3.Z);
+	return vec3(x + V3.x, y + V3.y, z + V3.z);
 }
 
 vec3 vec3::operator-(vec3 const & V3)
 {
-	return vec3(X - V3.X, Y - V3.Y, Z - V3.Z);
+	return vec3(x - V3.x, y - V3.y, z - V3.z);
 }
 
 vec3 vec3::operator-()
 {
-	return vec3(-X, -Y, -Z);
+	return vec3(-x, -y, -z);
 }
 
 r32 vec3::Dot(vec3 const & V3)
 {
-	return (r32)((X * V3.X) + (Y * V3.Y) + (Z * V3.Z));
+	return (r32)((x * V3.x) + (y * V3.y) + (z * V3.z));
 }
 
 vec3 vec3::Cross(vec3 const & V3)
 {
-	return vec3();
+	return vec3(y * V3.z - z * V3.y, z * V3.x - x * V3.z, x * V3.y - y * V3.x);
+
+	// C = A B - A B
+	// x = y z - z y
+	// y = z x - x z
+	// z = x y - y x
 }
 
 r32 vec3::Length()
 {
-	return (r32)sqrt((X*X) + (Y*Y) + (Z*Z));
+	return (r32)sqrt((x*x) + (y*y) + (z*z));
 }
 
 vec3::~vec3()
@@ -144,56 +150,56 @@ vec4::vec4()
 	Elements[3] = 0;
 }
 
-vec4::vec4(r32 X, r32 Y, r32 Z, r32 W)
+vec4::vec4(r32 x, r32 y, r32 z, r32 w)
 {
-	Elements[0] = X;
-	Elements[1] = Y;
-	Elements[2] = Z;
-	Elements[3] = W;
+	Elements[0] = x;
+	Elements[1] = y;
+	Elements[2] = z;
+	Elements[3] = w;
 }
 
-vec4::vec4(s32 X, s32 Y, s32 Z, s32 W)
+vec4::vec4(s32 x, s32 y, s32 z, s32 w)
 {
-	Elements[0] = (r32)X;
-	Elements[1] = (r32)Y;
-	Elements[2] = (r32)Z;
-	Elements[3] = (r32)W;
+	Elements[0] = (r32)x;
+	Elements[1] = (r32)y;
+	Elements[2] = (r32)z;
+	Elements[3] = (r32)w;
 }
 
-vec4::vec4(vec3 V3, r32 W)
+vec4::vec4(vec3 const & V3, r32 w)
 {
-	Elements[0] = V3.X;
-	Elements[1] = V3.Y;
-	Elements[2] = V3.Z;
-	Elements[3] = W;
+	Elements[0] = V3.x;
+	Elements[1] = V3.y;
+	Elements[2] = V3.z;
+	Elements[3] = w;
 }
 
-vec4::vec4(vec2 V21, vec2 V22)
+vec4::vec4(vec2 const & V21, vec2 const & V22)
 {
-	Elements[0] = V21.X;
-	Elements[1] = V21.Y;
-	Elements[2] = V22.X;
-	Elements[3] = V22.Y;
+	Elements[0] = V21.x;
+	Elements[1] = V21.y;
+	Elements[2] = V22.x;
+	Elements[3] = V22.y;
 }
 
 vec4 vec4::operator+(vec4 const & V4)
 {
-	return vec4(X + V4.X, Y + V4.Y, Z + V4.Z, W + V4.W);
+	return vec4(x + V4.x, y + V4.y, z + V4.z, w + V4.w);
 }
 
 vec4 vec4::operator-(vec4 const & V4)
 {
-	return vec4(X - V4.X, Y - V4.Y, Z - V4.Z, W - V4.W);
+	return vec4(x - V4.x, y - V4.y, z - V4.z, w - V4.w);
 }
 
 vec4 vec4::operator-()
 {
-	return vec4(-X, -Y, -Z, -W);
+	return vec4(-x, -y, -z, -w);
 }
 
 r32 vec4::Dot(vec4 const & V4)
 {
-	return (r32)((X*V4.X) + (Y*V4.Y) + (Z*V4.Z) + (W*V4.W));
+	return (r32)((x*V4.x) + (y*V4.y) + (z*V4.z) + (w*V4.w));
 }
 
 vec4 vec4::Cross(vec4 const & V4)
@@ -203,7 +209,7 @@ vec4 vec4::Cross(vec4 const & V4)
 
 r32 vec4::Length()
 {
-	return (r32)sqrt((X*X) + (Y*Y) + (Z*Z) + (W*W));
+	return (r32)sqrt((x*x) + (y*y) + (z*z) + (w*w));
 }
 
 vec4::~vec4()

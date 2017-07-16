@@ -17,24 +17,24 @@ union vec2
 	r32 Elements[2];
 	struct
 	{
-		r32 X, Y;
+		r32 x, y;
 	};
 	struct
 	{
-		r32 S, T;
+		r32 s, t;
 	};
 	struct
 	{
-		r32 U, V;
+		r32 u, v;
 	};
 	vec2();
-	vec2(r32 X, r32 Y);
-	vec2(s32 X, s32 Y);
+	vec2(r32 x, r32 y);
+	vec2(s32 x, s32 y);
 	vec2 operator+(vec2 const & V2);
 	vec2 operator-(vec2 const & V2);
 	vec2 operator-();
-	r32 	Dot(vec2 const & V2);
-	vec2	Cross(vec2 const & V2);
+	r32  Dot(vec2 const & V2);
+	r32  Cross(vec2 const & V2);
 	r32	Length();
 	~vec2();
 };
@@ -44,21 +44,21 @@ union vec3
 	r32 Elements[3];
 	struct
 	{
-		r32 X, Y, Z;
+		r32 x, y, z;
 	};
 	struct
 	{
-		r32 R, G, B;
+		r32 r, g, b;
 	};
 	vec3();
-	vec3(r32 X, r32 Y, r32 Z);
-	vec3(s32 X, s32 Y, s32 Z);
-	vec3(vec2 V2, r32 Z);
+	vec3(r32 x, r32 y, r32 z);
+	vec3(s32 x, s32 y, s32 z);
+	vec3(vec2 const & V2, r32 z);
 	vec3 operator+(vec3 const & V3);
 	vec3 operator-(vec3 const & V3);
 	vec3 operator-();
-	r32 	Dot(vec3 const & V3);
-	vec3	Cross(vec3 const & V3);
+	r32  Dot(vec3 const & V3);
+	vec3 Cross(vec3 const & V3);
 	r32	Length();
 	~vec3();
 };
@@ -68,23 +68,23 @@ union vec4
 	r32 Elements[4];
 	struct
 	{
-		r32 X, Y, Z, W;
+		r32 x, y, z, w;
 	};
 	struct
 	{
-		r32 R, G, B, A;
+		r32 r, g, b, a;
 	};
 	vec4();
-	vec4(r32 X, r32 Y, r32 Z, r32 W);
-	vec4(s32 X, s32 Y, s32 Z, s32 W);
-	vec4(vec2 V21, vec2 V22);
-	vec4(vec3 V3, r32 W);
+	vec4(r32 x, r32 y, r32 z, r32 w);
+	vec4(s32 x, s32 y, s32 z, s32 w);
+	vec4(vec2 const & V21, vec2 const & V22);
+	vec4(vec3 const & V3, r32 w);
 	vec4 operator+(vec4 const & V4);
 	vec4 operator-(vec4 const & V4);
 	vec4 operator-();
-	r32 	Dot(vec4 const & V4);
+	r32  Dot(vec4 const & V4);
 	vec4 Cross(vec4 const & V4);
-	r32 	Length();
+	r32	 Length();
 	~vec4();
 };
 

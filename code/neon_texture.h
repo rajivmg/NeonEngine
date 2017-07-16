@@ -32,20 +32,25 @@ typedef struct tga_header
 /**
  * texture
  *
- *	purpose: Load, rotate & free texture.
+ *	purpose: Load, flip & free texture.
  */
 class texture
 {
 public:
+	const u32 ID;
 	s32 	Width;
 	s32 	Height;
 	void*	Content;
 	u32  	ContentSize;
+	char 	Filename[128];
   	bool 	Initialised;
-	
-	void LoadFromFile(char const *Filename);
+  	bool 	FlipedVertically;
+	bool	OnGPU;
+
+	void LoadFromFile(char const *aFilename);
 	void FlipVertically();
 	void FreeMemory();
+	u32  UploadToGPU();
 
 	texture();
 	~texture();
@@ -84,6 +89,8 @@ struct binary_t_node
 class texture_atlas
 {
 public:
+	const u32 ID;
+
 	void	*Content;
 	u32		ContentSize;
 	u32		Width;
@@ -91,12 +98,13 @@ public:
 	u32		Padding;
 	bool  	Initialised;
 
+	texture Texture;
 	binary_t_node Node;
 
 	void Initialise(u32 AtlasWidth, u32 AtlasHeigth, u16 AtlasPadding);
-	texture_coordinates PackTexture(texture *Texture);
+	texture_coordinates PackTexture(texture *aTexture);
+	void GenTexture();
 	void FreeMemory();
-	texture ToTexture();
 
 	texture_atlas();
 	~texture_atlas();

@@ -27,6 +27,9 @@
 #define SAFE_FREE(x) { if(x) { free(x); (x) = 0;} }
 #define SAFE_DELETE(x) { if(x) { delete(x); (x) = 0;} }
 
+#define InvalidCodePath Assert(!"Invalid code path!")
+#define InvalidDefaultCase default: {Assert(!"Invalid default case!");} break
+
 typedef uint64_t u64;
 typedef uint32_t u32;
 typedef uint16_t u16;
@@ -39,6 +42,9 @@ typedef s32		 b32;
 
 typedef float 	 r32;
 typedef double	 r64;
+
+static u32 neon__COUNTER__ = 0; 
+#define GEN_ID ++neon__COUNTER__
 
 struct game_button_state
 {

@@ -5,14 +5,20 @@
 ////
 ////	Texture utility functions
 ////
-texture::texture()
+texture::texture() : ID(GEN_ID),
+					Initialised(false),
+					FlipedVertically(false),
+					OnGPU(false),
+					Content(0)
 {
-	Initialised = false;
-	Content = 0;
 }
 
 texture::~texture()
 {
+	if(Initialised)
+	{
+		FreeMemory();
+	}
 }
 
 /**
@@ -23,9 +29,9 @@ texture::~texture()
  * description: Considers the first byte of the texture data(on disk) as
  *				very first top left pixel of the texture. 
  */
-void texture::LoadFromFile(char const *Filename)
+void texture::LoadFromFile(char const *aFilename)
 {
-	read_file_result Data = Platform->ReadFile(Filename);
+	read_file_result Data = Platform->ReadFile(aFilename);
 
 	u8 *InBytes = (u8*)Data.Content;
 
@@ -61,12 +67,17 @@ void texture::LoadFromFile(char const *Filename)
 		*Pixel = R | G | B | A;
 	}
 
+	strncpy(Filename, aFilename, 128);
 	Initialised = true;
+	FlipedVertically = false;
 }
 
 void texture::FlipVertically()
 {
 	Assert(Initialised);
+	Assert(Content);
+
+	FlipedVertically = !FlipedVertically;
 
 	u32 *Data = (u32 *)malloc(ContentSize);
 
@@ -80,7 +91,7 @@ void texture::FlipVertically()
 		}
 	}
 
-	free(Data);
+	SAFE_FREE(Data);
 }
 
 void texture::FreeMemory()
@@ -89,6 +100,19 @@ void texture::FreeMemory()
 	SAFE_FREE(Content);
 }
 
+u32 texture::UploadToGPU()
+{
+	Assert(Initialised);
+	Assert(Content);
+	
+	OnGPU = true;
+
+	u32 TextureIndex;
+
+	TextureIndex = Renderer::UploadTexture(this);
+
+	return TextureIndex;
+}
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 ////
@@ -148,11 +172,10 @@ void DebugTextureSave_(char const * Filename, texture *Texture)
 ////
 ////	TextureAtlas functions
 ////
-
-texture_atlas::texture_atlas()
+texture_atlas::texture_atlas() : ID(GEN_ID),
+								Initialised(false),
+								Content(0)
 {
-	Initialised = false;
-	Content = 0;
 }
 
 texture_atlas::~texture_atlas()
@@ -287,11 +310,18 @@ static binary_t_node* Atlas_Insert(binary_t_node *Node, texture *Texture, u32 Pa
 	}
 }
 
-texture_coordinates texture_atlas::PackTexture(texture *Texture)
+/**
+ *
+ * NOTE: Texture coordinates returned are D3D style. (0,0) is 
+ *		 at top-left
+ *
+ */
+
+texture_coordinates texture_atlas::PackTexture(texture *aTexture)
 {
 	Assert(Initialised == true);
 
-	binary_t_node *NodeSlot = Atlas_Insert(&Node, Texture, Padding);
+	binary_t_node *NodeSlot = Atlas_Insert(&Node, aTexture, Padding);
 
 	if(NodeSlot == 0)
 	{
@@ -311,7 +341,7 @@ texture_coordinates texture_atlas::PackTexture(texture *Texture)
 	// x and y in range [1, width or height]
 	// needs to be written in range [0, Width or height - 1]
 	// write_at(x, y) = (u32)content_ptr + (x-1) + ((y-1) * width)
-	u32 *pTextureContent = (u32 *)Texture->Content;
+	u32 *pTextureContent = (u32 *)aTexture->Content;
 	
 	for(u32 y = NodeSlot->Rect.OriginY; y < NodeSlot->Rect.OriginY + NodeSlot->Rect.Height - Padding; ++y)
 	{
@@ -331,22 +361,18 @@ texture_coordinates texture_atlas::PackTexture(texture *Texture)
 	return TCoord;
 }
 
-void texture_atlas::FreeMemory()
+void texture_atlas::GenTexture()
 {
-	Assert(Initialised);
-	SAFE_FREE(Content);
-}
-
-texture texture_atlas::ToTexture()
-{
-	texture Texture;
-
 	Texture.Width  = Width;
 	Texture.Height = Height;
 	Texture.ContentSize = ContentSize;
 	Texture.Content = malloc(ContentSize);
 	memcpy(Texture.Content, Content, ContentSize);
 	Texture.Initialised = true;
-	
-	return Texture;
+}
+
+void texture_atlas::FreeMemory()
+{
+	Assert(Initialised);
+	SAFE_FREE(Content);
 }

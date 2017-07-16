@@ -11,6 +11,7 @@
 #include "neon_math.h"
 #include "neon_platform.h"
 #include "neon_texture.h"
+#include "neon_opengl.h"
 #include <cstring> // memcpy
 
 ///////////////////////////////////////////////////////////////////////////
@@ -58,7 +59,8 @@ struct color_quad
 	GLfloat Content[42];
 };
 
-texture_quad TextureQuad(vec2 Origin, vec2 Size, vec4 Color = vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4 UVCoords = vec4(0.0f, 0.0f, 1.0f, 1.0f));
+texture_quad TextureQuad(vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color);
+void TextureQuad(texture_quad *QuadVertex, vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color);
 color_quad ColorQuad(vec2 Origin, vec2 Size, vec4 Color);
 
 // Line data
@@ -67,141 +69,6 @@ struct line_3d
 	// 2 vertex 
 	// 1 Vertex data = Pos(3 floats) + Color (4 floats) = 7 Floats
 	GLfloat Content[14];
-};
-
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-////
-////	memory buffer
-////
-struct mem_buffer
-{
-	u32 MemAvailable;
-	u32	MemUsed;
-	u32 MemSize;
-
-	void* Head;
-	void* Content;
-};
-
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////
-////
-////	Shader
-////
-class shader
-{
-public:
-	GLuint Program;
-	bool ProgramAvailable;
-
-	void CreateProgram(read_file_result *VsFile, read_file_result *FsFile);
-
-	shader();
-	~shader();
-
-private:
-	GLuint Vs;
-	GLuint Fs;
-};
-
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////
-////
-////	Texture manager
-////
-enum tex_command // Texture manager commands
-{
-	GET_TEXTURE_UNIT,
-	RELEASE_TEXTURE_UNIT
-};
-
-u16 TextureManager(tex_command Command, u16 TexUnit = -1);
-
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////
-////
-////	Quad Batch
-////
-enum quad_type
-{
-	TEXTURE_QUAD,
-	COLOR_QUAD
-};
-
-class quad_batch
-{
-public:
-	GLuint 	VBO;
-	GLuint 	VAO;
-	GLuint 	TEX;
-	
-	shader 	*Shader;	
-	u16		TextureUnit;
-
-	u32 	QuadCount;
-	
-	mem_buffer Buffer;
-	
-	quad_type QuadType;
-	
-	bool Initialised;
-	bool GPUBufferAvailable;
-	bool ShaderAvailable;
-	bool TextureSet;
-	bool FlushAfterDraw;
-
-	void Init(quad_type aQuadType, u32 BufferSize, bool AutoFlush  = true);
-	void SetTexture(texture *Texture);
-	void SetShader(shader *aShader);
-	void PushQuad(texture_quad *Quad);
-	void PushQuad(color_quad *Quad);
-	void Draw();
-	void Flush();
-
-	quad_batch();
-	~quad_batch();
-
-private:
-	void CreateGPUBuffer();
-	void UpdateGPUBuffer();
-};
-
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////
-////
-////	Line Batch
-////
-class line_batch
-{
-public:
-	GLuint 	VBO;
-	GLuint 	VAO;
-	
-	shader 	*Shader;
-
-	u32 	LineCount;
-	
-	mem_buffer Buffer;
-
-	bool Initialised;
-	bool GPUBufferAvailable;
-	bool ShaderAvailable;
-	bool FlushAfterDraw;
-
-	void Init(u32 BufferSize, bool AutoFlush  = true);
-	void SetShader(shader *aShader);
-	void PushLine(vec3 Start, vec3 End, vec4 Color);
-	void PushLine(vec3 Start, r32 Radian, u32 Length, vec4 Color);
-	void Draw();
-	void Flush();
-
-	line_batch();
-	~line_batch();
-
-private:
-	void CreateGPUBuffer();
-	void UpdateGPUBuffer();
 };
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -229,30 +96,14 @@ public:
 	glyph 	*Glyphs;
 	u16		FontHeight;
 	texture_atlas Atlas;
+	u32 	TextureIndex;
 	bool 	Initialised;
 
 	void Load(char const * FontSrc, u16 aFontHeight);
 	void FreeMemory();
+	vec2 GetTextDim(char const *Fmt, ...);
 	font();
 	~font();
-};
-
-class text_batch
-{
-public:
-	quad_batch Batch;
-	font *Font;
-	bool FontSet;
-
-	vec2 Pen;
-
-	void SetFont(font *aFont, u32 BufferSize);
-	void PushText(vec2 Origin, vec4 Color, char const *Fmt, ...);
-	void Draw();
-	void Flush();
-
-	text_batch();
-	~text_batch();
 };
 
 
@@ -261,15 +112,86 @@ public:
 ////
 ////	Renderer functions
 //// 
-struct render_resources
+namespace Renderer
 {
-	shader 	*TQuadShader;
-	shader 	*CQuadShader;
-	shader  *TextShader;
-	font 	*HUDFont;
-} RenderResources;
+	void Init();
+	inline u32 UploadTexture(texture *Texture);
+}
+/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
+////
+////	Render Command
+////
+enum render_cmd_type : u32
+{
+	RenderCmd_render_cmd_Clear, 
+	RenderCmd_render_cmd_TextureQuad,
+	RenderCmd_render_cmd_Text, 
+	RenderCmd_render_cmd_ColorQuad 
+};
 
-void InitRenderer();
-void ClearBackBuffer();
+struct render_cmd_header
+{
+	render_cmd_type Type;
+	u64 Key;
+};
 
+struct render_cmd
+{
+	render_cmd_header Header;
+};
+
+struct render_cmd_Clear
+{
+	render_cmd_header Header;
+};
+
+struct render_cmd_TextureQuad
+{
+	render_cmd_header Header;
+	u32  TextureIndex;
+	vec2 P;
+	vec2 Size;
+	vec4 UV;
+	vec4 Tint;
+};
+
+struct render_cmd_ColorQuad
+{
+	render_cmd_header Header;
+	vec2 P;
+	vec2 Size;
+	vec4 Color;
+};
+
+struct render_cmd_Text
+{
+	render_cmd_header Header;
+	font *Font;
+	vec2 P;
+	vec4 Color;
+	char Text[8192];
+};
+
+struct render_cmd_list
+{
+	void *List;
+	u32 BaseOffset;
+	u32 Size;
+	
+	void **Table;
+	u32 CmdCount;
+
+	void *Scratch;
+};
+
+void AllocRenderCmdList(render_cmd_list *RenderCmdList);
+void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd);
+void SortRenderCmdList(render_cmd_list *RenderCmdList);
+void DrawRenderCmdList(render_cmd_list *RenderCmdList);
+
+void RenderCmdClear(render_cmd_list *RenderCmdList);
+void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, u32 TextureIndex, vec2 aP, vec2 aSize, vec4 aUV, vec4 aTint);
+void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec2 aP, vec2 aSize, vec4 aColor);
+void RenderCmdText(render_cmd_list *RenderCmdList, font *aFont, vec2 aP, vec4 aColor, char const *Fmt, ...);
 #endif

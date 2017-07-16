@@ -6,19 +6,14 @@
 #include "neon_math.cpp"
 #include "neon_renderer.cpp"
 #include "neon_texture.cpp"
+#include "neon_debug.cpp"
+#include "neon_opengl.cpp"
 
 #include "neon_renderer.h"
 #include "neon_math.h"
 #include "neon_texture.h"
+#include "neon_debug.h"
 
-struct game_resources
-{
-	quad_batch dbgQuadBatch;
-	text_batch dbgUITextBatch;
-	line_batch dbgLineBatch;
-}GameResources;
-
-void InitGameResources();
 
 platform_t *Platform;
 
