@@ -5,10 +5,9 @@
 ////
 ////	Quad
 ////
-texture_quad TextureQuad(vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color)
+void TextureQuad(texture_quad *Quad, vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color)
 {
-	texture_quad QuadVertex;
-/*
+	/*
 	D--------C
 	|  U 	/|
 	|      / |
@@ -40,240 +39,149 @@ texture_quad TextureQuad(vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color)
 	D.U   = UVCoords.x
 	D.V   = UVCoords.w
  */
+	Quad->Content[0] = Origin.x;
+	Quad->Content[1] = Origin.y + Size.y;
+	Quad->Content[2] = 0;
 
-	// Upper triangle
-	// D
-	QuadVertex.Content[0] = Origin.x;
-	QuadVertex.Content[1] = Origin.y + Size.y;
-	QuadVertex.Content[2] = 0;
+	Quad->Content[3]  = Color.r;
+	Quad->Content[4]  = Color.g;
+	Quad->Content[5]  = Color.b;
+	Quad->Content[6]  = Color.a;
 
-	QuadVertex.Content[3]  = Color.r;
-	QuadVertex.Content[4]  = Color.g;
-	QuadVertex.Content[5]  = Color.b;
-	QuadVertex.Content[6]  = Color.a;
-
-	QuadVertex.Content[7]  = UVCoords.x;
-	QuadVertex.Content[8]  = UVCoords.w;
+	Quad->Content[7]  = UVCoords.x;
+	Quad->Content[8]  = UVCoords.w;
 
 	// C
-	QuadVertex.Content[9]  = Origin.x + Size.x;
-	QuadVertex.Content[10] = Origin.y + Size.y;
-	QuadVertex.Content[11] = 0;
+	Quad->Content[9]  = Origin.x + Size.x;
+	Quad->Content[10] = Origin.y + Size.y;
+	Quad->Content[11] = 0;
 
-	QuadVertex.Content[12] = Color.r;
-	QuadVertex.Content[13] = Color.g;
-	QuadVertex.Content[14] = Color.b;
-	QuadVertex.Content[15] = Color.a;
+	Quad->Content[12] = Color.r;
+	Quad->Content[13] = Color.g;
+	Quad->Content[14] = Color.b;
+	Quad->Content[15] = Color.a;
 
-	QuadVertex.Content[16] = UVCoords.z;
-	QuadVertex.Content[17] = UVCoords.w;
+	Quad->Content[16] = UVCoords.z;
+	Quad->Content[17] = UVCoords.w;
 
 	// A
-	QuadVertex.Content[18] = Origin.x;
-	QuadVertex.Content[19] = Origin.y;
-	QuadVertex.Content[20] = 0;
+	Quad->Content[18] = Origin.x;
+	Quad->Content[19] = Origin.y;
+	Quad->Content[20] = 0;
 
-	QuadVertex.Content[21] = Color.r;
-	QuadVertex.Content[22] = Color.g;
-	QuadVertex.Content[23] = Color.b;
-	QuadVertex.Content[24] = Color.a;
+	Quad->Content[21] = Color.r;
+	Quad->Content[22] = Color.g;
+	Quad->Content[23] = Color.b;
+	Quad->Content[24] = Color.a;
   
-	QuadVertex.Content[25] = UVCoords.x;
-	QuadVertex.Content[26] = UVCoords.y;
+	Quad->Content[25] = UVCoords.x;
+	Quad->Content[26] = UVCoords.y;
 
 
 	// Lower triangle
 	// A
-	QuadVertex.Content[27] = Origin.x;
-	QuadVertex.Content[28] = Origin.y;
-	QuadVertex.Content[29] = 0;
+	Quad->Content[27] = Origin.x;
+	Quad->Content[28] = Origin.y;
+	Quad->Content[29] = 0;
 
-	QuadVertex.Content[30] = Color.r;
-	QuadVertex.Content[31] = Color.g;
-	QuadVertex.Content[32] = Color.b;
-	QuadVertex.Content[33] = Color.a;
+	Quad->Content[30] = Color.r;
+	Quad->Content[31] = Color.g;
+	Quad->Content[32] = Color.b;
+	Quad->Content[33] = Color.a;
   
-	QuadVertex.Content[34] = UVCoords.x;
-	QuadVertex.Content[35] = UVCoords.y;
+	Quad->Content[34] = UVCoords.x;
+	Quad->Content[35] = UVCoords.y;
 
 	// C
-	QuadVertex.Content[36] = Origin.x + Size.x;
-	QuadVertex.Content[37] = Origin.y + Size.y;
-	QuadVertex.Content[38] = 0;
+	Quad->Content[36] = Origin.x + Size.x;
+	Quad->Content[37] = Origin.y + Size.y;
+	Quad->Content[38] = 0;
 
-	QuadVertex.Content[39] = Color.r;
-	QuadVertex.Content[40] = Color.g;
-	QuadVertex.Content[41] = Color.b;
-	QuadVertex.Content[42] = Color.a;
+	Quad->Content[39] = Color.r;
+	Quad->Content[40] = Color.g;
+	Quad->Content[41] = Color.b;
+	Quad->Content[42] = Color.a;
 
-	QuadVertex.Content[43] = UVCoords.z;
-	QuadVertex.Content[44] = UVCoords.w;
+	Quad->Content[43] = UVCoords.z;
+	Quad->Content[44] = UVCoords.w;
 
 	// B
-	QuadVertex.Content[45] = Origin.x + Size.x;
-	QuadVertex.Content[46] = Origin.y;
-	QuadVertex.Content[47] = 0;
+	Quad->Content[45] = Origin.x + Size.x;
+	Quad->Content[46] = Origin.y;
+	Quad->Content[47] = 0;
 
-	QuadVertex.Content[48] = Color.r;
-	QuadVertex.Content[49] = Color.g;
-	QuadVertex.Content[50] = Color.b;
-	QuadVertex.Content[51] = Color.a;
+	Quad->Content[48] = Color.r;
+	Quad->Content[49] = Color.g;
+	Quad->Content[50] = Color.b;
+	Quad->Content[51] = Color.a;
 
-	QuadVertex.Content[52] = UVCoords.z;
-	QuadVertex.Content[53] = UVCoords.y;
-
-	return QuadVertex;
+	Quad->Content[52] = UVCoords.z;
+	Quad->Content[53] = UVCoords.y;
 }
 
-void TextureQuad(texture_quad *QuadVertex, vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color)
+void ColorQuad(color_quad *Quad, vec2 Origin, vec2 Size, vec4 Color)
 {
-	QuadVertex->Content[0] = Origin.x;
-	QuadVertex->Content[1] = Origin.y + Size.y;
-	QuadVertex->Content[2] = 0;
+	// Upper triangle
+	// D
+	Quad->Content[0] = Origin.x;
+	Quad->Content[1] = Origin.y + Size.y;
+	Quad->Content[2] = 0;
 
-	QuadVertex->Content[3]  = Color.r;
-	QuadVertex->Content[4]  = Color.g;
-	QuadVertex->Content[5]  = Color.b;
-	QuadVertex->Content[6]  = Color.a;
-
-	QuadVertex->Content[7]  = UVCoords.x;
-	QuadVertex->Content[8]  = UVCoords.w;
+	Quad->Content[3]  = Color.r;
+	Quad->Content[4]  = Color.g;
+	Quad->Content[5]  = Color.b;
+	Quad->Content[6]  = Color.a;
 
 	// C
-	QuadVertex->Content[9]  = Origin.x + Size.x;
-	QuadVertex->Content[10] = Origin.y + Size.y;
-	QuadVertex->Content[11] = 0;
+	Quad->Content[7]  = Origin.x + Size.x;
+	Quad->Content[8] = Origin.y + Size.y;
+	Quad->Content[9] = 0;
 
-	QuadVertex->Content[12] = Color.r;
-	QuadVertex->Content[13] = Color.g;
-	QuadVertex->Content[14] = Color.b;
-	QuadVertex->Content[15] = Color.a;
-
-	QuadVertex->Content[16] = UVCoords.z;
-	QuadVertex->Content[17] = UVCoords.w;
+	Quad->Content[10] = Color.r;
+	Quad->Content[11] = Color.g;
+	Quad->Content[12] = Color.b;
+	Quad->Content[13] = Color.a;
 
 	// A
-	QuadVertex->Content[18] = Origin.x;
-	QuadVertex->Content[19] = Origin.y;
-	QuadVertex->Content[20] = 0;
+	Quad->Content[14] = Origin.x;
+	Quad->Content[15] = Origin.y;
+	Quad->Content[16] = 0;
 
-	QuadVertex->Content[21] = Color.r;
-	QuadVertex->Content[22] = Color.g;
-	QuadVertex->Content[23] = Color.b;
-	QuadVertex->Content[24] = Color.a;
-  
-	QuadVertex->Content[25] = UVCoords.x;
-	QuadVertex->Content[26] = UVCoords.y;
-
+	Quad->Content[17] = Color.r;
+	Quad->Content[18] = Color.g;
+	Quad->Content[19] = Color.b;
+	Quad->Content[20] = Color.a;
 
 	// Lower triangle
 	// A
-	QuadVertex->Content[27] = Origin.x;
-	QuadVertex->Content[28] = Origin.y;
-	QuadVertex->Content[29] = 0;
+	Quad->Content[21] = Origin.x;
+	Quad->Content[22] = Origin.y;
+	Quad->Content[23] = 0;
 
-	QuadVertex->Content[30] = Color.r;
-	QuadVertex->Content[31] = Color.g;
-	QuadVertex->Content[32] = Color.b;
-	QuadVertex->Content[33] = Color.a;
-  
-	QuadVertex->Content[34] = UVCoords.x;
-	QuadVertex->Content[35] = UVCoords.y;
+	Quad->Content[24] = Color.r;
+	Quad->Content[25] = Color.g;
+	Quad->Content[26] = Color.b;
+	Quad->Content[27] = Color.a;
 
 	// C
-	QuadVertex->Content[36] = Origin.x + Size.x;
-	QuadVertex->Content[37] = Origin.y + Size.y;
-	QuadVertex->Content[38] = 0;
+	Quad->Content[28] = Origin.x + Size.x;
+	Quad->Content[29] = Origin.y + Size.y;
+	Quad->Content[30] = 0;
 
-	QuadVertex->Content[39] = Color.r;
-	QuadVertex->Content[40] = Color.g;
-	QuadVertex->Content[41] = Color.b;
-	QuadVertex->Content[42] = Color.a;
-
-	QuadVertex->Content[43] = UVCoords.z;
-	QuadVertex->Content[44] = UVCoords.w;
+	Quad->Content[31] = Color.r;
+	Quad->Content[32] = Color.g;
+	Quad->Content[33] = Color.b;
+	Quad->Content[34] = Color.a;
 
 	// B
-	QuadVertex->Content[45] = Origin.x + Size.x;
-	QuadVertex->Content[46] = Origin.y;
-	QuadVertex->Content[47] = 0;
+	Quad->Content[35] = Origin.x + Size.x;
+	Quad->Content[36] = Origin.y;
+	Quad->Content[37] = 0;
 
-	QuadVertex->Content[48] = Color.r;
-	QuadVertex->Content[49] = Color.g;
-	QuadVertex->Content[50] = Color.b;
-	QuadVertex->Content[51] = Color.a;
-
-	QuadVertex->Content[52] = UVCoords.z;
-	QuadVertex->Content[53] = UVCoords.y;
-}
-
-color_quad ColorQuad(vec2 Origin, vec2 Size, vec4 Color)
-{
-
-	color_quad QuadVertex;
-	// Upper triangle
-	// D
-	QuadVertex.Content[0] = Origin.x;
-	QuadVertex.Content[1] = Origin.y + Size.y;
-	QuadVertex.Content[2] = 0;
-
-	QuadVertex.Content[3]  = Color.r;
-	QuadVertex.Content[4]  = Color.g;
-	QuadVertex.Content[5]  = Color.b;
-	QuadVertex.Content[6]  = Color.a;
-
-	// C
-	QuadVertex.Content[7]  = Origin.x + Size.x;
-	QuadVertex.Content[8] = Origin.y + Size.y;
-	QuadVertex.Content[9] = 0;
-
-	QuadVertex.Content[10] = Color.r;
-	QuadVertex.Content[11] = Color.g;
-	QuadVertex.Content[12] = Color.b;
-	QuadVertex.Content[13] = Color.a;
-
-	// A
-	QuadVertex.Content[14] = Origin.x;
-	QuadVertex.Content[15] = Origin.y;
-	QuadVertex.Content[16] = 0;
-
-	QuadVertex.Content[17] = Color.r;
-	QuadVertex.Content[18] = Color.g;
-	QuadVertex.Content[19] = Color.b;
-	QuadVertex.Content[20] = Color.a;
-
-	// Lower t.angle
-	// A
-	QuadVertex.Content[21] = Origin.x;
-	QuadVertex.Content[22] = Origin.y;
-	QuadVertex.Content[23] = 0;
-
-	QuadVertex.Content[24] = Color.r;
-	QuadVertex.Content[25] = Color.g;
-	QuadVertex.Content[26] = Color.b;
-	QuadVertex.Content[27] = Color.a;
-
-	// C
-	QuadVertex.Content[28] = Origin.x + Size.x;
-	QuadVertex.Content[29] = Origin.y + Size.y;
-	QuadVertex.Content[30] = 0;
-
-	QuadVertex.Content[31] = Color.r;
-	QuadVertex.Content[32] = Color.g;
-	QuadVertex.Content[33] = Color.b;
-	QuadVertex.Content[34] = Color.a;
-
-	// B
-	QuadVertex.Content[35] = Origin.x + Size.x;
-	QuadVertex.Content[36] = Origin.y;
-	QuadVertex.Content[37] = 0;
-
-	QuadVertex.Content[38] = Color.r;
-	QuadVertex.Content[39] = Color.g;
-	QuadVertex.Content[40] = Color.b;
-	QuadVertex.Content[41] = Color.a;
-
-	return QuadVertex;
+	Quad->Content[38] = Color.r;
+	Quad->Content[39] = Color.g;
+	Quad->Content[40] = Color.b;
+	Quad->Content[41] = Color.a;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -283,7 +191,6 @@ color_quad ColorQuad(vec2 Origin, vec2 Size, vec4 Color)
 ////
 font::font() : Initialised(false)
 {
-	// Initialised = false;
 }
 
 font::~font()
@@ -389,7 +296,7 @@ void font::Load(char const * FontSrc, u16 aFontHeight)
 	Atlas.GenTexture();
 
 	//@HACK: see texture::PackTexture()
-	Atlas.Texture.FlipedVertically = true;
+	Atlas.Texture.FlippedVertically = true;
 	TextureIndex = Atlas.Texture.UploadToGPU();
 	Initialised = true;
 
@@ -505,7 +412,7 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 			render_cmd_Clear *Clear_Cmd = (render_cmd_Clear *)RenderCmd;
 
 			render_cmd_Clear *CmdSlot;
-			CmdSlot = (render_cmd_Clear *)((s8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
+			CmdSlot = (render_cmd_Clear *)((u8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
 
 			*CmdSlot = *Clear_Cmd;
 
@@ -520,7 +427,7 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 			render_cmd_TextureQuad *TextureQuad_Cmd = (render_cmd_TextureQuad *)RenderCmd;
 
 			render_cmd_TextureQuad *CmdSlot;
-			CmdSlot = (render_cmd_TextureQuad *)((s8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
+			CmdSlot = (render_cmd_TextureQuad *)((u8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
 
 			*CmdSlot = *TextureQuad_Cmd;
 			
@@ -535,7 +442,7 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 			render_cmd_ColorQuad *ColorQuad_Cmd = (render_cmd_ColorQuad *)RenderCmd;
 
 			render_cmd_ColorQuad *CmdSlot;
-			CmdSlot = (render_cmd_ColorQuad *)((s8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
+			CmdSlot = (render_cmd_ColorQuad *)((u8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
 
 			*CmdSlot = *ColorQuad_Cmd;
 			
@@ -550,7 +457,7 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 			render_cmd_Text *Text_Cmd = (render_cmd_Text *)RenderCmd;
 
 			render_cmd_Text *CmdSlot;
-			CmdSlot = (render_cmd_Text *)((s8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
+			CmdSlot = (render_cmd_Text *)((u8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
 
 			*CmdSlot = *Text_Cmd;
 			
@@ -598,7 +505,7 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 				{
 					GLClear();
 				} break;
-	
+
 				case RenderCmd_render_cmd_TextureQuad:
 				{
 					render_cmd_TextureQuad *TextureQuad_Cmd = (render_cmd_TextureQuad *)RenderCmd;
@@ -644,8 +551,29 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 				case RenderCmd_render_cmd_ColorQuad:
 				{
 					render_cmd_ColorQuad *ColorQuad_Cmd = (render_cmd_ColorQuad *)RenderCmd;
-					color_quad Quad = ColorQuad(ColorQuad_Cmd->P, ColorQuad_Cmd->Size, ColorQuad_Cmd->Color);
-					GLDrawColorQuads(&Quad, 1);
+					ColorQuad((color_quad *)RenderCmdList->Scratch, ColorQuad_Cmd->P, ColorQuad_Cmd->Size, ColorQuad_Cmd->Color);
+
+					u32 SameTypeCount = 0;
+					while(TableIndex + 1 < RenderCmdList->CmdCount)
+					{
+						render_cmd *NextRenderCmd = (render_cmd *)RenderCmdList->Table[TableIndex + 1];
+						if(NextRenderCmd->Header.Type == RenderCmd_render_cmd_ColorQuad)
+						{
+							++SameTypeCount;
+							render_cmd_ColorQuad *NextColorQuad_Cmd = (render_cmd_ColorQuad *)NextRenderCmd;
+							ColorQuad((color_quad *)RenderCmdList->Scratch + SameTypeCount,
+										NextColorQuad_Cmd->P,
+										NextColorQuad_Cmd->Size,
+										NextColorQuad_Cmd->Color);
+							++TableIndex;
+						}
+						else
+						{
+							// next cmd is not ColorQuad.
+							break;
+						}
+					}
+					GLDrawColorQuads(RenderCmdList->Scratch, 1 + SameTypeCount);
 
 				} break;
 	
@@ -700,6 +628,8 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 		RenderCmdList->CmdCount = 0;
 		RenderCmdList->BaseOffset = 0;
 	}
+
+	GLDrawDebugAxis();
 }
 
 void RenderCmdClear(render_cmd_list *RenderCmdList)

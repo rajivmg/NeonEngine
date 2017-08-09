@@ -7,7 +7,7 @@
 ////
 texture::texture() : ID(GEN_ID),
 					Initialised(false),
-					FlipedVertically(false),
+					FlippedVertically(false),
 					OnGPU(false),
 					Content(0)
 {
@@ -69,7 +69,7 @@ void texture::LoadFromFile(char const *aFilename)
 
 	strncpy(Filename, aFilename, 128);
 	Initialised = true;
-	FlipedVertically = false;
+	FlippedVertically = false;
 }
 
 void texture::FlipVertically()
@@ -77,7 +77,7 @@ void texture::FlipVertically()
 	Assert(Initialised);
 	Assert(Content);
 
-	FlipedVertically = !FlipedVertically;
+	FlippedVertically = !FlippedVertically;
 
 	u32 *Data = (u32 *)malloc(ContentSize);
 

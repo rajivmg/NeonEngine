@@ -1,10 +1,8 @@
 #version 330
 
-#define GAMMA 2.2
-
-in	vec4 OutColor;
+in	vec4 fs_color;
 
 void main ()
 {
-	gl_FragColor = vec4(pow(OutColor.rgb, vec3(GAMMA)), OutColor.a);
+	gl_FragColor = vec4(pow(fs_color.rgb, vec3(2.2)), fs_color.a);
 }

@@ -36,6 +36,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	local_persist u32 TIndex;
 	local_persist u32 TChainIndex;
 	local_persist u32 TPixelWallIndex;
+	local_persist u32 TCharacterIndex;
 	if(!FirstCall)
 	{
 		FirstCall = true;
@@ -53,6 +54,11 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		TPixelWallIndex = PixelWall.UploadToGPU();
 		PixelWall.FreeMemory();
 
+		texture Character;
+		Character.LoadFromFile("character_main.tga");
+		TCharacterIndex = Character.UploadToGPU();
+		Character.FreeMemory();
+
  		Font->Load("font/Inconsolata/Inconsolata-Bold.ttf", 16);
 
  		vec3 A(1, 2, 3), B(4, 5, 6);
@@ -62,12 +68,15 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	RenderCmdClear(&RenderCmdList);
 	vec2 TextBoxDim = Font->GetTextDim("%.2fms", FrameTime);
 	// RenderCmdColorQuad(&RenderCmdList, vec2(5.0f, Platform->Height - TextBoxDim.Y), TextBoxDim, vec4(0.0f, 0.0f, 0.0f, 0.8f));
-	RenderCmdText(&RenderCmdList, Font, vec2(5, Platform->Height), vec4(1.0f, 1.0f, 1.0f, 0.1f),
+	RenderCmdText(&RenderCmdList, Font, vec2(5, Platform->Height), vec4(1.0f, 1.0f, 1.0f, 0.2f),
 			"%.2fms", FrameTime);
-	RenderCmdText(&RenderCmdList, Font, vec2(10.0f + TextBoxDim.x, (r32)Platform->Height), vec4(1.0f, 1.0f, 1.0f, 0.7f),
+	RenderCmdText(&RenderCmdList, Font, vec2(10.0f + TextBoxDim.x, (r32)Platform->Height), vec4(1.0f, 1.0f, 1.0f, 0.6f),
 				"Mouse(%d,%d)", Input->Mouse.X, Input->Mouse.Y);
 
 	RenderCmdTextureQuad(&RenderCmdList, TPixelWallIndex, vec2(550, 350), vec2(16 * 16, 16 * 16), vec4(0.0, 0.0f, 8.0f, 8.0f),
+						vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+	RenderCmdTextureQuad(&RenderCmdList, TCharacterIndex, vec2(300, 460), vec2(19 * 4, 46 * 4), vec4(0.0, 0.0f, 1.0f, 1.0f),
 						vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	RenderCmdColorQuad(&RenderCmdList, vec2(1, 1), vec2(10, 10), vec4(1.0f, 0.0f, 0.0f, 1.0f));
@@ -78,6 +87,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	RenderCmdTextureQuad(&RenderCmdList, TChainIndex, vec2(150, 150), vec2(64, 64), vec4(0.0f, 0.0f, 1.0f, 1.0f), vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// RenderCmdColorQuad(&RenderCmdList, vec2(300, 350), vec2(100, 100), vec4(0.0f, 0.9f, 0.9f, 0.8f));
 	RenderCmdColorQuad(&RenderCmdList, vec2(300, 350), vec2(100, 100), vec4(200/255.0f, 20/255.0f, 99/255.0f, 1.0f));
+	
 	// Draw
 	DrawRenderCmdList(&RenderCmdList);
 }

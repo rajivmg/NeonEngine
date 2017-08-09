@@ -11,6 +11,7 @@
 #define GL_VERTEX_SHADER                  0x8B31
 #define GL_VALIDATE_STATUS                0x8B83
 #define GL_ARRAY_BUFFER                   0x8892
+#define GL_ELEMENT_ARRAY_BUFFER           0x8893
 #define GL_STREAM_DRAW                    0x88E0
 #define GL_STATIC_DRAW                    0x88E4
 #define GL_DYNAMIC_DRAW                   0x88E8
@@ -18,6 +19,8 @@
 #define GL_DEBUG_OUTPUT_SYNCHRONOUS       0x8242
 #define GL_FRAMEBUFFER_SRGB               0x8DB9
 #define GL_SRGB_ALPHA                     0x8C42
+
+#define GL_CLAMP_TO_EDGE                  0x812F
 
 typedef char GLchar;
 typedef ptrdiff_t GLintptr;

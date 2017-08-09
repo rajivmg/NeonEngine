@@ -44,7 +44,7 @@ public:
 	u32  	ContentSize;
 	char 	Filename[128];
   	bool 	Initialised;
-  	bool 	FlipedVertically;
+  	bool 	FlippedVertically;
 	bool	OnGPU;
 
 	void LoadFromFile(char const *aFilename);

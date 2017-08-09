@@ -124,9 +124,10 @@ union mat4
 		r32 m30, m31, m32, m33;
 	};
 	mat4();
+	// Transpose();
 	~mat4();
 };
 
-mat4 OrthoMat4(r32 L, r32 R, r32 T, r32 B, r32 N, r32 F);
-
+mat4 ScreenspacePRJ(r32 L, r32 R, r32 T, r32 B, r32 N, r32 F);
+mat4 PerspectivePRJ(r32 Fov, r32 Aspect, r32 Near, r32 Far);
 #endif

@@ -4,10 +4,6 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#define NEON_INIT_GL
-#define NEON_DEBUG_GL
-#include "neon_GL.h"
-
 #include "neon_math.h"
 #include "neon_platform.h"
 #include "neon_texture.h"
@@ -44,7 +40,7 @@
 //		|		(2D) 
 //		|
 //		| 
-//		O--------------------- +X
+// 		O--------------------- +X
 //
 //
 //
@@ -58,10 +54,8 @@ struct color_quad
 {
 	GLfloat Content[42];
 };
-
-texture_quad TextureQuad(vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color);
-void TextureQuad(texture_quad *QuadVertex, vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color);
-color_quad ColorQuad(vec2 Origin, vec2 Size, vec4 Color);
+void TextureQuad(texture_quad *Quad, vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color);
+void ColorQuad(color_quad *Quad, vec2 Origin, vec2 Size, vec4 Color);
 
 // Line data
 struct line_3d
@@ -124,10 +118,10 @@ namespace Renderer
 ////
 enum render_cmd_type : u32
 {
-	RenderCmd_render_cmd_Clear, 
+	RenderCmd_render_cmd_Clear,
 	RenderCmd_render_cmd_TextureQuad,
 	RenderCmd_render_cmd_Text, 
-	RenderCmd_render_cmd_ColorQuad 
+	RenderCmd_render_cmd_ColorQuad
 };
 
 struct render_cmd_header

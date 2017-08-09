@@ -273,13 +273,33 @@ mat4::~mat4()
 
 }
 
-mat4 OrthoMat4(r32 L, r32 R, r32 T, r32 B, r32 N, r32 F)
+mat4 ScreenspacePRJ(r32 L, r32 R, r32 T, r32 B, r32 N, r32 F)
 {
 	mat4 Matrix;
 	Matrix.m00 = 2/(R-L); 		Matrix.m01 = 0; 			Matrix.m02 = 0; 			Matrix.m03 = -(R+L)/(R-L);
 	Matrix.m10 = 0; 			Matrix.m11 = 2/(T-B); 		Matrix.m12 = 0; 			Matrix.m13 = -(T+B)/(T-B);
 	Matrix.m20 = 0; 			Matrix.m21 = 0; 			Matrix.m22 = -2/(F-N); 		Matrix.m23 = -(F+N)/(F-N);
 	Matrix.m30 = 0; 			Matrix.m31 = 0; 			Matrix.m32 = 0; 			Matrix.m33 = 1;
+
+	return Matrix;
+}
+
+mat4 PerspectivePRJ(r32 Fov, r32 Aspect, r32 Near, r32 Far)
+{
+	mat4 Matrix;
+
+	r32 Range, Sx, Sy, Sz, Pz;
+
+	Range = tanf(Fov * 0.5f) * Near;
+	Sx = (2 * Near) / (Range * Aspect + Range * Aspect);
+	Sy = Near / Range;
+	Sz = - (Far + Near) / (Far - Near);
+	Pz = - (2 * Far * Near) / (Far - Near); 
+
+	Matrix.m00 = Sx; 	Matrix.m01 = 0; 		Matrix.m02 = 0; 	Matrix.m03 = 0;
+	Matrix.m10 = 0; 	Matrix.m11 = Sy; 		Matrix.m12 = 0; 	Matrix.m13 = 0;
+	Matrix.m20 = 0; 	Matrix.m21 = 0; 		Matrix.m22 = Sz; 	Matrix.m23 = Pz;
+	Matrix.m30 = 0; 	Matrix.m31 = 0; 		Matrix.m32 = -1; 	Matrix.m33 = 0;
 
 	return Matrix;
 }

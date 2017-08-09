@@ -4,13 +4,11 @@ static gl_batch TextureQuadBatch;
 static gl_batch ColorQuadBatch;
 static gl_batch TextBatch;
 
-static gl_state GLState;
 static gl_resources GLResources;
 
 void GLInitRenderer()
 {
 	// Set clear color
-	// glClearColor(0.3f, 0.3f, 0.8f, 1.0);
 	glClearColor(0.08f, 0.08f, 0.61f, 1.0); // gamma-ed
 
 	// set the viewport
@@ -33,12 +31,8 @@ void GLInitRenderer()
 	// @NOTE: fragment shader must always output in linear color space
 	glEnable(GL_FRAMEBUFFER_SRGB); 
 
-	// init GLState
-	memset(&GLState, 0, sizeof(GLState));
-	for(int i = 0; i < ArrayCount(GLState.TextureUnit); ++ i)
-	{
-		GLState.TextureUnit[i] = -1;
-	}
+	// wireframe rendering mode for debugging.
+	// glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 	// init GLResources
 	GLResources.TEXIndex = 0;
@@ -115,20 +109,20 @@ void GLInitTextureQuadBatch()
 	glGenVertexArrays(1, &TextureQuadBatch.VAO);
 	glBindVertexArray(TextureQuadBatch.VAO);
 
-	PosLoc = glGetAttribLocation(TextureQuadBatch.PROG, "InPos");
+	PosLoc = glGetAttribLocation(TextureQuadBatch.PROG, "vs_pos");
 	Assert(PosLoc != -1);
-	ColorLoc = glGetAttribLocation(TextureQuadBatch.PROG, "InColor");
+	ColorLoc = glGetAttribLocation(TextureQuadBatch.PROG, "vs_color");
 	Assert(ColorLoc != -1);
-	TexCoordLoc = glGetAttribLocation(TextureQuadBatch.PROG, "InTexcoord");
+	TexCoordLoc = glGetAttribLocation(TextureQuadBatch.PROG, "vs_texcoord");
 	Assert(TexCoordLoc != -1);
 
 	map0Loc = glGetUniformLocation(TextureQuadBatch.PROG, "map0");
 	Assert(map0Loc != -1);
 	TextureQuadBatch.map0Uniform = map0Loc;
 
-	ProjMatLoc = glGetUniformLocation(TextureQuadBatch.PROG, "ProjMatx");
+	ProjMatLoc = glGetUniformLocation(TextureQuadBatch.PROG, "projection");
 	Assert(ProjMatLoc != -1);
-	TextureQuadBatch.ProjMatUniform = ProjMatLoc; 
+	TextureQuadBatch.projectionUniform = ProjMatLoc; 
 
 	glVertexAttribPointer(PosLoc, 3, GL_FLOAT, GL_FALSE, 36, (void *)0);
 	glVertexAttribPointer(ColorLoc, 4, GL_FLOAT, GL_FALSE, 36, (void *)12);
@@ -165,14 +159,14 @@ void GLInitColorQuadBatch()
 	glGenVertexArrays(1, &ColorQuadBatch.VAO);
 	glBindVertexArray(ColorQuadBatch.VAO);
 
-	PosLoc = glGetAttribLocation(ColorQuadBatch.PROG, "InPos");
+	PosLoc = glGetAttribLocation(ColorQuadBatch.PROG, "vs_pos");
 	Assert(PosLoc != -1);
-	ColorLoc = glGetAttribLocation(ColorQuadBatch.PROG, "InColor");
+	ColorLoc = glGetAttribLocation(ColorQuadBatch.PROG, "vs_color");
 	Assert(ColorLoc != -1);
 
-	ProjMatLoc = glGetUniformLocation(ColorQuadBatch.PROG, "ProjMatx");
+	ProjMatLoc = glGetUniformLocation(ColorQuadBatch.PROG, "projection");
 	Assert(ProjMatLoc != -1);
-	ColorQuadBatch.ProjMatUniform = ProjMatLoc; 
+	ColorQuadBatch.projectionUniform = ProjMatLoc; 
 
 	glVertexAttribPointer(PosLoc, 3, GL_FLOAT, GL_FALSE, 28, (void *)0);
 	glVertexAttribPointer(ColorLoc, 4, GL_FLOAT, GL_FALSE, 28, (void *)12);
@@ -205,20 +199,20 @@ void GLInitTextBatch()
 	glGenVertexArrays(1, &TextBatch.VAO);
 	glBindVertexArray(TextBatch.VAO);
 
-	PosLoc = glGetAttribLocation(TextBatch.PROG, "InPos");
+	PosLoc = glGetAttribLocation(TextBatch.PROG, "vs_pos");
 	Assert(PosLoc != -1);
-	ColorLoc = glGetAttribLocation(TextBatch.PROG, "InColor");
+	ColorLoc = glGetAttribLocation(TextBatch.PROG, "vs_color");
 	Assert(ColorLoc != -1);
-	TexCoordLoc = glGetAttribLocation(TextBatch.PROG, "InTexcoord");
+	TexCoordLoc = glGetAttribLocation(TextBatch.PROG, "vs_texcoord");
 	Assert(TexCoordLoc != -1);
 
 	map0Loc = glGetUniformLocation(TextBatch.PROG, "map0");
 	Assert(map0Loc != -1);
 	TextBatch.map0Uniform = map0Loc;
 
-	ProjMatLoc = glGetUniformLocation(TextBatch.PROG, "ProjMatx");
+	ProjMatLoc = glGetUniformLocation(TextBatch.PROG, "projection");
 	Assert(ProjMatLoc != -1);
-	TextBatch.ProjMatUniform = ProjMatLoc; 
+	TextBatch.projectionUniform = ProjMatLoc; 
 
 	glVertexAttribPointer(PosLoc, 3, GL_FLOAT, GL_FALSE, 36, (void *)0);
 	glVertexAttribPointer(ColorLoc, 4, GL_FLOAT, GL_FALSE, 36, (void *)12);
@@ -238,16 +232,16 @@ u32 GLUploadTexture(texture *Texture)
 	glBindTexture(GL_TEXTURE_2D, GLResources.TEX[GLResources.TEXIndex]);
 
 
-	if(!Texture->FlipedVertically)
+	if(!Texture->FlippedVertically)
 	{
 		Texture->FlipVertically();
 	}
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, Texture->Width, Texture->Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, Texture->Content);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	return GLResources.TEXIndex++;
@@ -271,9 +265,10 @@ void GLDrawTextureQuads(void *Data, u32 Count, u32 TextureIndex)
 
 	glBindVertexArray(TextureQuadBatch.VAO);
 
-	mat4 Proj = OrthoMat4(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
+	mat4 Proj = ScreenspacePRJ(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
+	// mat4 Proj = PerspectiveProj(110, 16/9, -100.0f, 100.0f);
 
-	glUniformMatrix4fv(TextureQuadBatch.ProjMatUniform, 1, GL_TRUE, Proj.Elements);
+	glUniformMatrix4fv(TextureQuadBatch.projectionUniform, 1, GL_TRUE, Proj.Elements);
 	
 	glDrawArrays(GL_TRIANGLES, 0, Count * 6);
 }
@@ -291,9 +286,9 @@ void GLDrawText(void *Data, u32 CharCount, u32 TextureIndex)
 
 	glBindVertexArray(TextBatch.VAO);
 
-	mat4 Proj = OrthoMat4(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
+	mat4 Proj = ScreenspacePRJ(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
 
-	glUniformMatrix4fv(TextBatch.ProjMatUniform, 1, GL_TRUE, Proj.Elements);
+	glUniformMatrix4fv(TextBatch.projectionUniform, 1, GL_TRUE, Proj.Elements);
 	
 	glDrawArrays(GL_TRIANGLES, 0, CharCount * 6);
 }
@@ -308,9 +303,42 @@ void GLDrawColorQuads(void *Data, u32 Count)
 
 	glBindVertexArray(ColorQuadBatch.VAO);
 
-	mat4 Proj = OrthoMat4(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
+	mat4 Proj = ScreenspacePRJ(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
 
-	glUniformMatrix4fv(ColorQuadBatch.ProjMatUniform, 1, GL_TRUE, Proj.Elements);
+	glUniformMatrix4fv(ColorQuadBatch.projectionUniform, 1, GL_TRUE, Proj.Elements);
 	
 	glDrawArrays(GL_TRIANGLES, 0, Count * 6);
 }
+
+void GLDrawDebugAxis()
+{
+	glUseProgram(0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glRotatef(10, 1, 1, 0);
+	glScalef(1, 1, -1);
+	// glTranslatef(0, 0, -10);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	// glFrustum(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
+	// mat4 Proj = Perspective(110.0f, 4/3, 1.0f, -100.0f);
+	// glLoadMatrixf(Proj.Elements);
+
+	glBegin(GL_LINES);
+		glColor3f(1.0f, 0, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(2.0f, 0, 0);
+
+		glColor3f(0, 1.0f, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 2.0f, 0);
+
+		glColor3f(0, 0, 1.0f);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0, 2.0f);
+	glEnd();
+}
+

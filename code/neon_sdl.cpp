@@ -248,7 +248,8 @@ int main(int argc, char **argv)
 	{
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+		// compatiblity profile for immediate mode debugging draws
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY); //SDL_GL_CONTEXT_PROFILE_CORE
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -263,11 +264,11 @@ int main(int argc, char **argv)
 		// create opengl debugging context
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 
-		SDL_Window 		*Window;
-		Window 		= SDL_CreateWindow("Neon God",
-										SDL_WINDOWPOS_UNDEFINED,
-										SDL_WINDOWPOS_UNDEFINED, 1280, 720,
-										SDL_WINDOW_OPENGL); // | SDL_WINDOW_FULLSCREEN);
+		SDL_Window *Window;
+		Window = SDL_CreateWindow("Neon God",
+									SDL_WINDOWPOS_UNDEFINED,
+									SDL_WINDOWPOS_UNDEFINED, 1280, 720,
+									SDL_WINDOW_OPENGL); //| SDL_WINDOW_FULLSCREEN);
 
 		Platform->ReadFile = &ReadFile;
 		Platform->WriteFile = &WriteFile;

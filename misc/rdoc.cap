@@ -18,6 +18,6 @@
   <AutoStart>false</AutoStart>
   <Executable>Y:\build\neon_sdl.exe</Executable>
   <WorkingDir>Y:\neon\data</WorkingDir>
-  <CmdLine>0</CmdLine>
+  <CmdLine />
   <Environment />
 </CaptureSettings>

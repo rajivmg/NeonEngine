@@ -7,17 +7,13 @@ struct gl_batch
 {
 	GLuint VAO;
 	GLuint VBO;
+	GLuint IBO;
 	GLuint TEX;
 	GLuint PROG;
 
 	// Uniform locations
 	GLuint map0Uniform;
-	GLuint ProjMatUniform;
-};
-
-struct gl_state
-{
-	s32 TextureUnit[8];
+	GLuint projectionUniform;
 };
 
 struct gl_resources
@@ -36,10 +32,8 @@ static void GLInitTextBatch();
 
 u32  GLUploadTexture(texture *Texture);
 void GLClear();
-void GLDrawTextureQuads(void *Data, u32 Count, texture *Texture);
 void GLDrawTextureQuads(void *Data, u32 Count, u32 TextureIndex);
 void GLDrawColorQuads(void *Data, u32 Count);
-void GLDrawText(void *Data, u32 CharCount, texture *FontTexture);
 void GLDrawText(void *Data, u32 CharCount, u32 TextureIndex);
-
+void GLDrawDebugAxis();
 #endif
