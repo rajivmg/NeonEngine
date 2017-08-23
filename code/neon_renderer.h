@@ -8,7 +8,6 @@
 #include "neon_platform.h"
 #include "neon_texture.h"
 #include "neon_primitive_mesh.h"
-#include "neon_mesh.h"
 #include "neon_opengl.h"
 #include <cstring> // memcpy
 
@@ -91,7 +90,6 @@ namespace Renderer
 {	
 	void Init();
 	inline u32 UploadTexture(texture *Texture);
-	inline u32 UploadMesh(mesh *Mesh);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -151,12 +149,6 @@ struct render_cmd_Text
 	char Text[8192];
 };
 
-struct render_cmd_Mesh
-{
-	render_cmd_header Header;
-	u32 MeshIndex;
-};
-
 struct render_cmd_list
 {
 	void *List;
@@ -178,5 +170,4 @@ void RenderCmdClear(render_cmd_list *RenderCmdList);
 void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aUV, u32 TextureIndex, vec4 aTint);
 void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aColor);
 void RenderCmdText(render_cmd_list *RenderCmdList, font *aFont, vec3 aP, vec4 aColor, char const *Fmt, ...);
-void RenderCmdMesh(render_cmd_list *RenderCmdList, u32 aMeshIndex);
 #endif

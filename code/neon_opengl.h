@@ -2,7 +2,6 @@
 #define NEON_OPENGL_H
 
 #include "neon_platform.h"
-#include "neon_mesh.h"
 
 struct gl_batch
 {
@@ -22,24 +21,6 @@ struct gl_resources
 	GLuint TEX[64];
 	u32 TEXIndex;
 };
-
-// Mesh rendering not required right now, so why do it????
-struct gl_mesh
-{
-	GLuint VAO;
-	GLuint VBO;
-	GLuint IBO;
-	GLuint TEX;
-
-	// uniform locations
-	GLuint map0Uniform;
-	GLuint materialUniform;
-	GLuint modelUniform;
-	GLuint viewUniform;
-	GLuint projectionUniform;
-};
-void GLDrawMesh();
-u32  GLUploadMesh(mesh *Mesh);
 
 void GLInitRenderer();
 

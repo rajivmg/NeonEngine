@@ -1,7 +1,5 @@
 #include "neon_renderer.h"
 
-
-
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 ////
@@ -201,17 +199,6 @@ u32 Renderer::UploadTexture(texture *Texture)
 	return Index;
 }
 
-// Mesh rendering not needed right now, so why do it??
-inline
-u32 Renderer::UploadMesh(mesh *Mesh)
-{
-	Assert(Mesh->Vertices);
-
-	u32 Index;
-	Index = GLUploadMesh(Mesh);
-	return Index;
-}
-
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 ////
@@ -296,21 +283,6 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 			
 			RenderCmdList->Table[RenderCmdList->CmdCount++] = (void *)(CmdSlot);
 			RenderCmdList->BaseOffset += sizeof(render_cmd_Text);
-		} break;
-
-		case RenderCmd_render_cmd_Mesh:
-		{
-			Assert((RenderCmdList->Size - RenderCmdList->BaseOffset) >= sizeof(render_cmd_Mesh));
-
-			render_cmd_Mesh *Mesh_Cmd = (render_cmd_Mesh *)RenderCmd;
-
-			render_cmd_Mesh *CmdSlot;
-			CmdSlot = (render_cmd_Mesh *)((u8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
-
-			*CmdSlot = *Mesh_Cmd;
-			
-			RenderCmdList->Table[RenderCmdList->CmdCount++] = (void *)(CmdSlot);
-			RenderCmdList->BaseOffset += sizeof(render_cmd_Mesh);
 		} break;
 
 		InvalidDefaultCase;
@@ -530,14 +502,5 @@ void RenderCmdText(render_cmd_list *RenderCmdList, font *aFont, vec3 aP, vec4 aC
 	vsnprintf(Cmd.Text, 8192, Fmt, Arguments);
 	va_end(Arguments);
 
-	PushRenderCmd(RenderCmdList, &Cmd);
-}
-
-void RenderCmdMesh(render_cmd_list *RenderCmdList, u32 aMeshIndex)
-{
-	render_cmd_Mesh Cmd;
-	Cmd.Header.Type = RenderCmd_render_cmd_Mesh;
-	Cmd.Header.Key  = ((u64)RenderCmd_render_cmd_Mesh << 32) | 0;
-	Cmd.MeshIndex = aMeshIndex;
 	PushRenderCmd(RenderCmdList, &Cmd);
 }

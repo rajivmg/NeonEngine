@@ -256,11 +256,6 @@ u32 GLUploadTexture(texture *Texture)
 	return GLResources.TEXIndex++;
 }
 
-u32  GLUploadMesh(mesh *Mesh)
-{
-	return 0;
-}
-
 void GLClear()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

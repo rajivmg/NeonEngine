@@ -63,12 +63,11 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
  		vec3 A(1, 2, 3), B(4, 5, 6);
  		vec3 CrossResult = A.Cross(B);
- 		// MeshFromFile("model/suzanne.fbx");
 	}
 
 	RenderCmdClear(&RenderCmdList);
 	vec2 TextBoxDim = Font->GetTextDim("%.2fms", FrameTime);
-	// RenderCmdColorQuad(&RenderCmdList, vec2(5.0f, Platform->Height - TextBoxDim.Y), TextBoxDim, vec4(0.0f, 0.0f, 0.0f, 0.8f));
+	RenderCmdColorQuad(&RenderCmdList, vec3(5.0f, Platform->Height - TextBoxDim.y, 0.0f), TextBoxDim, vec4(0.0f, 0.0f, 0.0f, 0.8f));
 	RenderCmdText(&RenderCmdList, Font, vec3(5.0f, (r32)Platform->Height, 0.0f), vec4(1.0f, 1.0f, 1.0f, 0.2f),
 			"%.2fms", FrameTime);
 	RenderCmdText(&RenderCmdList, Font, vec3(10.0f + TextBoxDim.x, (r32)Platform->Height, 0.0f), vec4(1.0f, 1.0f, 1.0f, 0.6f),
