@@ -11,12 +11,15 @@
 #include "neon_math.h"
 #include "neon_texture.h"
 #include "neon_debug.h"
+#include "neon_mesh.h"
 
 #include "neon_math.cpp"
 #include "neon_renderer.cpp"
 #include "neon_texture.cpp"
 #include "neon_debug.cpp"
 #include "neon_opengl.cpp"
+#include "neon_primitive_mesh.cpp"
+#include "neon_mesh.cpp"
 
 platform_t *Platform;
 

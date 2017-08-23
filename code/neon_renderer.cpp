@@ -1,193 +1,11 @@
 #include "neon_renderer.h"
 
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-////
-////	Quad
-////
-void TextureQuad(texture_quad *Quad, vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color)
-{
-	/*
-	D--------C
-	|  U 	/|
-	|      / |
-	|  	  /	 |
-	|    /   |
-	|	/    |
-	|  /     |
-	| /      |
-	|/    B  |
-	A--------B
-	
-	A.XYZ = Origin.XYZ
-	A.UV  = UVCoords.xY
 
-	B.X   = Origin.X + Size.x - 1
-	B.Y   = Origin.Y
-	B.Z   = 0
-	B.U   = UVCoords.z 
-	B.V   = UVCoords.y 
-
-	C.X   = Origin.X + Size.x - 1
-	C.Y   = Origin.Y + Size.y -1
-	C.Z   = 0
-	C.UV  = UVCoords.zW
-
-	D.X   = Origin.X 
-	D.Y   = Origin.Y + Size.y - 1
-	D.Z   = 0
-	D.U   = UVCoords.x
-	D.V   = UVCoords.w
- */
-	Quad->Content[0] = Origin.x;
-	Quad->Content[1] = Origin.y + Size.y;
-	Quad->Content[2] = 0;
-
-	Quad->Content[3]  = Color.r;
-	Quad->Content[4]  = Color.g;
-	Quad->Content[5]  = Color.b;
-	Quad->Content[6]  = Color.a;
-
-	Quad->Content[7]  = UVCoords.x;
-	Quad->Content[8]  = UVCoords.w;
-
-	// C
-	Quad->Content[9]  = Origin.x + Size.x;
-	Quad->Content[10] = Origin.y + Size.y;
-	Quad->Content[11] = 0;
-
-	Quad->Content[12] = Color.r;
-	Quad->Content[13] = Color.g;
-	Quad->Content[14] = Color.b;
-	Quad->Content[15] = Color.a;
-
-	Quad->Content[16] = UVCoords.z;
-	Quad->Content[17] = UVCoords.w;
-
-	// A
-	Quad->Content[18] = Origin.x;
-	Quad->Content[19] = Origin.y;
-	Quad->Content[20] = 0;
-
-	Quad->Content[21] = Color.r;
-	Quad->Content[22] = Color.g;
-	Quad->Content[23] = Color.b;
-	Quad->Content[24] = Color.a;
-  
-	Quad->Content[25] = UVCoords.x;
-	Quad->Content[26] = UVCoords.y;
-
-
-	// Lower triangle
-	// A
-	Quad->Content[27] = Origin.x;
-	Quad->Content[28] = Origin.y;
-	Quad->Content[29] = 0;
-
-	Quad->Content[30] = Color.r;
-	Quad->Content[31] = Color.g;
-	Quad->Content[32] = Color.b;
-	Quad->Content[33] = Color.a;
-  
-	Quad->Content[34] = UVCoords.x;
-	Quad->Content[35] = UVCoords.y;
-
-	// C
-	Quad->Content[36] = Origin.x + Size.x;
-	Quad->Content[37] = Origin.y + Size.y;
-	Quad->Content[38] = 0;
-
-	Quad->Content[39] = Color.r;
-	Quad->Content[40] = Color.g;
-	Quad->Content[41] = Color.b;
-	Quad->Content[42] = Color.a;
-
-	Quad->Content[43] = UVCoords.z;
-	Quad->Content[44] = UVCoords.w;
-
-	// B
-	Quad->Content[45] = Origin.x + Size.x;
-	Quad->Content[46] = Origin.y;
-	Quad->Content[47] = 0;
-
-	Quad->Content[48] = Color.r;
-	Quad->Content[49] = Color.g;
-	Quad->Content[50] = Color.b;
-	Quad->Content[51] = Color.a;
-
-	Quad->Content[52] = UVCoords.z;
-	Quad->Content[53] = UVCoords.y;
-}
-
-void ColorQuad(color_quad *Quad, vec2 Origin, vec2 Size, vec4 Color)
-{
-	// Upper triangle
-	// D
-	Quad->Content[0] = Origin.x;
-	Quad->Content[1] = Origin.y + Size.y;
-	Quad->Content[2] = 0;
-
-	Quad->Content[3]  = Color.r;
-	Quad->Content[4]  = Color.g;
-	Quad->Content[5]  = Color.b;
-	Quad->Content[6]  = Color.a;
-
-	// C
-	Quad->Content[7]  = Origin.x + Size.x;
-	Quad->Content[8] = Origin.y + Size.y;
-	Quad->Content[9] = 0;
-
-	Quad->Content[10] = Color.r;
-	Quad->Content[11] = Color.g;
-	Quad->Content[12] = Color.b;
-	Quad->Content[13] = Color.a;
-
-	// A
-	Quad->Content[14] = Origin.x;
-	Quad->Content[15] = Origin.y;
-	Quad->Content[16] = 0;
-
-	Quad->Content[17] = Color.r;
-	Quad->Content[18] = Color.g;
-	Quad->Content[19] = Color.b;
-	Quad->Content[20] = Color.a;
-
-	// Lower triangle
-	// A
-	Quad->Content[21] = Origin.x;
-	Quad->Content[22] = Origin.y;
-	Quad->Content[23] = 0;
-
-	Quad->Content[24] = Color.r;
-	Quad->Content[25] = Color.g;
-	Quad->Content[26] = Color.b;
-	Quad->Content[27] = Color.a;
-
-	// C
-	Quad->Content[28] = Origin.x + Size.x;
-	Quad->Content[29] = Origin.y + Size.y;
-	Quad->Content[30] = 0;
-
-	Quad->Content[31] = Color.r;
-	Quad->Content[32] = Color.g;
-	Quad->Content[33] = Color.b;
-	Quad->Content[34] = Color.a;
-
-	// B
-	Quad->Content[35] = Origin.x + Size.x;
-	Quad->Content[36] = Origin.y;
-	Quad->Content[37] = 0;
-
-	Quad->Content[38] = Color.r;
-	Quad->Content[39] = Color.g;
-	Quad->Content[40] = Color.b;
-	Quad->Content[41] = Color.a;
-}
 
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 ////
-////	Font
+////	Text rendering 
 ////
 font::font() : Initialised(false)
 {
@@ -358,7 +176,11 @@ void font::FreeMemory()
 	Atlas.FreeMemory();
 }
 
-
+/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
+////
+////	Renderer functions
+//// 
 void Renderer::Init()
 {
 	// initialise opengl function pointers.
@@ -373,9 +195,20 @@ u32 Renderer::UploadTexture(texture *Texture)
 {
 	Assert(Texture->Initialised);
 
-	s32 Index;
+	u32 Index;
 	Index = GLUploadTexture(Texture);
 	Texture->OnGPU = true;
+	return Index;
+}
+
+// Mesh rendering not needed right now, so why do it??
+inline
+u32 Renderer::UploadMesh(mesh *Mesh)
+{
+	Assert(Mesh->Vertices);
+
+	u32 Index;
+	Index = GLUploadMesh(Mesh);
 	return Index;
 }
 
@@ -463,6 +296,21 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 			
 			RenderCmdList->Table[RenderCmdList->CmdCount++] = (void *)(CmdSlot);
 			RenderCmdList->BaseOffset += sizeof(render_cmd_Text);
+		} break;
+
+		case RenderCmd_render_cmd_Mesh:
+		{
+			Assert((RenderCmdList->Size - RenderCmdList->BaseOffset) >= sizeof(render_cmd_Mesh));
+
+			render_cmd_Mesh *Mesh_Cmd = (render_cmd_Mesh *)RenderCmd;
+
+			render_cmd_Mesh *CmdSlot;
+			CmdSlot = (render_cmd_Mesh *)((u8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
+
+			*CmdSlot = *Mesh_Cmd;
+			
+			RenderCmdList->Table[RenderCmdList->CmdCount++] = (void *)(CmdSlot);
+			RenderCmdList->BaseOffset += sizeof(render_cmd_Mesh);
 		} break;
 
 		InvalidDefaultCase;
@@ -583,7 +431,7 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 
 					Assert(Text_Cmd->Font->Initialised); //@NOTE: Not required, already checked
 
-					vec2 Pen = Text_Cmd->P;
+					vec3 Pen = Text_Cmd->P;
 					Pen.y -= Text_Cmd->Font->FontHeight;
 
 					u32 CharCount = 0;
@@ -600,7 +448,7 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 
 						glyph *CharGlyph = Text_Cmd->Font->Glyphs + ((int)Text_Cmd->Text[Index] - 32);
 						vec4 TexCoords = vec4(CharGlyph->Coordinates.BL_X, CharGlyph->Coordinates.BL_Y, CharGlyph->Coordinates.TR_X, CharGlyph->Coordinates.TR_Y);
-						vec2 CharOrigin = vec2(Pen.x + CharGlyph->HoriBearingX, Pen.y + CharGlyph->Hang);
+						vec3 CharOrigin = vec3(Pen.x + CharGlyph->HoriBearingX, Pen.y + CharGlyph->Hang, Pen.z);
 
 						TextureQuad((texture_quad *)RenderCmdList->Scratch + CharCount, 
 									CharOrigin,
@@ -629,7 +477,7 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 		RenderCmdList->BaseOffset = 0;
 	}
 
-	GLDrawDebugAxis();
+	// GLDrawDebugAxis();
 }
 
 void RenderCmdClear(render_cmd_list *RenderCmdList)
@@ -640,7 +488,7 @@ void RenderCmdClear(render_cmd_list *RenderCmdList)
 	PushRenderCmd(RenderCmdList, &Cmd);
 }
 
-void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, u32 TextureIndex, vec2 aP, vec2 aSize, vec4 aUV, vec4 aTint)
+void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aUV, u32 TextureIndex, vec4 aTint)
 {
 	// 00 00 00 00 00 00 00 01
 	render_cmd_TextureQuad Cmd;
@@ -654,7 +502,7 @@ void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, u32 TextureIndex, vec2
 	PushRenderCmd(RenderCmdList, &Cmd);
 }
 
-void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec2 aP, vec2 aSize, vec4 aColor)
+void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aColor)
 {
 	render_cmd_ColorQuad Cmd;
 	Cmd.Header.Type = RenderCmd_render_cmd_ColorQuad;
@@ -665,7 +513,7 @@ void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec2 aP, vec2 aSize, vec
 	PushRenderCmd(RenderCmdList, &Cmd);
 }
 
-void RenderCmdText(render_cmd_list *RenderCmdList, font *aFont, vec2 aP, vec4 aColor, char const *Fmt, ...)
+void RenderCmdText(render_cmd_list *RenderCmdList, font *aFont, vec3 aP, vec4 aColor, char const *Fmt, ...)
 {
 	render_cmd_Text Cmd;
 	Cmd.Header.Type = RenderCmd_render_cmd_Text;
@@ -682,5 +530,14 @@ void RenderCmdText(render_cmd_list *RenderCmdList, font *aFont, vec2 aP, vec4 aC
 	vsnprintf(Cmd.Text, 8192, Fmt, Arguments);
 	va_end(Arguments);
 
+	PushRenderCmd(RenderCmdList, &Cmd);
+}
+
+void RenderCmdMesh(render_cmd_list *RenderCmdList, u32 aMeshIndex)
+{
+	render_cmd_Mesh Cmd;
+	Cmd.Header.Type = RenderCmd_render_cmd_Mesh;
+	Cmd.Header.Key  = ((u64)RenderCmd_render_cmd_Mesh << 32) | 0;
+	Cmd.MeshIndex = aMeshIndex;
 	PushRenderCmd(RenderCmdList, &Cmd);
 }

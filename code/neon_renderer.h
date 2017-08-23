@@ -7,6 +7,8 @@
 #include "neon_math.h"
 #include "neon_platform.h"
 #include "neon_texture.h"
+#include "neon_primitive_mesh.h"
+#include "neon_mesh.h"
 #include "neon_opengl.h"
 #include <cstring> // memcpy
 
@@ -14,61 +16,41 @@
 ///////////////////////////////////////////////////////////////////////////
 //
 //	NOTE:
-//	- Follow left-handed coordinate system.
+//	- Follow right-handed coordinate system.
 //	
-//	- Clock-wise vertex winding = triangle's front.
+//	- Counter-clockwise vertex winding = triangle's front.
 //	 
+//
+//	 			 	(+Y)			
+//	 			 	|   / (-Z)(Inward)
+//	 			 	|  /		
+//	 			 	| /
+//	 			 	|/
+//	 	(-X) --------O--------- (+X)
+//	 			   /|	
+//	 			  / |
+//	 			 /  |					(3D)
+//	 	 (+Z)	/   |
+//	  	(Outward)	(-Y)
+//
 //
 //		+Y
 //		|
-//		|		 +Z (Inward)	
-//		|	   / 
-//		|	  /	  
-//		|	 /
-//		|   /
-//		|  /		(3D)
-//		| /
-//		|/
-//	    O--------------------- +X
-//
-//		 +Y
 //		|
 //		|
 //		|
-//		|
-//		|
-//		|		(2D) 
+//		|								(2D) 
 //		|
 //		| 
-// 		O--------------------- +X
+// 		O---------------- +X
 //
 //
 //
-
-// Quad vertex data
-struct texture_quad
-{
-	GLfloat Content[54];
-};
-struct color_quad
-{
-	GLfloat Content[42];
-};
-void TextureQuad(texture_quad *Quad, vec2 Origin, vec2 Size, vec4 UVCoords, vec4 Color);
-void ColorQuad(color_quad *Quad, vec2 Origin, vec2 Size, vec4 Color);
-
-// Line data
-struct line_3d
-{
-	// 2 vertex 
-	// 1 Vertex data = Pos(3 floats) + Color (4 floats) = 7 Floats
-	GLfloat Content[14];
-};
 
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 ////
-////	Text rendering functions
+////	Text rendering
 ////
 struct glyph
 {
@@ -100,17 +82,18 @@ public:
 	~font();
 };
 
-
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 ////
 ////	Renderer functions
 //// 
 namespace Renderer
-{
+{	
 	void Init();
 	inline u32 UploadTexture(texture *Texture);
+	inline u32 UploadMesh(mesh *Mesh);
 }
+
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 ////
@@ -121,7 +104,8 @@ enum render_cmd_type : u32
 	RenderCmd_render_cmd_Clear,
 	RenderCmd_render_cmd_TextureQuad,
 	RenderCmd_render_cmd_Text, 
-	RenderCmd_render_cmd_ColorQuad
+	RenderCmd_render_cmd_ColorQuad,
+	RenderCmd_render_cmd_Mesh
 };
 
 struct render_cmd_header
@@ -144,7 +128,7 @@ struct render_cmd_TextureQuad
 {
 	render_cmd_header Header;
 	u32  TextureIndex;
-	vec2 P;
+	vec3 P;
 	vec2 Size;
 	vec4 UV;
 	vec4 Tint;
@@ -153,7 +137,7 @@ struct render_cmd_TextureQuad
 struct render_cmd_ColorQuad
 {
 	render_cmd_header Header;
-	vec2 P;
+	vec3 P;
 	vec2 Size;
 	vec4 Color;
 };
@@ -162,9 +146,15 @@ struct render_cmd_Text
 {
 	render_cmd_header Header;
 	font *Font;
-	vec2 P;
+	vec3 P;
 	vec4 Color;
 	char Text[8192];
+};
+
+struct render_cmd_Mesh
+{
+	render_cmd_header Header;
+	u32 MeshIndex;
 };
 
 struct render_cmd_list
@@ -185,7 +175,8 @@ void SortRenderCmdList(render_cmd_list *RenderCmdList);
 void DrawRenderCmdList(render_cmd_list *RenderCmdList);
 
 void RenderCmdClear(render_cmd_list *RenderCmdList);
-void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, u32 TextureIndex, vec2 aP, vec2 aSize, vec4 aUV, vec4 aTint);
-void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec2 aP, vec2 aSize, vec4 aColor);
-void RenderCmdText(render_cmd_list *RenderCmdList, font *aFont, vec2 aP, vec4 aColor, char const *Fmt, ...);
+void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aUV, u32 TextureIndex, vec4 aTint);
+void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aColor);
+void RenderCmdText(render_cmd_list *RenderCmdList, font *aFont, vec3 aP, vec4 aColor, char const *Fmt, ...);
+void RenderCmdMesh(render_cmd_list *RenderCmdList, u32 aMeshIndex);
 #endif

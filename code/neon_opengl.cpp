@@ -16,7 +16,7 @@ void GLInitRenderer()
 	
 	// since we are following the left-handed coodinate system we set
 	// clock-wise vertex winding as the triangle's front.
-	glFrontFace(GL_CW);
+	glFrontFace(GL_CCW);
 
 	// enable back-face culling to improve performance.
 	glEnable(GL_CULL_FACE);
@@ -131,6 +131,9 @@ void GLInitTextureQuadBatch()
 	glEnableVertexAttribArray(ColorLoc);
 	glEnableVertexAttribArray(TexCoordLoc);
 
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER,0);
+
 	glGenTextures(1, &TextureQuadBatch.TEX);
 }
 
@@ -172,6 +175,9 @@ void GLInitColorQuadBatch()
 	glVertexAttribPointer(ColorLoc, 4, GL_FLOAT, GL_FALSE, 28, (void *)12);
 	glEnableVertexAttribArray(PosLoc);
 	glEnableVertexAttribArray(ColorLoc);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER,0);
 }
 
 static
@@ -221,6 +227,9 @@ void GLInitTextBatch()
 	glEnableVertexAttribArray(ColorLoc);
 	glEnableVertexAttribArray(TexCoordLoc);
 
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER,0);
+	
 	glGenTextures(1, &TextBatch.TEX);
 }
 
@@ -238,13 +247,18 @@ u32 GLUploadTexture(texture *Texture)
 	}
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, Texture->Width, Texture->Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, Texture->Content);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	return GLResources.TEXIndex++;
+}
+
+u32  GLUploadMesh(mesh *Mesh)
+{
+	return 0;
 }
 
 void GLClear()
@@ -265,8 +279,8 @@ void GLDrawTextureQuads(void *Data, u32 Count, u32 TextureIndex)
 
 	glBindVertexArray(TextureQuadBatch.VAO);
 
-	mat4 Proj = ScreenspacePRJ(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
-	// mat4 Proj = PerspectiveProj(110, 16/9, -100.0f, 100.0f);
+	mat4 Proj = mat4::Orthographic(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
+	// mat4 Proj = mat4::Perspective(110, 16/9, 0.1f, 100.0f);
 
 	glUniformMatrix4fv(TextureQuadBatch.projectionUniform, 1, GL_TRUE, Proj.Elements);
 	
@@ -286,7 +300,7 @@ void GLDrawText(void *Data, u32 CharCount, u32 TextureIndex)
 
 	glBindVertexArray(TextBatch.VAO);
 
-	mat4 Proj = ScreenspacePRJ(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
+	mat4 Proj = mat4::Orthographic(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
 
 	glUniformMatrix4fv(TextBatch.projectionUniform, 1, GL_TRUE, Proj.Elements);
 	
@@ -303,7 +317,7 @@ void GLDrawColorQuads(void *Data, u32 Count)
 
 	glBindVertexArray(ColorQuadBatch.VAO);
 
-	mat4 Proj = ScreenspacePRJ(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
+	mat4 Proj = mat4::Orthographic(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
 
 	glUniformMatrix4fv(ColorQuadBatch.projectionUniform, 1, GL_TRUE, Proj.Elements);
 	
@@ -316,29 +330,33 @@ void GLDrawDebugAxis()
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	glRotatef(10, 1, 1, 0);
-	glScalef(1, 1, -1);
-	// glTranslatef(0, 0, -10);
+	static r32 Dy = 0.0f, Dx = 0.0f; 
+	mat4 LookAt = mat4::LookAt(vec3(Dx,Dy,3.0f), vec3(0,0,0), vec3(0,1,0));
+	// Dy += 0.001f;
+	// Dx += 0.001f;
+	LookAt = mat4::Transpose(LookAt);
+	glLoadMatrixf(LookAt.Elements);
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
+	// mat4 Proj = mat4::Orthographic(-1.0f, 1.0f, 1.0f, -1.0f, 0.1f, 10.0f);
+	mat4 Proj = mat4::Perspective(110, 16/9, 0.1f, 100.0f);
+	mat4 Proj1 = mat4::Transpose(Proj);
+	glLoadMatrixf(Proj1.Elements);
 
-	// glFrustum(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
-	// mat4 Proj = Perspective(110.0f, 4/3, 1.0f, -100.0f);
-	// glLoadMatrixf(Proj.Elements);
-
+	vec3 Origin(0.0f, 0.0f, 0.0f), WidgetSize(2, 2, 2);
 	glBegin(GL_LINES);
 		glColor3f(1.0f, 0, 0);
-		glVertex3f(0, 0, 0);
-		glVertex3f(2.0f, 0, 0);
+		glVertex3f(Origin.x, Origin.y, Origin.z);
+		glVertex3f(Origin.x + WidgetSize.x, Origin.y, Origin.z);
 
 		glColor3f(0, 1.0f, 0);
-		glVertex3f(0, 0, 0);
-		glVertex3f(0, 2.0f, 0);
+		glVertex3f(Origin.x, Origin.y, Origin.z);
+		glVertex3f(Origin.x, Origin.y + WidgetSize.y, Origin.z);
 
 		glColor3f(0, 0, 1.0f);
-		glVertex3f(0, 0, 0);
-		glVertex3f(0, 0, 2.0f);
+		glVertex3f(Origin.x, Origin.y, Origin.z);
+		glVertex3f(Origin.x, Origin.y, Origin.z + WidgetSize.z);
 	glEnd();
 }
 
