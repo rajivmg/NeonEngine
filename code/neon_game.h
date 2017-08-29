@@ -21,4 +21,18 @@
 
 platform_t *Platform;
 
+struct world_position
+{
+	ivec2 Tile;
+	vec2  TileRel;
+};
+
+struct level
+{
+	ivec2 LevelSize;
+	u32 *Tiles;
+};	
+
+level* AllocLevel(ivec2 LevelSize);
+
 #endif

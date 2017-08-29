@@ -13,7 +13,7 @@ struct color_quad
 	// 1 vertex data = Pos(3 floats) + Color(4 floats) = 7 floats
 	r32 Content[42];
 };
-struct color_line
+struct line
 {
 	// 2 vertices
 	// 1 Vertex data = Pos(3 floats) + Color (4 floats) = 7 floats
@@ -22,5 +22,6 @@ struct color_line
 
 void TextureQuad(texture_quad *Quad, vec3 Origin, vec2 Size, vec4 UVCoords, vec4 Color);
 void ColorQuad(color_quad *Quad, vec3 Origin, vec2 Size, vec4 Color);
+void Line(line *Line, vec3 Start, vec3 End, vec4 Color);
 
 #endif

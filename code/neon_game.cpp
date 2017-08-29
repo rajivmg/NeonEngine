@@ -1,93 +1,156 @@
 #include "neon_game.h"
 
-static render_cmd_list RenderCmdList;
+static render_cmd_list *RenderCmdList;
+using namespace Renderer;
 
-extern "C"
+extern "C" DLLEXPORT
 GAME_CODE_LOADED(GameCodeLoaded)
 {
 	Platform = aPlatform;
 	Renderer::Init();
-	AllocRenderCmdList(&RenderCmdList);
+	RenderCmdList = AllocRenderCmdList();
 }
 
-extern "C"
+extern "C" DLLEXPORT
 GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
 	/*===================================
 	=            Game Update            =
 	===================================*/
-	if(Input->Up.EndedDown && Input->Up.HalfTransitionCount == 1)
-	{
-		Platform->Log(INFO,"'Up' pressed.\n");
-	}
-
 	if(!Input->Mouse.Left.EndedDown && Input->Mouse.Left.HalfTransitionCount == 1)
 	{
-		Platform->Log(INFO, "'Left' Mouse button pressed.");
+		// Platform->Log(INFO, "'Left' Mouse button pressed.");
 	}
 
 	/*===================================
 	=            Game Render            =
 	===================================*/
 	local_persist bool FirstCall = false;
-	local_persist color_quad CQuad1 = {};
-	local_persist texture EngineLogo;
 	local_persist font *Font = new font();
-	local_persist u32 TIndex;
-	local_persist u32 TChainIndex;
+ 	local_persist font *StyleFont = new font(); 
 	local_persist u32 TPixelWallIndex;
-	local_persist u32 TCharacterIndex;
+	local_persist u32 SnakeHeadTexHandle;
 	if(!FirstCall)
 	{
 		FirstCall = true;
 
-		EngineLogo.LoadFromFile("vortex.tga");
-		TIndex = EngineLogo.UploadToGPU();
-		
-		texture ChainArmor;
-		ChainArmor.LoadFromFile("chain_mail2.tga");
-		TChainIndex = ChainArmor.UploadToGPU();
-		ChainArmor.FreeMemory();
-
 		texture PixelWall;
 		PixelWall.LoadFromFile("red_wall_1.tga");
-		TPixelWallIndex = PixelWall.UploadToGPU();
+		TPixelWallIndex = Renderer::UploadTexture(&PixelWall, TEXTURE_2D, NEAREST, REPEAT);
 		PixelWall.FreeMemory();
 
-		texture Character;
-		Character.LoadFromFile("character_main.tga");
-		TCharacterIndex = Character.UploadToGPU();
-		Character.FreeMemory();
+		texture SnakeHead;
+		SnakeHead.LoadFromFile("snake/snake_head_up.tga");
+		SnakeHeadTexHandle = Renderer::UploadTexture(&SnakeHead, TEXTURE_2D, NEAREST, REPEAT);
+		SnakeHead.FreeMemory();
 
  		Font->Load("font/Inconsolata/Inconsolata-Bold.ttf", 16);
+ 		StyleFont->Load("font/Neuton/Neuton-Regular.ttf", 64);
+ 	}
 
- 		vec3 A(1, 2, 3), B(4, 5, 6);
- 		vec3 CrossResult = A.Cross(B);
+	RenderCmdClear(RenderCmdList);
+	
+	// debug grid
+#if 0
+	for(int i = 0; i <= 1280/32; ++i)
+	{
+		RenderCmdLine(RenderCmdList, vec3(32.0f * i, 0.0f, 0.1f), vec3(32.0f * i + 1.0f, 720.0f, 0.1f), vec4(1.0f, 1.0f, 0.0f, 0.4f), 0);
+	}
+	for(int i = 0; i<= 720/32; ++i)
+	{
+		RenderCmdLine(RenderCmdList, vec3(0.0f, 32.0f * i, 0.1f), vec3(1280.0f, 32.0f * i + 1.0f, 0.1f), vec4(1.0f, 1.0f, 0.0f, 0.4f), 0);
+	}
+#endif
+	// debug text
+	// RenderCmdText(RenderCmdList, vec3(5.0f, (r32)Platform->Height, 0.2f), vec4(1.0f, 1.0f, 1.0f, 0.7f), Font, 0,
+			// "%.2fms Mouse(%d,%d)", Input->dTFrame * 1000, Input->Mouse.x, Input->Mouse.y); // multiply by 1000 to convert sec to ms
+
+#if defined(DEBUG_BUILD)
+	RenderCmdText(RenderCmdList, vec3(5.0f, (r32)Platform->Height, 0.2f), vec4(1.0f, 1.0f, 1.0f, 0.7f), Font, 0,
+			"%s", "Debug Build");
+#else
+	RenderCmdText(RenderCmdList, vec3(5.0f, (r32)Platform->Height, 0.2f), vec4(1.0f, 1.0f, 1.0f, 0.7f), Font, 0,
+			"%s", "Release Build");
+#endif
+	/*
+	u32 MouseTileX = (u32)floorf(Input->Mouse.X/32.0f);
+	u32 MouseTileY = (u32)floorf(Input->Mouse.Y/32.0f);
+	RenderCmdText(RenderCmdList, vec3(185.0f, (r32)Platform->Height, 0.2f), vec4(1.0f, 1.0f, 1.0f, 0.7f), Font, 0,
+			"Tile(%d,%d)", MouseTileY, MouseTileX); */
+	// RenderCmdText(RenderCmdList, vec3(500.0f, (r32)Platform->Height, 0.2f), vec4(1.0f, 1.0f, 1.0f, 1.0f), StyleFont, 0,
+	// 		"Neon");
+	
+	// tilemap
+	u32 TileMap[11][18] =
+	{
+		{1, 1, 1,  1, 1, 1,  1, 1, 1,  1, 1, 1,  1, 1, 1,  1, 1, 1},
+		{1, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 1},
+		{1, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 1},
+		{1, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 1,  1, 1, 1},
+		{1, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 1},
+		{1, 0, 0,  0, 0, 0,  0, 0, 1,  1, 1, 1,  0, 0, 0,  0, 0, 1},
+		{1, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 1},
+		{1, 0, 0,  0, 1, 1,  1, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 1},
+		{1, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 1},
+		{1, 0, 1,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 0,  0, 0, 1},
+		{1, 1, 1,  1, 1, 1,  1, 1, 1,  1, 1, 1,  1, 1, 1,  1, 1, 1},
+	};
+
+	s32 TileWidth = 64;
+	s32 TileHeight = 64;
+
+	for(int Row = 10; Row>=0; --Row)
+	{
+		for(int Column = 0; Column<18; ++Column)
+		{
+			vec2 Min = vec2(Column * TileWidth, ((10-Row) * TileHeight));
+			vec2 Max = vec2(TileWidth, TileHeight);
+
+			if(TileMap[Row][Column] == 1)
+			{
+				RenderCmdColorQuad(RenderCmdList, vec3(Min, 0.0f), Max, vec4(0.7f, 0.1f, 0.3f, 1.0f), 0);
+			}
+			else
+			{
+				RenderCmdColorQuad(RenderCmdList, vec3(Min, 0.0f), Max, vec4(0.3f, 0.0f, 0.0f, 1.0f), 0);
+			}
+		}
 	}
 
-	RenderCmdClear(&RenderCmdList);
-	vec2 TextBoxDim = Font->GetTextDim("%.2fms", FrameTime);
-	RenderCmdColorQuad(&RenderCmdList, vec3(5.0f, Platform->Height - TextBoxDim.y, 0.0f), TextBoxDim, vec4(0.0f, 0.0f, 0.0f, 0.8f));
-	RenderCmdText(&RenderCmdList, Font, vec3(5.0f, (r32)Platform->Height, 0.0f), vec4(1.0f, 1.0f, 1.0f, 0.2f),
-			"%.2fms", FrameTime);
-	RenderCmdText(&RenderCmdList, Font, vec3(10.0f + TextBoxDim.x, (r32)Platform->Height, 0.0f), vec4(1.0f, 1.0f, 1.0f, 0.6f),
-				"Mouse(%d,%d)", Input->Mouse.X, Input->Mouse.Y);
+	static vec2 PlayerPos = vec2(128.0f, 128.0f);
+	static r32 MetersToPixels = 64;
+	vec2 dPlayer;
 
-	RenderCmdTextureQuad(&RenderCmdList, vec3(550, 350, 0), vec2(16 * 16, 16 * 16), vec4(0.0, 0.0f, 8.0f, 8.0f),
-						TPixelWallIndex, vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	if(Input->Up.EndedDown)
+	{
+		dPlayer = vec2(0.0f, 1.0f);
+	}
+	else if(Input->Down.EndedDown)
+	{
+		dPlayer = vec2(0.0f, -1.0f);
+	}
+	else if(Input->Left.EndedDown)
+	{
+		dPlayer = vec2(-1.0f, 0.0f);
+	}
+	else if(Input->Right.EndedDown)
+	{
+		dPlayer = vec2(1.0f, 0.0f);
+	}
+	dPlayer = dPlayer * 4.0f;
+	PlayerPos = PlayerPos + dPlayer*(MetersToPixels*Input->dTFrame);
 
-	RenderCmdTextureQuad(&RenderCmdList, vec3(300, 460, 0), vec2(19 * 4, 46 * 4), vec4(0.0, 0.0f, 1.0f, 1.0f),
-						TCharacterIndex, vec4(1.0f, 1.0f, 1.0f, 1.0f));
-
-	RenderCmdColorQuad(&RenderCmdList, vec3(1, 1, 0), vec2(10, 10), vec4(1.0f, 0.0f, 0.0f, 1.0f));
-	RenderCmdTextureQuad(&RenderCmdList, vec3(10, 20, 0), vec2(64, 64), 
-						vec4(0.0f, 0.0f, 1.0f, 1.0f), TIndex, vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	RenderCmdTextureQuad(&RenderCmdList, vec3(100, 120, 0), vec2(64, 64), 
-						vec4(0.0f, 0.0f, 1.0f, 1.0f), TIndex, vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	RenderCmdTextureQuad(&RenderCmdList, vec3(150, 150, 0), vec2(64, 64), vec4(0.0f, 0.0f, 1.0f, 1.0f),
-						TChainIndex, vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	RenderCmdColorQuad(&RenderCmdList, vec3(300, 350, 0), vec2(100, 100), vec4(200/255.0f, 20/255.0f, 99/255.0f, 1.0f));
+	// RenderCmdColorQuad(RenderCmdList, vec3(PlayerPos, 0.1f), vec2(64.0f, 64.0f), vec4(1.0f, 1.0f, 0.0f, 1.0f), 0);
+	RenderCmdTextureQuad(RenderCmdList, vec3(PlayerPos, 0.1f), vec2(64.0f, 64.0f), vec4(0.0f, 0.0f, 1.0f, 1.0f),
+						vec4(1.0f, 1.0f, 0.0f, 1.0f), SnakeHeadTexHandle, 0);
 	
 	// Draw
-	DrawRenderCmdList(&RenderCmdList);
+	DrawRenderCmdList(RenderCmdList);
+}
+
+level* AllocLevel(ivec2 LevelSize)
+{
+	level *Level = (level *)malloc(sizeof(level));
+
+	return Level;
 }

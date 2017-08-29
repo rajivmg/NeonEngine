@@ -1,4 +1,8 @@
 #include "neon_renderer.h"
+#include "neon_opengl.h"
+#include "neon_primitive_mesh.h"
+
+using namespace Renderer;
 
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
@@ -113,7 +117,8 @@ void font::Load(char const * FontSrc, u16 aFontHeight)
 
 	//@HACK: see texture::PackTexture()
 	Atlas.Texture.FlippedVertically = true;
-	TextureIndex = Atlas.Texture.UploadToGPU();
+	// @TODO: make text render correctly with LINEAR filtering!
+	TextureIndex = UploadTexture(&Atlas.Texture, TEXTURE_2D, NEAREST, CLAMP_TO_EDGE);
 	Initialised = true;
 
 
@@ -181,22 +186,30 @@ void font::FreeMemory()
 //// 
 void Renderer::Init()
 {
-	// initialise opengl function pointers.
-	InitGL();
+	// if OpenGL Renderer {
+		// initialise opengl function pointers.
+		InitGL();
 
-	// initialise opengl renderer.
-	GLInitRenderer();
+		// initialise opengl renderer.
+		GLInitRenderer();
+	// endif OpenGL render
 }
 
-inline
-u32 Renderer::UploadTexture(texture *Texture)
+u32 Renderer::UploadTexture(texture *Texture, Renderer::TextureTarget Target, Renderer::TextureParam Filter,
+							Renderer::TextureParam Wrap)
 {
 	Assert(Texture->Initialised);
-
-	u32 Index;
-	Index = GLUploadTexture(Texture);
+	u32 TextureIndex;
+	TextureIndex = GLUploadTexture(Texture, Target, Filter, Wrap);
 	Texture->OnGPU = true;
-	return Index;
+	return TextureIndex;
+}
+
+u32 Renderer::CreateRenderTarget(u32 Width, u32 Height, Renderer::TextureParam Filter)
+{
+	u32 TargetIndex;
+	TargetIndex = GLCreateRenderTarget(Width, Height, Filter);
+	return TargetIndex;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -204,16 +217,20 @@ u32 Renderer::UploadTexture(texture *Texture)
 ////
 ////	Render command
 ////
-void AllocRenderCmdList(render_cmd_list *RenderCmdList)
-{
-	RenderCmdList->Size = MEGABYTE(8);
-	RenderCmdList->List = malloc(RenderCmdList->Size);
-	RenderCmdList->Table = (void **)malloc(sizeof(void *) * 1024);
-	RenderCmdList->BaseOffset = 0;
-	RenderCmdList->CmdCount = 0;
 
-	RenderCmdList->Scratch= malloc(MEGABYTE(8));
-}	
+render_cmd_list* AllocRenderCmdList()
+{
+	render_cmd_list *Result = (render_cmd_list *)malloc(sizeof(render_cmd_list));
+
+	Result->Size = MEGABYTE(8);
+	Result->List = malloc(Result->Size);
+	Result->Table = (void **)malloc(sizeof(void *) * 1024);
+	Result->BaseOffset = 0;
+	Result->CmdCount = 0;
+	Result->Scratch= malloc(MEGABYTE(8));
+
+	return Result;
+} 
 
 void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 {
@@ -225,7 +242,7 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 
 	switch(Cmd->Header.Type)
 	{
-		case RenderCmd_render_cmd_Clear:
+		case RenderCmd_Clear:
 		{
 			Assert((RenderCmdList->Size - RenderCmdList->BaseOffset) >= sizeof(render_cmd_Clear));
 
@@ -240,7 +257,21 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 			RenderCmdList->BaseOffset += sizeof(render_cmd_Clear);
 		} break;
 
-		case RenderCmd_render_cmd_TextureQuad:
+		case RenderCmd_Line:
+		{
+			Assert((RenderCmdList->Size - RenderCmdList->BaseOffset) >= sizeof(render_cmd_Line));
+			render_cmd_Line *Line_Cmd = (render_cmd_Line *)RenderCmd;
+
+			render_cmd_Line *CmdSlot;
+			CmdSlot = (render_cmd_Line *)((u8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
+
+			*CmdSlot = *Line_Cmd;
+
+			RenderCmdList->Table[RenderCmdList->CmdCount++] = (void *)(CmdSlot);
+			RenderCmdList->BaseOffset += sizeof(render_cmd_Line);
+		} break;
+
+		case RenderCmd_TextureQuad:
 		{
 			Assert((RenderCmdList->Size - RenderCmdList->BaseOffset) >= sizeof(render_cmd_TextureQuad));
 
@@ -255,7 +286,7 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 			RenderCmdList->BaseOffset += sizeof(render_cmd_TextureQuad);
 		} break;
 
-		case RenderCmd_render_cmd_ColorQuad:
+		case RenderCmd_ColorQuad:
 		{
 			Assert((RenderCmdList->Size - RenderCmdList->BaseOffset) >= sizeof(render_cmd_ColorQuad));
 
@@ -270,7 +301,7 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 			RenderCmdList->BaseOffset += sizeof(render_cmd_ColorQuad);
 		} break;
 
-		case RenderCmd_render_cmd_Text:
+		case RenderCmd_Text:
 		{
 			Assert((RenderCmdList->Size - RenderCmdList->BaseOffset) >= sizeof(render_cmd_Text));
 
@@ -285,6 +316,21 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 			RenderCmdList->BaseOffset += sizeof(render_cmd_Text);
 		} break;
 
+		case RenderCmd_RenderTargetQuad:
+		{
+			Assert((RenderCmdList->Size - RenderCmdList->BaseOffset) >= sizeof(render_cmd_RenderTargetQuad));
+
+			render_cmd_RenderTargetQuad *TargetQuad_Cmd = (render_cmd_RenderTargetQuad *)RenderCmd;
+
+			render_cmd_RenderTargetQuad *CmdSlot;
+			CmdSlot = (render_cmd_RenderTargetQuad *)((u8 *)RenderCmdList->List + RenderCmdList->BaseOffset);
+
+			*CmdSlot = *TargetQuad_Cmd;
+			
+			RenderCmdList->Table[RenderCmdList->CmdCount++] = (void *)(CmdSlot);
+			RenderCmdList->BaseOffset += sizeof(render_cmd_RenderTargetQuad);
+		} break;
+
 		InvalidDefaultCase;
 	}
 }
@@ -292,7 +338,7 @@ void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd)
 void SortRenderCmdList(render_cmd_list *RenderCmdList)
 {
 	// Sort using insertion sort
-	u8 i, j;
+	u32 i, j;
 	for(i = 1; i < RenderCmdList->CmdCount; ++i)
 	{
 		j = i;
@@ -321,21 +367,46 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 	
 			switch(RenderCmd->Header.Type)
 			{
-				case RenderCmd_render_cmd_Clear:
+				case RenderCmd_Clear:
 				{
 					GLClear();
 				} break;
 
-				case RenderCmd_render_cmd_TextureQuad:
+				case RenderCmd_Line:
+				{
+					render_cmd_Line *Line_Cmd = (render_cmd_Line *)RenderCmd;
+					Line((line *)RenderCmdList->Scratch, Line_Cmd->Start, Line_Cmd->End, Line_Cmd->Color);
+
+					u32 SameTypeCount = 0;
+					while(TableIndex + 1 < RenderCmdList->CmdCount)
+					{
+						render_cmd *NextRenderCmd = (render_cmd *)RenderCmdList->Table[TableIndex + 1];
+						if(NextRenderCmd->Header.Type == RenderCmd_Line && NextRenderCmd->Header.Target == Line_Cmd->Header.Target)
+						{
+							++SameTypeCount;
+							render_cmd_Line *NextLine_Cmd = (render_cmd_Line *)NextRenderCmd;
+							Line((line *)RenderCmdList->Scratch + SameTypeCount, NextLine_Cmd->Start, NextLine_Cmd->End, NextLine_Cmd->Color);
+							++TableIndex;
+						}
+						else
+						{
+							// next cmd is not Line cmd.
+							break;
+						}
+					}
+					GLDrawLines(RenderCmdList->Scratch, 1 + SameTypeCount, Line_Cmd->Header.Target);
+				} break;
+
+				case RenderCmd_TextureQuad:
 				{
 					render_cmd_TextureQuad *TextureQuad_Cmd = (render_cmd_TextureQuad *)RenderCmd;
 					TextureQuad((texture_quad *)RenderCmdList->Scratch, TextureQuad_Cmd->P, TextureQuad_Cmd->Size, TextureQuad_Cmd->UV, TextureQuad_Cmd->Tint);
 					
 					u32 SameTypeCount = 0;
-					while(1)
+					while(TableIndex + 1 < RenderCmdList->CmdCount)
 					{
 						render_cmd *NextRenderCmd = (render_cmd *)RenderCmdList->Table[TableIndex + 1];
-						if(NextRenderCmd->Header.Type == RenderCmd_render_cmd_TextureQuad)
+						if(NextRenderCmd->Header.Type == RenderCmd_TextureQuad && NextRenderCmd->Header.Target == TextureQuad_Cmd->Header.Target)
 						{
 							render_cmd_TextureQuad *NextTextureQuad_Cmd = (render_cmd_TextureQuad *)NextRenderCmd;
 							if(NextTextureQuad_Cmd->TextureIndex == TextureQuad_Cmd->TextureIndex)
@@ -356,19 +427,16 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 						}
 						else
 						{
-							// next cmd is not TextureQuad.
+							// next cmd is either not TextureQuad or has different render target.
 							break;
 						}
 					}
 
-					// extract TextureIndex from Key
-					// u64 Index = TextureQuad_Cmd->Header.Key & 0x00000000FFFFFFFF;
-
-					GLDrawTextureQuads(RenderCmdList->Scratch, 1 + SameTypeCount,  TextureQuad_Cmd->TextureIndex);
+					GLDrawTextureQuads(RenderCmdList->Scratch, 1 + SameTypeCount,  TextureQuad_Cmd->TextureIndex, TextureQuad_Cmd->Header.Target);
 
 				} break;
 	
-				case RenderCmd_render_cmd_ColorQuad:
+				case RenderCmd_ColorQuad:
 				{
 					render_cmd_ColorQuad *ColorQuad_Cmd = (render_cmd_ColorQuad *)RenderCmd;
 					ColorQuad((color_quad *)RenderCmdList->Scratch, ColorQuad_Cmd->P, ColorQuad_Cmd->Size, ColorQuad_Cmd->Color);
@@ -377,7 +445,7 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 					while(TableIndex + 1 < RenderCmdList->CmdCount)
 					{
 						render_cmd *NextRenderCmd = (render_cmd *)RenderCmdList->Table[TableIndex + 1];
-						if(NextRenderCmd->Header.Type == RenderCmd_render_cmd_ColorQuad)
+						if(NextRenderCmd->Header.Type == RenderCmd_ColorQuad && NextRenderCmd->Header.Target == ColorQuad_Cmd->Header.Target)
 						{
 							++SameTypeCount;
 							render_cmd_ColorQuad *NextColorQuad_Cmd = (render_cmd_ColorQuad *)NextRenderCmd;
@@ -389,15 +457,15 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 						}
 						else
 						{
-							// next cmd is not ColorQuad.
+							// next cmd is either not ColorQuad or has different render target.
 							break;
 						}
 					}
-					GLDrawColorQuads(RenderCmdList->Scratch, 1 + SameTypeCount);
+					GLDrawColorQuads(RenderCmdList->Scratch, 1 + SameTypeCount, ColorQuad_Cmd->Header.Target);
 
 				} break;
 	
-				case RenderCmd_render_cmd_Text:
+				case RenderCmd_Text:
 				{
 					render_cmd_Text *Text_Cmd = (render_cmd_Text *)RenderCmd;
 
@@ -435,7 +503,17 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 						++Index;
 					}
 					
-					GLDrawText(RenderCmdList->Scratch, CharCount, Text_Cmd->Font->TextureIndex);
+					GLDrawText(RenderCmdList->Scratch, CharCount, Text_Cmd->Font->TextureIndex, Text_Cmd->Header.Target);
+
+				} break;
+
+				case RenderCmd_RenderTargetQuad:
+				{
+					render_cmd_RenderTargetQuad *TargetQuad_Cmd = (render_cmd_RenderTargetQuad *)RenderCmd;
+					TextureQuad((texture_quad *)RenderCmdList->Scratch, TargetQuad_Cmd->P, TargetQuad_Cmd->Size,
+								vec4(0, 0, 1, 1), vec4(0, 0, 0, 1));
+
+					GLDrawTargetQuad(RenderCmdList->Scratch, TargetQuad_Cmd->RenderTargetIndex);
 
 				} break;
 					
@@ -455,18 +533,30 @@ void DrawRenderCmdList(render_cmd_list *RenderCmdList)
 void RenderCmdClear(render_cmd_list *RenderCmdList)
 {
 	render_cmd_Clear Cmd;
-	Cmd.Header.Type = RenderCmd_render_cmd_Clear;
-	Cmd.Header.Key  = ((u64)RenderCmd_render_cmd_Clear << 32) | 0; 
+	Cmd.Header.Type = RenderCmd_Clear;
+	Cmd.Header.Texture = 0;
 	PushRenderCmd(RenderCmdList, &Cmd);
 }
 
-void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aUV, u32 TextureIndex, vec4 aTint)
+void RenderCmdLine(render_cmd_list *RenderCmdList, vec3 aStart, vec3 aEnd, vec4 aColor, u32 aRenderTarget)
 {
-	// 00 00 00 00 00 00 00 01
+	render_cmd_Line Cmd;
+	Cmd.Header.Target = (u8)aRenderTarget;
+	Cmd.Header.Type = RenderCmd_Line;
+	Cmd.Header.Texture = 0;
+	Cmd.Start = aStart;
+	Cmd.End = aEnd;
+	Cmd.Color = aColor;
+	PushRenderCmd(RenderCmdList, &Cmd);
+}
+
+void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aUV, vec4 aTint, u32 aTextureIndex, u32 aRenderTarget)
+{
 	render_cmd_TextureQuad Cmd;
-	Cmd.Header.Type = RenderCmd_render_cmd_TextureQuad;
-	Cmd.Header.Key	= ((u64)RenderCmd_render_cmd_TextureQuad << 32) | TextureIndex;
-	Cmd.TextureIndex = TextureIndex;
+	Cmd.Header.Target = (u8)aRenderTarget;
+	Cmd.Header.Type = RenderCmd_TextureQuad;
+	Cmd.Header.Texture = (u16)aTextureIndex;
+	Cmd.TextureIndex = aTextureIndex;
 	Cmd.P = aP;
 	Cmd.Size = aSize;
 	Cmd.UV = aUV;
@@ -474,33 +564,47 @@ void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, v
 	PushRenderCmd(RenderCmdList, &Cmd);
 }
 
-void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aColor)
+void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aColor, u32 aRenderTarget)
 {
 	render_cmd_ColorQuad Cmd;
-	Cmd.Header.Type = RenderCmd_render_cmd_ColorQuad;
-	Cmd.Header.Key	= ((u64)RenderCmd_render_cmd_ColorQuad << 32) | 0;
+	Cmd.Header.Target = (u8)aRenderTarget;
+	Cmd.Header.Type = RenderCmd_ColorQuad;
+	Cmd.Header.Texture = 0;
 	Cmd.P = aP;
 	Cmd.Size = aSize;
 	Cmd.Color = aColor;
 	PushRenderCmd(RenderCmdList, &Cmd);
 }
 
-void RenderCmdText(render_cmd_list *RenderCmdList, font *aFont, vec3 aP, vec4 aColor, char const *Fmt, ...)
+void RenderCmdText(render_cmd_list *RenderCmdList, vec3 aP, vec4 aColor, font *aFont, u32 aRenderTarget, char const *Fmt, ...)
 {
 	render_cmd_Text Cmd;
-	Cmd.Header.Type = RenderCmd_render_cmd_Text;
+	Cmd.Header.Target = (u8)aRenderTarget;
+	Cmd.Header.Type = RenderCmd_Text;
 	Cmd.Font = aFont;
 	Cmd.P = aP;
 	Cmd.Color = aColor;
 
 	Assert(aFont->Initialised);
 
-	Cmd.Header.Key = ((u64)RenderCmd_render_cmd_Text << 32) | 0;
+	Cmd.Header.Texture = 0;
 
 	va_list Arguments;
 	va_start(Arguments, Fmt);
 	vsnprintf(Cmd.Text, 8192, Fmt, Arguments);
 	va_end(Arguments);
 
+	PushRenderCmd(RenderCmdList, &Cmd);
+}
+
+void RenderCmdRenderTargetQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, u32 aRenderTargetIndex)
+{
+	render_cmd_RenderTargetQuad Cmd;
+	Cmd.Header.Target = (u8)0;
+	Cmd.Header.Type = RenderCmd_RenderTargetQuad;
+	Cmd.Header.Texture = (u16)aRenderTargetIndex;
+	Cmd.P = aP;
+	Cmd.Size = aSize;
+	Cmd.RenderTargetIndex = aRenderTargetIndex;
 	PushRenderCmd(RenderCmdList, &Cmd);
 }

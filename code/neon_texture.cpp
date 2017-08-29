@@ -100,20 +100,6 @@ void texture::FreeMemory()
 	SAFE_FREE(Content);
 }
 
-u32 texture::UploadToGPU()
-{
-	Assert(Initialised);
-	Assert(Content);
-	
-	OnGPU = true;
-
-	u32 TextureIndex;
-
-	TextureIndex = Renderer::UploadTexture(this);
-
-	return TextureIndex;
-}
-
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 ////

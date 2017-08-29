@@ -51,7 +51,6 @@ public:
 	void LoadFromFile(char const *aFilename);
 	void FlipVertically();
 	void FreeMemory();
-	u32  UploadToGPU();
 
 	texture();
 	~texture();

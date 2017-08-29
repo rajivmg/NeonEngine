@@ -18,6 +18,9 @@
 
 #include "neon_sdl.h"
 
+#include <imgui.h>
+#include "imgui_impl.cpp"
+
 platform_t *Platform;
 
 PLATFORM_LOG(Log)
@@ -192,8 +195,9 @@ void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller)
 
 		case SDL_MOUSEMOTION:
 		{
-			Controller->Mouse.X = Event->motion.x;
-			Controller->Mouse.Y = Platform->Height - 1 - Event->motion.y;
+			Controller->Mouse.x = Event->motion.x;
+			Controller->Mouse.y = Platform->Height - 1 - Event->motion.y;
+			// Controller->Mouse.Y = Event->motion.y;
 		} break;
 
 		case SDL_MOUSEBUTTONDOWN:
@@ -249,7 +253,7 @@ int main(int argc, char **argv)
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,3);
 		// compatiblity profile for immediate mode debugging draws
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY); //SDL_GL_CONTEXT_PROFILE_CORE
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE); //SDL_GL_CONTEXT_PROFILE_CORE
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -280,6 +284,11 @@ int main(int argc, char **argv)
 
 			if(GLContext)
 			{
+				// Setup Imgui binding
+				ImGui_Init(Window);
+
+				int w, h;
+				SDL_GL_GetDrawableSize(Window, &w, &h);
 
 				game_code GameCode = {};
 				
@@ -289,7 +298,7 @@ int main(int argc, char **argv)
 				SDL_Event Event;
 				bool ShouldQuit = false;
 
-				r64 FrameTime = 0;
+				r32 FrameTime = 0;
 				
 				u64 PrevCounter, CurrentCounter, CounterFrequency;
 				CounterFrequency = SDL_GetPerformanceFrequency();
@@ -308,8 +317,8 @@ int main(int argc, char **argv)
 						NewInput.Buttons[ButtonIndex].EndedDown = OldInput.Buttons[ButtonIndex].EndedDown;
 					}
 
-					NewInput.Mouse.X = OldInput.Mouse.X;
-					NewInput.Mouse.Y = OldInput.Mouse.Y;
+					NewInput.Mouse.x = OldInput.Mouse.x;
+					NewInput.Mouse.y = OldInput.Mouse.y;
 
 					for(int ButtonIndex = 0; ButtonIndex < ArrayCount(NewInput.Mouse.Buttons); ++ButtonIndex)
 					{
@@ -324,20 +333,32 @@ int main(int argc, char **argv)
 						}
 						else
 						{
+							ImGui_ProcessEvent(&Event); // Imgui process events
 							SDLProcessEvents(&Event, &NewInput);
 						}
 					}
-					
+					// Imgui mark new frame start
+					ImGui_NewFrame(Window);
+
+					{
+            			static float f = 0.0f;
+            			ImGui::Text("Hello, world!");
+            			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+           				ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        			}
+
 					PrevCounter = SDL_GetPerformanceCounter();
-					GameCode.GameUpdateAndRender(&NewInput, FrameTime);
+					NewInput.dTFrame = FrameTime;
+					GameCode.GameUpdateAndRender(&NewInput);
+					ImGui::Render();
 					SDL_GL_SwapWindow(Window);
 					
 					OldInput = NewInput;	
 
 					CurrentCounter = SDL_GetPerformanceCounter();
-					FrameTime = (r64)((CurrentCounter - PrevCounter)*1000.0) / CounterFrequency;
+					FrameTime = (r32)((CurrentCounter - PrevCounter)) / CounterFrequency;
 					char DebugCountString[100];
-					sprintf(DebugCountString, "%f ms\n", FrameTime);
+					sprintf(DebugCountString, "%f ms\n", FrameTime*1000.0);
 					PrevCounter = CurrentCounter;
 
 					#if defined(WINDOWS)
@@ -361,6 +382,9 @@ int main(int argc, char **argv)
 	{
 		Platform->Log(ERR, "%s\n", SDL_GetError());
 	} 
+	
+	ImGui_Shutdown();
+
 	SDL_Quit();
 	return 0;
 }

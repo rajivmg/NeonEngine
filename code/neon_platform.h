@@ -7,10 +7,13 @@
 
 #include <cstdint>
 
-// #include <SDL2/SDL.h>
+#if defined(WINDOWS)
+	#define DLLEXPORT __declspec(dllexport)
+#else
+	#define DLLEXPORT
+#endif
 
 #define local_persist static
-#define global_variable static
 
 #ifdef DEBUG_BUILD
 #define Assert(Exp) if(!(Exp)) {*(volatile int *)0 = 0;}
@@ -54,8 +57,8 @@ struct game_button_state
 
 struct game_mouse_state
 {
-	s32 X;
-	s32 Y;
+	s32 x;
+	s32 y;
 
 	union
 	{
@@ -72,6 +75,7 @@ struct game_mouse_state
 struct game_controller_input
 {
 	game_mouse_state Mouse;
+	r32 dTFrame;
 	union
 	{
 		game_button_state Buttons[4];
@@ -120,7 +124,7 @@ struct platform_t
 
 extern platform_t *Platform;
 
-#define GAME_UPDATE_AND_RENDER(Name) void (Name)(game_controller_input *Input, r64 FrameTime)
+#define GAME_UPDATE_AND_RENDER(Name) void (Name)(game_controller_input *Input)
 typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
 
 #define GAME_CODE_LOADED(Name) void (Name)(platform_t *aPlatform)

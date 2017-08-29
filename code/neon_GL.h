@@ -6,9 +6,11 @@
 #define GLAPI WINAPI
 #endif //_MSC_VER
 
+#define GL_ACTIVE_TEXTURE                 0x84E0
 #define GL_TEXTURE0                       0x84C0
 #define GL_FRAGMENT_SHADER                0x8B30
 #define GL_VERTEX_SHADER                  0x8B31
+
 #define GL_VALIDATE_STATUS                0x8B83
 #define GL_ARRAY_BUFFER                   0x8892
 #define GL_ELEMENT_ARRAY_BUFFER           0x8893
@@ -21,6 +23,25 @@
 #define GL_SRGB_ALPHA                     0x8C42
 
 #define GL_CLAMP_TO_EDGE                  0x812F
+
+#define GL_FRAMEBUFFER_COMPLETE           0x8CD5
+#define GL_FRAMEBUFFER                    0x8D40
+#define GL_COLOR_ATTACHMENT0              0x8CE0
+#define GL_RENDERBUFFER                   0x8D41
+#define GL_DEPTH_ATTACHMENT               0x8D00
+
+#define GL_CURRENT_PROGRAM                0x8B8D
+#define GL_SAMPLER_BINDING                0x8919
+#define GL_ARRAY_BUFFER_BINDING           0x8894
+#define GL_ELEMENT_ARRAY_BUFFER_BINDING   0x8895
+#define GL_VERTEX_ARRAY_BINDING           0x85B5
+#define GL_BLEND_SRC_RGB                  0x80C9
+#define GL_BLEND_DST_RGB                  0x80C8
+#define GL_BLEND_SRC_ALPHA                0x80CB
+#define GL_BLEND_DST_ALPHA                0x80CA
+#define GL_BLEND_EQUATION_RGB             0x8009
+#define GL_BLEND_EQUATION_ALPHA           0x883D
+#define GL_FUNC_ADD                       0x8006
 
 typedef char GLchar;
 typedef ptrdiff_t GLintptr;
@@ -55,7 +76,25 @@ GLPROC(void,	EnableVertexAttribArray, GLuint index)\
 GLPROC(GLint,	GetUniformLocation, GLuint program, const GLchar *name)\
 GLPROC(void,	Uniform1i, GLint location, GLint v0)\
 GLPROC(void, 	UniformMatrix4fv, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)\
-GLPROC(void,	ActiveTexture, GLenum texture)
+GLPROC(void,	ActiveTexture, GLenum texture)\
+GLPROC(void, 	BindFramebuffer, GLenum target, GLuint framebuffer)\
+GLPROC(void, 	DeleteFramebuffers, GLsizei n, const GLuint *framebuffers)\
+GLPROC(void, 	GenFramebuffers, GLsizei n, GLuint *framebuffers)\
+GLPROC(GLenum, 	CheckFramebufferStatus, GLenum target)\
+GLPROC(void, 	FramebufferTexture2D, GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level)\
+GLPROC(void, 	FramebufferRenderbuffer, GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)\
+GLPROC(void, 	BindRenderbuffer, GLenum target, GLuint renderbuffer)\
+GLPROC(void, 	DeleteRenderbuffers, GLsizei n, const GLuint *renderbuffers)\
+GLPROC(void, 	GenRenderbuffers, GLsizei n, GLuint *renderbuffers)\
+GLPROC(void, 	RenderbufferStorage, GLenum target, GLenum internalformat, GLsizei width, GLsizei height)\
+GLPROC(void, 	GetRenderbufferParameteriv, GLenum target, GLenum pname, GLint *params)\
+GLPROC(void, 	BlendEquation, GLenum mode)\
+GLPROC(void, 	BindSampler, GLuint unit, GLuint sampler)\
+GLPROC(void, 	BlendEquationSeparate, GLenum modeRGB, GLenum modeAlpha)\
+GLPROC(void, 	BlendFuncSeparate, GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha)\
+GLPROC(void, 	DeleteVertexArrays, GLsizei n, const GLuint *arrays)\
+GLPROC(void, 	DeleteBuffers, GLsizei n, const GLuint *buffers)
+
 
 #ifdef NEON_DEBUG_GL
 	#define GL_Assert(Exp) if(!(Exp)) {*(volatile int *)0 = 0;}

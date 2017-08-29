@@ -2,6 +2,53 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 //
+//	ivec2
+//
+/////////////////////////////////////////////////////////////////////////////////
+ivec2::ivec2()
+{
+	Elements[0] = 0;
+	Elements[1] = 0;
+}
+
+ivec2::ivec2(s32 X, s32 Y)
+{
+	x = X;
+	y = Y;	
+}
+
+ivec2::ivec2(r32 X, r32 Y)
+{
+	x = (s32)X;
+	y = (s32)Y;
+}
+
+ivec2 ivec2::operator+(ivec2 const & V2)
+{
+	return ivec2(x + V2.x, y + V2.y);
+}
+
+ivec2 ivec2::operator-(ivec2 const & V2)
+{
+	return ivec2(x - V2.x, y - V2.y);
+}
+
+ivec2 ivec2::operator-()
+{
+	return ivec2(-x, -y);
+}
+
+ivec2 ivec2::operator*(s32 const & C)
+{
+	return ivec2(x * C, y * C);
+}
+
+ivec2::~ivec2()
+{
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//
 //	vec2
 //
 /////////////////////////////////////////////////////////////////////////////////
@@ -38,6 +85,11 @@ vec2 vec2::operator-()
 	return vec2(-x, -y);
 }
 
+vec2 vec2::operator*(r32 const & C)
+{
+	return vec2(x * C, y * C);
+}
+
 r32 vec2::Dot(vec2 const & V2)
 {
 	return (r32)((x * V2.x) + (y * V2.y));
@@ -66,6 +118,56 @@ vec2 vec2::Normalize(vec2& V2)
 }
 
 vec2::~vec2()
+{
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//
+//	ivec3
+//
+/////////////////////////////////////////////////////////////////////////////////
+ivec3::ivec3()
+{
+	Elements[0] = 0;
+	Elements[1] = 0;
+	Elements[2] = 0;
+}
+
+ivec3::ivec3(s32 X, s32 Y, s32 Z)
+{
+	Elements[0] = X;
+	Elements[1] = Y;
+	Elements[2] = Z;
+}
+
+ivec3::ivec3(ivec2 const & V2, s32 Z)
+{
+	Elements[0] = V2.x;
+	Elements[1] = V2.y;
+	Elements[2] = Z;
+}
+
+ivec3 ivec3::operator+(ivec3 const & V3)
+{
+	return ivec3(x + V3.x, y + V3.y, z + V3.z);
+}
+
+ivec3 ivec3::operator-(ivec3 const & V3)
+{
+	return ivec3(x - V3.x, y - V3.y, z - V3.z);
+}
+
+ivec3 ivec3::operator-()
+{
+	return ivec3(-x, -y, -z);
+}
+
+ivec3 ivec3::operator*(s32 const & C)
+{
+	return ivec3(x * C, y * C, z * C);
+}
+
+ivec3::~ivec3()
 {
 }
 
@@ -117,6 +219,11 @@ vec3 vec3::operator-()
 	return vec3(-x, -y, -z);
 }
 
+vec3 vec3::operator*(r32 const & C)
+{
+	return vec3(x * C, y * C, z * C);
+}
+
 r32 vec3::Dot(vec3 const & V3)
 {
 	return (r32)((x * V3.x) + (y * V3.y) + (z * V3.z));
@@ -147,6 +254,67 @@ vec3 vec3::Normalize(vec3& V3)
 }
 
 vec3::~vec3()
+{
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//
+//	ivec4
+//
+/////////////////////////////////////////////////////////////////////////////////
+ivec4::ivec4()
+{
+	Elements[0] = 0;
+	Elements[1] = 0;
+	Elements[2] = 0;
+	Elements[3] = 0;
+}
+
+ivec4::ivec4(s32 X, s32 Y, s32 Z, s32 W)
+{
+	Elements[0] = X;
+	Elements[1] = Y;
+	Elements[2] = Z;
+	Elements[3] = W;
+}
+
+ivec4::ivec4(ivec3 const & V3, s32 W)
+{
+	Elements[0] = V3.x;
+	Elements[1] = V3.y;
+	Elements[2] = V3.z;
+	Elements[3] = W;
+}
+
+ivec4::ivec4(ivec2 const & V21, ivec2 const & V22)
+{
+	Elements[0] = V21.x;
+	Elements[1] = V21.y;
+	Elements[2] = V22.x;
+	Elements[3] = V22.y;
+}
+
+ivec4 ivec4::operator+(ivec4 const & V4)
+{
+	return ivec4(x + V4.x, y + V4.y, z + V4.z, w + V4.w);
+}
+
+ivec4 ivec4::operator-(ivec4 const & V4)
+{
+	return ivec4(x - V4.x, y - V4.y, z - V4.z, w - V4.w);
+}
+
+ivec4 ivec4::operator-()
+{
+	return ivec4(-x, -y, -z, -w);
+}
+
+ivec4 ivec4::operator*(s32 const & C)
+{
+	return ivec4(x * C, y * C, z * C, w *C);
+}
+
+ivec4::~ivec4()
 {
 }
 
@@ -208,6 +376,11 @@ vec4 vec4::operator-(vec4 const & V4)
 vec4 vec4::operator-()
 {
 	return vec4(-x, -y, -z, -w);
+}
+
+vec4 vec4::operator*(r32 const & C)
+{
+	return vec4(x * C, y * C, z * C, w *C);
 }
 
 r32 vec4::Dot(vec4 const & V4)
@@ -390,9 +563,9 @@ mat4 mat4::LookAt(vec3 Eye, vec3 Direction, vec3 Up)
 	Up = Forward.Cross(Left);
 
 	r32 TX, TY, TZ;
-	TX = -Left.x*Eye.x - 	Left.y*Eye.y - 		Left.z*Eye.z;
-	TY = -Up.x*Eye.x - 		Up.y*Eye.y - 		Up.z*Eye.z;
-	TZ = -Forward.x*Eye.x - Forward.y*Eye.y - 	Forward.z*Eye.z;
+	TX = -Left.x*Eye.x 		- 	Left.y*Eye.y 	- 		Left.z*Eye.z;
+	TY = -Up.x*Eye.x 		-	Up.y*Eye.y 		- 		Up.z*Eye.z;
+	TZ = -Forward.x*Eye.x 	- 	Forward.y*Eye.y -	 	Forward.z*Eye.z;
 
 	Matrix.m00 = Left.x;  	 Matrix.m01 = Left.y;  	 Matrix.m02 = Left.z;  	 Matrix.m03 = TX;
 	Matrix.m10 = Up.x;  	 Matrix.m11 = Up.y;  	 Matrix.m12 = Up.z;  	 Matrix.m13 = TY;

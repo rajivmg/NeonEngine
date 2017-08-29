@@ -1,15 +1,14 @@
 #version 330
 
-uniform mat4 ProjMatx;
+uniform mat4 projection;
 
-in vec3 InPos;
-in vec4 InColor;
-
-out vec4 OutColor;
+in 	vec3 vs_pos;
+in 	vec4 vs_color;
+out vec4 fs_color;
 
 void main ()
 {
-  	gl_Position = ProjMatx * vec4(InPos, 1.0);
+  	gl_Position = projection * vec4(vs_pos, 1.0);
 
-  	OutColor = InColor;
+  	fs_color = vs_color;
 }

@@ -4,11 +4,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include "neon_math.h"
 #include "neon_platform.h"
+#include "neon_math.h"
 #include "neon_texture.h"
-#include "neon_primitive_mesh.h"
-#include "neon_opengl.h"
 #include <cstring> // memcpy
 
 ///////////////////////////////////////////////////////////////////////////
@@ -88,8 +86,29 @@ public:
 //// 
 namespace Renderer
 {	
+	enum TextureTarget
+	{
+		TEXTURE_2D
+	};
+	enum TextureParamName
+	{
+		MAG_FILTER,
+		MIN_FILTER,
+		WRAP_S,
+		WRAP_T
+	};
+	enum TextureParam
+	{
+		LINEAR,
+		NEAREST,
+		CLAMP_TO_EDGE,
+		REPEAT
+	};
+
 	void Init();
-	inline u32 UploadTexture(texture *Texture);
+	u32 UploadTexture(texture *Texture, Renderer::TextureTarget Target, Renderer::TextureParam Filter,
+							 Renderer::TextureParam Wrap);
+	u32 CreateRenderTarget(u32 Width, u32 Height, Renderer::TextureParam Filter);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -97,19 +116,28 @@ namespace Renderer
 ////
 ////	Render Command
 ////
-enum render_cmd_type : u32
+enum render_cmd_type : u8
 {
-	RenderCmd_render_cmd_Clear,
-	RenderCmd_render_cmd_TextureQuad,
-	RenderCmd_render_cmd_Text, 
-	RenderCmd_render_cmd_ColorQuad,
-	RenderCmd_render_cmd_Mesh
+	RenderCmd_Clear,
+	RenderCmd_ColorQuad,
+	RenderCmd_TextureQuad,
+	RenderCmd_Line,
+	RenderCmd_Text,
+	RenderCmd_RenderTargetQuad
 };
 
 struct render_cmd_header
 {
-	render_cmd_type Type;
-	u64 Key;
+	union
+	{
+		u32 Key;
+		struct
+		{
+			u16 Texture;
+			render_cmd_type Type;	
+			u8 Target;
+		};
+	};
 };
 
 struct render_cmd
@@ -120,6 +148,14 @@ struct render_cmd
 struct render_cmd_Clear
 {
 	render_cmd_header Header;
+};
+
+struct render_cmd_Line
+{
+	render_cmd_header Header;
+	vec3 Start;
+	vec3 End;
+	vec4 Color;
 };
 
 struct render_cmd_TextureQuad
@@ -149,6 +185,14 @@ struct render_cmd_Text
 	char Text[8192];
 };
 
+struct render_cmd_RenderTargetQuad
+{
+	render_cmd_header Header;
+	vec3 P;
+	vec2 Size;
+	u32  RenderTargetIndex;
+};
+
 struct render_cmd_list
 {
 	void *List;
@@ -161,13 +205,15 @@ struct render_cmd_list
 	void *Scratch;
 };
 
-void AllocRenderCmdList(render_cmd_list *RenderCmdList);
+render_cmd_list* AllocRenderCmdList();
 void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd);
 void SortRenderCmdList(render_cmd_list *RenderCmdList);
 void DrawRenderCmdList(render_cmd_list *RenderCmdList);
 
 void RenderCmdClear(render_cmd_list *RenderCmdList);
-void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aUV, u32 TextureIndex, vec4 aTint);
-void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aColor);
-void RenderCmdText(render_cmd_list *RenderCmdList, font *aFont, vec3 aP, vec4 aColor, char const *Fmt, ...);
+void RenderCmdLine(render_cmd_list *RenderCmdList, vec3 aStart, vec3 aEnd, vec4 aColor, u32 aRenderTarget);
+void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aUV, vec4 aTint, u32 aTextureIndex, u32 aRenderTarget);
+void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aColor, u32 aRenderTarget);
+void RenderCmdText(render_cmd_list *RenderCmdList, vec3 aP, vec4 aColor, font *aFont, u32 aRenderTarget, char const *Fmt, ...);
+void RenderCmdRenderTargetQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, u32 aRenderTargetIndex);
 #endif

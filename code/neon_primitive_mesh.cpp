@@ -179,3 +179,24 @@ void ColorQuad(color_quad *Quad, vec3 Origin, vec2 Size, vec4 Color)
 	Quad->Content[40] = Color.b;
 	Quad->Content[41] = Color.a;
 }
+
+void Line(line *Line, vec3 Start, vec3 End, vec4 Color)
+{
+	Line->Content[0] = Start.x;
+	Line->Content[1] = Start.y;
+	Line->Content[2] = Start.z;
+	
+	Line->Content[3] = Color.r;
+	Line->Content[4] = Color.g;
+	Line->Content[5] = Color.b;
+	Line->Content[6] = Color.a;
+
+	Line->Content[7] = End.x;
+	Line->Content[8] = End.y;
+	Line->Content[9] = End.z;
+
+	Line->Content[10] = Color.r;
+	Line->Content[11] = Color.g;
+	Line->Content[12] = Color.b;
+	Line->Content[13] = Color.a;
+}
