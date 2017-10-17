@@ -1,7 +1,7 @@
 #ifndef NEON_OPENGL_H
 #define NEON_OPENGL_H
 
-#include "neon_platform.h"
+#include "../platform/neon_platform.h"
 #include "neon_renderer.h"
 
 struct gl_batch

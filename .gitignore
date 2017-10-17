@@ -1,0 +1,15 @@
+bin/
+misc/.vs/
+*.DS_Store
+*.opensdf
+*.sdf
+code/todo.txt
+misc/neon.sublime-workspace
+build/neon_sdl.pdb
+build/neon_sdl.obj
+build/neon_sdl.exe
+build/neon_game.pdb
+build/neon_game.obj
+build/neon_game.lib
+build/neon_game.exp
+build/neon_game.dll

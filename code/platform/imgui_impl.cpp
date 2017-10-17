@@ -20,7 +20,7 @@
 // OpenGL
 #define NEON_INIT_GL
 #define NEON_DEBUG_GL
-#include "neon_GL.h"
+#include "../game/neon_GL.h"
 
 // Data
 static double       g_Time = 0.0f;

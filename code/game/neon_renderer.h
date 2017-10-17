@@ -4,7 +4,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include "neon_platform.h"
+#include "../platform/neon_platform.h"
 #include "neon_math.h"
 #include "neon_texture.h"
 #include <cstring> // memcpy

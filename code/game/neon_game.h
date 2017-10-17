@@ -1,7 +1,7 @@
 #ifndef NEON_GAME_H
 #define NEON_GAME_H
 
-#include "neon_platform.h"
+#include "../platform/neon_platform.h"
 
 #define NEON_INIT_GL
 #define NEON_DEBUG_GL

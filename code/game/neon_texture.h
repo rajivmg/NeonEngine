@@ -1,6 +1,6 @@
 #ifndef neon_texture_H
 #define neon_texture_H
-#include "neon_platform.h"
+#include "../platform/neon_platform.h"
 #include <cstdlib> // malloc, free
 #include <cstring> // memset
 
