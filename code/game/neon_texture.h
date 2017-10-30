@@ -1,14 +1,12 @@
-#ifndef neon_texture_H
-#define neon_texture_H
-#include "../platform/neon_platform.h"
-#include <cstdlib> // malloc, free
-#include <cstring> // memset
+#ifndef NEON_TEXTURE_H
+#define NEON_TEXTURE_H
 
-//////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-////
-////	Texture functions
-////
+#include "../platform/neon_platform.h"
+#include "neon_math.h"
+
+#include <cstdlib> // malloc
+
+#include "neon_renderer.h"
 
 // TGA file header format.
 #pragma pack(push, 1)
@@ -29,44 +27,85 @@ typedef struct tga_header
 } tga_header;
 #pragma pack(pop)
 
+//-----------------------------------------------------------------------------
+// Texture
+//-----------------------------------------------------------------------------
 
-/**
- * texture
- *
- *	purpose: Load, flip & free texture.
- */
+enum class texture_type
+{
+	XX,
+	TEXTURE_2D
+};
+
+enum class texture_filter
+{
+	XX,
+	LINEAR,
+	NEAREST,
+};
+
+enum class texture_wrap
+{
+	XX,
+	CLAMP,
+	REPEAT
+};
+
 class texture
 {
 public:
-	const u32 ID;
-	s32 	Width;
-	s32 	Height;
-	void*	Content;
-	u32  	ContentSize;
-	char 	Filename[128];
-  	bool 	Initialised;
-  	bool 	FlippedVertically;
-	bool	OnGPU;
+	u32 const		InstanceID;
+	u32				Width;
+	u32				Height;
+	void			*Content;
+	u32				ContentSize;
 
-	void LoadFromFile(char const *aFilename);
-	void FlipVertically();
-	void FreeMemory();
+	bool			FlippedAroundY;
+
+	texture_type	Type;
+	texture_filter	Filter;
+	texture_wrap	Wrap;
+
+	// If true this texture will be setup so that on sampling it
+	// hardware gamma correction is applied i.e. it's converted from sRGB to linear space.
+	// NOTE: Must be set before 'CreateRenderResource'.
+	bool			HwGammaCorrection;
+
+	render_resource RenderResource;
+	bool			RenderResourceCreated;
+
+	// Load texture from .tga file.
+	// NOTE: Pixels data origin is top left of the image(texture).
+	void			LoadFile(char const *Filename, texture_type _Type, texture_filter _Filter, texture_wrap _Wrap, bool _HwGammaCorrection = false);
+
+	// Returns true if texture is valid
+	bool			IsValid();
+
+	// Frees the pixel data memory.
+	void			FreeContentMemory();
+
+	// Flip the texture vertically.
+	void			FlipAroundY();
+
+	// Creates the render resource for this texture.
+	// NOTE: This must not be called before texture is initialised.
+	void			CreateRenderResource();
+	
+	// Frees the render resource for this texture.
+	void			FreeRenderResource();
 
 	texture();
 	~texture();
 };
 
-//////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-////
-////	TextureAltas functions
-////	NOTE: Returned texture coordinate's origin (0,0) is at top left.
-struct texture_coordinates
+//-----------------------------------------------------------------------------
+// TextureAtlas
+//-----------------------------------------------------------------------------
+
+struct texture_coords
 {
-	r32 BL_X;
-	r32 BL_Y;
-	r32 TR_X;
-	r32 TR_Y;
+	vec2 LowerLeft;
+	vec2 UpperRight;
 };
 
 struct texture_rect
@@ -89,39 +128,36 @@ struct binary_t_node
 class texture_atlas
 {
 public:
-	const u32 ID;
+	texture			Texture;		
+	u32				Padding;
 
-	void	*Content;
-	u32		ContentSize;
-	u32		Width;
-	u32		Height;
-	u32		Padding;
-	bool  	Initialised;
+	binary_t_node	Node;
 
-	texture Texture;
-	binary_t_node Node;
+	void			Init(u32 Width, u32 Height, u32 _Padding, texture_filter Filter, bool HwGammaCorrection = false);
 
-	void Initialise(u32 AtlasWidth, u32 AtlasHeigth, u16 AtlasPadding);
-	texture_coordinates PackTexture(texture *aTexture);
-	void GenTexture();
-	void FreeMemory();
+	// Returns true if texture atlas is valid
+	bool			IsValid();
+
+	// Returns the texture coordinates of the given texture in the texture atlas.
+	// Note that the coordinates will be in OGL style. i.e. (0,0) = Bottom Left
+	texture_coords	Pack(texture *_Texture);
 
 	texture_atlas();
 	~texture_atlas();
 };
 
-//////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-////
-////	Texture Debugging functions
-////
-#ifdef DEBUG_BUILD
+//-----------------------------------------------------------------------------
+// Texture Debugging
+//-----------------------------------------------------------------------------
+
+#ifdef DEBUG
   #define DebugTextureSave(F, T) DebugTextureSave_(F, T)
 #else
   #define DebugTextureSave(F, T)
 #endif
 
-void      DebugTextureSave_(char const * Filename, texture *Texture);
-
+// Save texture object on disk in .tga format
+// Note that the first byte of texture data will be saved as the first top left pixel.
+void DebugTextureSave_(char const *Filename, texture *Texture);
 
 #endif

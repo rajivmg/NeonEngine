@@ -13,6 +13,12 @@
 //#define IMGUI_API __declspec( dllexport )
 //#define IMGUI_API __declspec( dllimport )
 
+#if !defined(IMGUI_API) && defined(IMGUI_DLLEXPORT)
+#define IMGUI_API __declspec( dllexport )
+#elif !defined(IMGUI_API) && defined(IMGUI_DLLIMPORT)	
+#define IMGUI_API __declspec( dllimport )
+#endif	
+
 //---- Include imgui_user.h at the end of imgui.h
 //#define IMGUI_INCLUDE_IMGUI_USER_H
 

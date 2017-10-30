@@ -1,119 +1,141 @@
 #include "neon_texture.h"
 
-//////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-////
-////	Texture functions
-////
-texture::texture() : ID(GEN_ID),
-					Initialised(false),
-					FlippedVertically(false),
-					OnGPU(false),
-					Content(0)
+#include "neon_renderer.h"
+
+//-----------------------------------------------------------------------------
+// Texture
+//-----------------------------------------------------------------------------
+
+texture::texture() :	InstanceID(GEN_ID),
+						Width(0),
+						Height(0),
+						Content(0),
+						ContentSize(0),
+						FlippedAroundY(false),
+						Type(texture_type::TEXTURE_2D),
+						Filter(texture_filter::NEAREST),
+						Wrap(texture_wrap::CLAMP),
+						HwGammaCorrection(false),
+						RenderResourceCreated(false)
+		
 {
 }
 
 texture::~texture()
 {
-	if(Initialised)
-	{
-		FreeMemory();
-	}
+	SafeFree(Content);
 }
 
-/**
- * texture::LoadFromFile
- * 
- * purpose: Load texture data from disk into the texture object.
- * 
- * description: Considers the first byte of the texture data(on disk) as
- *				very first top left pixel of the texture. 
- */
-void texture::LoadFromFile(char const *aFilename)
+void texture::LoadFile(char const * Filename, texture_type _Type, texture_filter _Filter, texture_wrap _Wrap, bool _HwGammaCorrection)
 {
-	read_file_result Data = Platform->ReadFile(aFilename);
+	read_file_result File = Platform->ReadFile(Filename);
 
-	u8 *InBytes = (u8*)Data.Content;
+	u8 *InBytes = (u8*)File.Content;
 
 	u8 TGAType = *(u8 *)(InBytes + 2);
-	Assert(TGAType == 2); // @TODO: Error message 
 
-	Width  = *(u16 *)(InBytes + 12);
+	// Check if the tga file type is what we want.
+	// 2 == Uncompressed, True-color Image
+	assert(TGAType == 2);
+
+	// Assign members with width and height values from file
+	Width = *(u16 *)(InBytes + 12);
 	Height = *(u16 *)(InBytes + 14);
 
+	// Read bit/pixel of file
 	u8 BitsPerPixel = *(u8 *)(InBytes + 16);
-	Assert(BitsPerPixel == 32); // @TODO: Error message
 
-	ContentSize = Width * Height * (32/8); // bits/pixel = 32
+	// Currently we only support 4 bytes per pixel only
+	assert(BitsPerPixel == 32);
 
+	// Set content size
+	ContentSize = Width * Height * (BitsPerPixel / 8);
+
+	// Allocate memory for pixel data
 	Content = malloc(ContentSize);
-	
-	memcpy(Content, InBytes + sizeof(tga_header), ContentSize);
-	
-	Platform->FreeFileMemory(&Data);
 
-	// Little-endian 
-	// On disk : 		  BB GG RR AA
-	// In Mem  : 		  AA RR GG BB (Disk BBGGRRAA)
-	// After Processing : RR GG BB AA (Mem 0xAABBGGRR)
+	// Copy pixel data from file to our memory
+	memcpy(Content, InBytes + sizeof(tga_header), ContentSize);
+
+	/*
+	GL			: RRGGBBAA == 0xAABBGGRR
+	TGA ORDER	: AARRGGBB == 0xBBGGRRAA
+	*/
 	u32 *PixelPointer = (u32 *)Content;
 	for(u32 PixelOffset = 0; PixelOffset < (ContentSize / 4); ++PixelOffset)
 	{
 		u32 *Pixel = (PixelPointer + PixelOffset);
 		u32 B = (*Pixel & 0x000000FF) << 16;
-		u32 G = (*Pixel & 0x0000FF00) ;//<< 8;
+		u32 G = (*Pixel & 0x0000FF00);
 		u32 R = (*Pixel & 0x00FF0000) >> 16;
-		u32 A = (*Pixel & 0xFF000000);// >> 24;
+		u32 A = (*Pixel & 0xFF000000);
 		*Pixel = R | G | B | A;
 	}
 
-	strncpy(Filename, aFilename, 128);
-	Initialised = true;
-	FlippedVertically = false;
+	Platform->FreeFileMemory(&File);
+
+	FlippedAroundY = false;
+
+	Type = _Type;
+	Filter = _Filter;
+	Wrap = _Wrap;
 }
 
-void texture::FlipVertically()
+bool texture::IsValid()
 {
-	Assert(Initialised);
-	Assert(Content);
+	return Width > 0 && Height > 0 && Content;
+}
 
-	FlippedVertically = !FlippedVertically;
+void texture::FreeContentMemory()
+{
+	SafeFree(Content);
+	ContentSize = 0;
+}
+
+void texture::FlipAroundY()
+{
+	assert(Content);
+
+	FlippedAroundY = !FlippedAroundY;
 
 	u32 *Data = (u32 *)malloc(ContentSize);
 
 	memcpy(Data, Content, ContentSize);
-	for(int Row = 0; Row < Height; ++Row)
+	for(u32 Row = 0; Row < Height; ++Row)
 	{
-		for(int Col = 0; Col < Width; ++Col)
-		{	
-			*((u32 *)(Content) + ((Width) * (Height - 1 - Row)) + Col)
-				= *(Data + (Width) * Row + Col); 
+		for(u32 Col = 0; Col < Width; ++Col)
+		{
+			*((u32 *)(Content)+((Width) * (Height - 1 - Row)) + Col)
+				= *(Data + (Width)* Row + Col);
 		}
 	}
 
-	SAFE_FREE(Data);
+	SafeFree(Data);
 }
 
-void texture::FreeMemory()
+void texture::CreateRenderResource()
 {
-	Assert(Initialised);
-	SAFE_FREE(Content);
+	if(IsValid() && !RenderResourceCreated)
+	{	
+		RenderResource = rndr::MakeTexture(this);
+		RenderResourceCreated = true;
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-////
-////	Texture debugging functions
-////
+void texture::FreeRenderResource()
+{
+	if(RenderResourceCreated)
+	{
+		// TODO: Free texture render resource from GPU
+		// rndr::FreeTexture()
+		RenderResourceCreated = false;
+	}
+}
 
-/**
- * DebugTextureSave
- *
- * purpose: Save the texture objects as .tga file on disk
- *
- * description: Considers the first byte of the texture->content as very
- *				first top left pixel of the texture. 
- */
+//-----------------------------------------------------------------------------
+// Texture Debugging
+//-----------------------------------------------------------------------------
+
 void DebugTextureSave_(char const * Filename, texture *Texture)
 {	
 	tga_header Header = {};
@@ -131,10 +153,16 @@ void DebugTextureSave_(char const * Filename, texture *Texture)
 	Header.PixelDepth = 32;     
 	Header.ImageDescriptor = 0x20;
 	
+	if(!Texture->FlippedAroundY)
+		Texture->FlipAroundY();
+
 	// Change the colors byte position
 	// Little-endian
 	// Spec:   AA RR GG BB [ BB GG RR AA (On file) ]
-	u32 *PixelPointer = (u32 *)Texture->Content;
+	u32 *PixelPointer = (u32 *)malloc(Texture->ContentSize);
+	
+	memcpy(PixelPointer, Texture->Content, Texture->ContentSize);
+
 	for(u32 PixelOffset = 0; PixelOffset < (Texture->ContentSize / 4); ++PixelOffset)
 	{
 		u32 *Pixel = (PixelPointer + PixelOffset);
@@ -148,20 +176,17 @@ void DebugTextureSave_(char const * Filename, texture *Texture)
 
 	void *FileContent = malloc(sizeof(tga_header) + Texture->ContentSize);
 	memcpy(FileContent, &Header, sizeof(tga_header));
-	memcpy((u8 *)FileContent + sizeof(tga_header), Texture->Content, Texture->ContentSize);
+	memcpy((u8 *)FileContent + sizeof(tga_header), PixelPointer, Texture->ContentSize);
 	Platform->WriteFile(Filename, sizeof(tga_header) + Texture->ContentSize, FileContent);
 
 	free(FileContent);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-////
-////	TextureAtlas functions
-////
-texture_atlas::texture_atlas() : ID(GEN_ID),
-								Initialised(false),
-								Content(0)
+//-----------------------------------------------------------------------------
+// TextureAtlas
+//-----------------------------------------------------------------------------
+
+texture_atlas::texture_atlas() :	Padding(0)
 {
 }
 
@@ -169,32 +194,37 @@ texture_atlas::~texture_atlas()
 {
 }
 
-void texture_atlas::Initialise(u32 AtlasWidth, u32 AtlasHeigth, u16 AtlasPadding)
+void texture_atlas::Init(u32 Width, u32 Height, u32 _Padding, texture_filter Filter, bool HwGammaCorrection)
 {
-	Width = AtlasWidth;
-	Height = AtlasHeigth;
-	Padding = AtlasPadding;
+	Texture.Type = texture_type::TEXTURE_2D;
+	Texture.Wrap = texture_wrap::CLAMP;
+	Texture.Filter = Filter;
 
-	Content = malloc(Width * Height * 4);
-	if(Content == 0)
+	Texture.HwGammaCorrection = HwGammaCorrection;
+
+	Texture.Width = Width;
+	Texture.Height = Height;
+	Padding = _Padding;
+
+	Texture.Content = malloc(Texture.Width * Texture.Height * 4);
+	if(Texture.Content == 0)
 	{
-		Assert(!"Error");
+		assert(!"Malloc error");
 	}
 	
-	ContentSize = Width * Height * 4;
+	Texture.ContentSize = Texture.Width * Texture.Height * 4;
 
-	memset(Content, 0, ContentSize);
+	memset(Texture.Content, 0, Texture.ContentSize);
 
 	Node.Child[0] = 0;
 	Node.Child[1] = 0;
 	Node.Rect.OriginX = 1;
 	Node.Rect.OriginY = 1;
-	Node.Rect.Width = Width;
-	Node.Rect.Height = Height;
+	Node.Rect.Width = Texture.Width;
+	Node.Rect.Height = Texture.Height;
 	Node.Filled = false;
-	Initialised = true;
 
-#if 1
+#if 0
 	// make all pixels pink for debugging 
 	u32 *Pixel = (u32 *)Content;	
 	for(u32 x = 0; x < Width * Height; ++x)
@@ -204,7 +234,12 @@ void texture_atlas::Initialise(u32 AtlasWidth, u32 AtlasHeigth, u16 AtlasPadding
 #endif
 }
 
-static binary_t_node* Atlas_Insert(binary_t_node *Node, texture *Texture, u32 Padding)
+bool texture_atlas::IsValid()
+{
+	return Texture.IsValid();
+}
+
+static inline binary_t_node* Atlas_Insert(binary_t_node *Node, texture *Texture, u32 Padding)
 {
 	// if we're not a leaf node
 	if(Node->Child[0] != 0 && Node->Child[1] != 0)
@@ -297,68 +332,50 @@ static binary_t_node* Atlas_Insert(binary_t_node *Node, texture *Texture, u32 Pa
 	}
 }
 
-/**
- *
- * NOTE: Texture coordinates returned are D3D style. (0,0) is 
- *		 at top-left
- *
- */
-texture_coordinates texture_atlas::PackTexture(texture *aTexture)
+texture_coords texture_atlas::Pack(texture *_Texture)
 {
-	Assert(Initialised == true);
+	assert(IsValid());
 
-	binary_t_node *NodeSlot = Atlas_Insert(&Node, aTexture, Padding);
+	binary_t_node *NodeSlot = Atlas_Insert(&Node, _Texture, Padding);
 
 	if(NodeSlot == 0)
 	{
-		Assert(!"Null returned.");
+		assert(!"Null returned.");
 	}
 
-	texture_coordinates TCoord;
+	texture_coords TCoord;
 
-	TCoord.BL_X = (r32)(NodeSlot->Rect.OriginX - 1.5) / (r32)(Width - 1);
-	TCoord.BL_Y = (r32)(NodeSlot->Rect.OriginY + NodeSlot->Rect.Height - Padding - 1.5) / (r32)(Height - 1);
-	TCoord.TR_X = (r32)(NodeSlot->Rect.OriginX + NodeSlot->Rect.Width - Padding - 1.5) / (r32)(Width - 1);
-	TCoord.TR_Y = (r32)(NodeSlot->Rect.OriginY - 1.5) / (r32)(Height - 1);
+	//TCoord.BL_X = (r32)(NodeSlot->Rect.OriginX - 1.5) / (r32)(Width - 1);
+	//TCoord.BL_Y = (r32)(NodeSlot->Rect.OriginY + NodeSlot->Rect.Height - Padding - 1.5) / (r32)(Height - 1);
+	//TCoord.TR_X = (r32)(NodeSlot->Rect.OriginX + NodeSlot->Rect.Width - Padding - 1.5) / (r32)(Width - 1);
+	//TCoord.TR_Y = (r32)(NodeSlot->Rect.OriginY - 1.5) / (r32)(Height - 1);
+
+	TCoord.LowerLeft.x	= (r32)(NodeSlot->Rect.OriginX - 1.0) / (r32)(Texture.Width - 0);
+	TCoord.LowerLeft.y	= 1.0f - (r32)(NodeSlot->Rect.OriginY + NodeSlot->Rect.Height - Padding - 1.0) / (r32)(Texture.Height - 0);
+	TCoord.UpperRight.x	= (r32)(NodeSlot->Rect.OriginX + NodeSlot->Rect.Width - Padding - 1.0) / (r32)(Texture.Width - 0);
+	TCoord.UpperRight.y = 1.0f - (r32)(NodeSlot->Rect.OriginY - 1.0) / (r32)(Texture.Height - 0);
+
 
 	// Platform->Log(INFO, "BL_x=%f BL_y=%f TR_x=%f TR_y=%f\n", TCoord.BL_X, TCoord.BL_Y, TCoord.TR_X, TCoord.TR_Y);
 
-	// copy the texture on the atlas at its position
-	// x and y in range [1, width or height]
-	// needs to be written in range [0, Width or height - 1]
+	// Copy the texture on the atlas at its position.
+	// x and y in range [1, width and height] that
+	// needs to be written in range [0, Width - 1 or height - 1]
 	// write_at(x, y) = (u32)content_ptr + (x-1) + ((y-1) * width)
-	u32 *pTextureContent = (u32 *)aTexture->Content;
+	u32 *pTextureContent = (u32 *)_Texture->Content;
 	
 	for(u32 y = NodeSlot->Rect.OriginY; y < NodeSlot->Rect.OriginY + NodeSlot->Rect.Height - Padding; ++y)
 	{
 		for(u32 x = NodeSlot->Rect.OriginX; x < NodeSlot->Rect.OriginX + NodeSlot->Rect.Width - Padding; ++x)
 		{
-			u32 *Pixel = (u32 *)Content + (x - 1) + ((y-1) * Width);
+			u32 *Pixel = (u32 *)Texture.Content + (x - 1) + ((y-1) * Texture.Width);
 			*Pixel = *(pTextureContent);
 			pTextureContent++;
 		}
 	}
-	
-	// Debugging purpose
-	// texture AtlasDebugCopy;
-	// AtlasDebugCopy = this->ToTexture();
-	// DebugTextureSave("FontAtlas.tga", &AtlasDebugCopy);
+
+	 //this->GenTexture();
+	 //DebugTextureSave("FontAtlas.tga", &Texture);
 
 	return TCoord;
-}
-
-void texture_atlas::GenTexture()
-{
-	Texture.Width  = Width;
-	Texture.Height = Height;
-	Texture.ContentSize = ContentSize;
-	Texture.Content = malloc(ContentSize);
-	memcpy(Texture.Content, Content, ContentSize);
-	Texture.Initialised = true;
-}
-
-void texture_atlas::FreeMemory()
-{
-	Assert(Initialised);
-	SAFE_FREE(Content);
 }

@@ -1,5 +1,5 @@
-#ifndef NEON_GL_H
-#define NEON_GL_H
+ //#ifndef NEON_GL_H
+ //#define NEON_GL_H
 
 #ifdef _MSC_VER
 #include "Windows.h"
@@ -21,6 +21,7 @@
 #define GL_DEBUG_OUTPUT_SYNCHRONOUS       0x8242
 #define GL_FRAMEBUFFER_SRGB               0x8DB9
 #define GL_SRGB_ALPHA                     0x8C42
+#define GL_MULTISAMPLE                    0x809D
 
 #define GL_CLAMP_TO_EDGE                  0x812F
 
@@ -73,6 +74,7 @@ GLPROC(void,	BindVertexArray, GLuint array)\
 GLPROC(GLint,	GetAttribLocation, GLuint program, const GLchar *name)\
 GLPROC(void,	VertexAttribPointer, GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer)\
 GLPROC(void,	EnableVertexAttribArray, GLuint index)\
+GLPROC(void,	DisableVertexAttribArray, GLuint index)\
 GLPROC(GLint,	GetUniformLocation, GLuint program, const GLchar *name)\
 GLPROC(void,	Uniform1i, GLint location, GLint v0)\
 GLPROC(void, 	UniformMatrix4fv, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)\
@@ -134,7 +136,7 @@ void DisableGLDebug()
 }
 #endif //NEON_DEBUG_GL
 
-
+bool InitGL();
 
 #ifdef NEON_INIT_GL 
 #define GLPROC(Ret, Name, ...) gl_type_##Name *gl##Name;
@@ -167,6 +169,7 @@ return true;
 }
 #endif //NEON_INIT_GL
 
+#undef GLPROCLIST
+#undef GLDEBUGPROCLIST
 
-
-#endif //NEON_GL_H
+ //#endif //NEON_GL_H
