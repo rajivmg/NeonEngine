@@ -55,8 +55,8 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		DefaultTexture->CreateRenderResource();
 		DefaultTexture->FreeContentMemory();
 
-		DebugFont->Load("font/Inconsolata/Inconsolata-Regular.ttf", 16);
-		BigFont->Load("font/Neuton/Neuton-Regular.ttf", 48);
+		DebugFont->Load("fonts/Inconsolata/Inconsolata-Regular.ttf", 16);
+		BigFont->Load("fonts/Neuton/Neuton-Regular.ttf", 48);
 
 		std::vector<vert_POS3UV2COLOR4> *VertexData = new std::vector<vert_POS3UV2COLOR4>;
 		PushSpriteQuad(VertexData, vec3(50.0f, 50.0f, 1.0f), vec2(400.0f, 400.0f), vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4(0.0f, 0.0f, 1.0f, 1.0f));
@@ -66,7 +66,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		TestVB = rndr::MakeVertexBuffer(MEGABYTE(1));
 		rndr::VertexBufferData(TestVB, 0, (u32)VertexData->size() * sizeof(vert_POS3UV2COLOR4), &VertexData->front());
 
-		TestProg = rndr::MakeShaderProgram("basic_vs.glsl", "basic_ps.glsl");
+		TestProg = rndr::MakeShaderProgram("shaders/basic_vs.glsl", "shaders/basic_ps.glsl");
 		
 		SafeDelete(VertexData);
 

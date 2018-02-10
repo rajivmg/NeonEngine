@@ -980,7 +980,7 @@ static void ImGui_CreateFontsTexture()
 {
 	// Build texture atlas
     ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontFromFileTTF("font/DroidSans.ttf", 16);
+	io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 16);
 
     unsigned char* pixels;
     int width, height;
