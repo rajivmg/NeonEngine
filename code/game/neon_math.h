@@ -195,7 +195,7 @@ struct vec4
 	FORCE_INLINE explicit vec4(r32 _xyzw) { x = _xyzw; y = _xyzw; z = _xyzw; w = _xyzw; }
 };
 
-FORCE_INLINE vec4 vec4i(s32 _x, s32 _y, s32 _z, s32 _w) { vec4((r32)_x, (r32)_y, (r32)_z, (r32)_w); }
+FORCE_INLINE vec4 vec4i(s32 _x, s32 _y, s32 _z, s32 _w) { return vec4((r32)_x, (r32)_y, (r32)_z, (r32)_w); }
 FORCE_INLINE vec4 operator+(vec4 const &A, r32 Scalar) { return vec4(A.x + Scalar, A.y + Scalar, A.z + Scalar, A.w + Scalar); }
 FORCE_INLINE vec4 operator-(vec4 const &A, r32 Scalar) { return vec4(A.x - Scalar, A.y - Scalar, A.z - Scalar, A.w - Scalar); }
 FORCE_INLINE vec4 operator*(vec4 const &A, r32 Scalar) { return vec4(A.x * Scalar, A.y * Scalar, A.z * Scalar, A.w * Scalar); }
