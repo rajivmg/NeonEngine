@@ -224,11 +224,11 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 
 	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertBuff[Cmd->VertexBuffer.ResourceHandle]);
 
-	if(Cmd->VertexFormat == vert_format::POS3UV2COLOR4)
+	if(Cmd->VertexFormat == vert_format::P1UV1C1)
 	{
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_POS3UV2COLOR4), (void *)OffsetOf(vert_POS3UV2COLOR4, Position));
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vert_POS3UV2COLOR4), (void *)OffsetOf(vert_POS3UV2COLOR4, UV));
-		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vert_POS3UV2COLOR4), (void *)OffsetOf(vert_POS3UV2COLOR4, Color));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OffsetOf(vert_P1UV1C1, Position));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OffsetOf(vert_P1UV1C1, UV));
+		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OffsetOf(vert_P1UV1C1, Color));
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);

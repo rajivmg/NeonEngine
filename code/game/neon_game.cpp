@@ -36,39 +36,25 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	ImGui::End();
 
 	static bool FirstCall = false;
-	static u32  DefaultTex;
 	static texture *DefaultTexture;
 	static font *DebugFont = new font;
-	static font *BigFont = new font;
-	static font *ParaFont = new font;
-	static u32 Sky;
-	static render_cmd_list a(KILOBYTE(5));
-	static render_resource TestProg;
-	static render_resource TestVB;
+	static font *NeutonFont = new font;
+	static render_cmd_list *BackbufferList = new render_cmd_list(MEGABYTE(5));
+	static render_resource BasicShader;
 
 	if(!FirstCall)
 	{
 		FirstCall = true;
+
 		DefaultTexture = new texture;
 		DefaultTexture->LoadFile("uv_texture.tga", texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, true);
-		DefaultTexture->HwGammaCorrection = true;
 		DefaultTexture->CreateRenderResource();
 		DefaultTexture->FreeContentMemory();
 
+		BasicShader = rndr::MakeShaderProgram("shaders/basic_vs.glsl", "shaders/basic_ps.glsl");
+
 		DebugFont->Load("fonts/Inconsolata/Inconsolata-Regular.ttf", 16);
-		BigFont->Load("fonts/Neuton/Neuton-Regular.ttf", 48);
-
-		std::vector<vert_POS3UV2COLOR4> *VertexData = new std::vector<vert_POS3UV2COLOR4>;
-		PushSpriteQuad(VertexData, vec3(50.0f, 50.0f, 1.0f), vec2(400.0f, 400.0f), vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4(0.0f, 0.0f, 1.0f, 1.0f));
-
-		PushSpriteQuad(VertexData, vec3(500.0f, 50.0f, 1.0f), vec2((r32)BigFont->TextureAtlas.Texture.Width, (r32)BigFont->TextureAtlas.Texture.Height), vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4(0.0f, 0.0f, 1.0f, 1.0f));
-
-		TestVB = rndr::MakeVertexBuffer(MEGABYTE(1));
-		rndr::VertexBufferData(TestVB, 0, (u32)VertexData->size() * sizeof(vert_POS3UV2COLOR4), &VertexData->front());
-
-		TestProg = rndr::MakeShaderProgram("shaders/basic_vs.glsl", "shaders/basic_ps.glsl");
-		
-		SafeDelete(VertexData);
+		NeutonFont->Load("fonts/Neuton/Neuton-Regular.ttf", 48);
 
 		vec3 va = vec3i(1, 1, 1);
 		vec3 vb = va + 2.0f;
@@ -86,28 +72,23 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		int a; a = 5;
 	}
 
-	cmd::udraw *d = a.AddCommand<cmd::udraw>(10, 0);
-	d->Texture = DefaultTexture;
-	d->VertexFormat = vert_format::POS3UV2COLOR4;
-	d->StartVertex = 0;
-	d->VertexCount = 6;
-	d->VertexBuffer = TestVB;
-	d->ShaderProgram = TestProg;
-	
-	cmd::udraw *Quad2 = a.AddCommand<cmd::udraw>(50, 0);
-	Quad2->VertexBuffer = TestVB;
-	Quad2->VertexFormat = vert_format::POS3UV2COLOR4;
-	Quad2->StartVertex	= 6;
-	Quad2->VertexCount = 6;
-	Quad2->Texture = &(BigFont->TextureAtlas.Texture);
-	Quad2->ShaderProgram = TestProg;
+	std::vector<vert_P1UV1C1> TextVertices;
+	PushTextSprite(&TextVertices, NeutonFont, vec3i(100, 500, 1), vec4i(1, 1, 0, 1), "Neon Text Rendering\nSucessful!");
 
-	//cmd::udraw *c = a.AppendCommand<cmd::udraw>(d, 0);
-	//c->Texture.ResourceHandle = 777;
+	static render_resource TextVertexBuffer = rndr::MakeVertexBuffer((u32)TextVertices.size() * sizeof(vert_P1UV1C1));
+	rndr::VertexBufferData(TextVertexBuffer, 0, (u32)TextVertices.size() * sizeof(vert_P1UV1C1), &TextVertices.front());
 
-	a.Sort();
-	a.Submit();
-	a.Flush();
+	cmd::udraw *TextC = BackbufferList->AddCommand<cmd::udraw>(10, 0);
+	TextC->VertexBuffer = TextVertexBuffer;
+	TextC->VertexFormat = vert_format::P1UV1C1;
+	TextC->StartVertex = 0;
+	TextC->VertexCount = (u32)TextVertices.size();
+	TextC->Texture = &NeutonFont->TextureAtlas.Texture;
+	TextC->ShaderProgram = BasicShader;
+
+	BackbufferList->Sort();
+	BackbufferList->Submit();
+	BackbufferList->Flush();
 
 /*
 	RenderCmdClear(RenderCmdList);
@@ -148,10 +129,3 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	DrawRenderCmdList(RenderCmdList);
 */
 }
-
-//level* AllocLevel(ivec2 LevelSize)
-//{
-//	level *Level = (level *)malloc(sizeof(level));
-//
-//	return Level;
-//}

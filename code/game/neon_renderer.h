@@ -84,16 +84,6 @@ namespace rndr
 	void			UnindexedDraw(void const *Data);
 }
 
-/*
-struct render_target
-{
-u32 Handle;
-ivec2 Size;
-};
-extern render_target RT0;
-render_target	MakeRenderTarget(ivec2 Size, texture_filter Filter);
-*/
-
 //-----------------------------------------------------------------------------
 // Render Commands
 //-----------------------------------------------------------------------------
@@ -193,10 +183,10 @@ inline U* render_cmd_list::AppendCommand(V *Cmd, u32 AuxMemorySize)
 
 enum class vert_format
 {
-	POS3UV2COLOR4
+	P1UV1C1
 };
 
-struct vert_POS3UV2COLOR4
+struct vert_P1UV1C1
 {
 	vec3 Position;
 	vec2 UV;
@@ -218,121 +208,21 @@ namespace cmd
 	};
 	static_assert(std::is_pod<udraw>::value == true, "Must be a POD.");
 
-
-	/*struct idraw
+	struct idraw
 	{
-		render_resource	Texture;
-		render_resource	VertexBuffer;
-		render_resource	IndexBuffer;
-		u32				StartVertex;
-		u32				IndexCount;
+		render_resource		IndexBuffer;
+		render_resource		VertexBuffer;
+		vert_format			VertexFormat;
+		u32					StartVertex;
+		u32					IndexCount;
+		texture				*Texture;
+		render_resource		ShaderProgram;
 
 		static const dispatch_fn DISPATCH_FUNCTION;
 	};
-	static_assert(std::is_pod<idraw>::value == true, "Must be a POD.");*/
+	static_assert(std::is_pod<idraw>::value == true, "Must be a POD.");
 }
 
-/*
-enum render_cmd_type : u8
-{
-	RenderCmd_Clear,
-	RenderCmd_ColorQuad,
-	RenderCmd_TextureQuad,
-	RenderCmd_Line,
-	RenderCmd_Text,
-	RenderCmd_RenderTarget
-};
+void PushTextSprite(std::vector<vert_P1UV1C1> *Vertices, font *Font, vec3 P, vec4 Color, char const * Format, ...);
 
-struct render_cmd_header
-{
-	union
-	{
-		u32 Key;
-		struct
-		{
-			u16 Texture;
-			render_cmd_type Type;	
-			u8 Target;
-		};
-	};
-};
-
-struct render_cmd
-{
-	render_cmd_header Header;
-};
-
-struct render_cmd_Clear
-{
-	render_cmd_header Header;
-};
-
-struct render_cmd_Line
-{
-	render_cmd_header Header;
-	vec3 Start;
-	vec3 End;
-	vec4 Color;
-};
-
-struct render_cmd_TextureQuad
-{
-	render_cmd_header Header;
-	u32  TextureIndex;
-	vec3 P;
-	vec2 Size;
-	vec4 UV;
-	vec4 Tint;
-};
-
-struct render_cmd_ColorQuad
-{
-	render_cmd_header Header;
-	vec3 P;
-	vec2 Size;
-	vec4 Color;
-};
-
-struct render_cmd_Text
-{
-	render_cmd_header Header;
-	font *Font;
-	vec3 P;
-	vec4 Color;
-	char Text[8192];
-};
-
-struct render_cmd_RenderTarget
-{
-	render_cmd_header Header;
-	vec3 P;
-	vec2 Size;
-	render_target SrcRenderTarget;
-	render_target DestRenderTarget;
-};
-
-struct render_cmd_list
-{
-	void *List;
-	u32 BaseOffset;
-	u32 Size;
-	
-	void **Table;
-	u32 CmdCount;
-
-	void *Scratch;
-};
-
-render_cmd_list* AllocRenderCmdList();
-void PushRenderCmd(render_cmd_list *RenderCmdList, void *RenderCmd);
-void SortRenderCmdList(render_cmd_list *RenderCmdList);
-void DrawRenderCmdList(render_cmd_list *RenderCmdList);
-
-void RenderCmdClear(render_cmd_list *RenderCmdList);
-void RenderCmdLine(render_cmd_list *RenderCmdList, vec3 aStart, vec3 aEnd, vec4 aColor, render_target RenderTarget);
-void RenderCmdTextureQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aUV, vec4 aTint, u32 aTextureIndex, render_target RenderTarget);
-void RenderCmdColorQuad(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, vec4 aColor, render_target RenderTarget);
-void RenderCmdText(render_cmd_list *RenderCmdList, vec3 aP, vec4 aColor, font *aFont, render_target RenderTarget, char const *Fmt, ...);
-void RenderCmdRenderTarget(render_cmd_list *RenderCmdList, vec3 aP, vec2 aSize, render_target SrcRenderTarget, render_target DestRenderTarget);
-*/
 #endif
