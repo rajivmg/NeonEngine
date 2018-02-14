@@ -1,7 +1,7 @@
 #include "neon_primitive_mesh.h"
 #include "neon_renderer.h"
 
-void PushSpriteQuad(std::vector<vert_POS3UV2COLOR4> *Container, vec3 P, vec2 Size, vec4 Color, vec4 UV)
+void PushSprite(std::vector<vert_P1UV1C1> *Vertices, vec3 P, vec2 Size, vec4 Color, vec4 UV)
 {
 	/*
 	D--------C
@@ -36,41 +36,43 @@ void PushSpriteQuad(std::vector<vert_POS3UV2COLOR4> *Container, vec3 P, vec2 Siz
 	D.V   = UVCoords.w
 	*/ 
 
-	vert_POS3UV2COLOR4 Vertex;
+	Vertices->reserve(Vertices->size() + 6);
+
+	vert_P1UV1C1 Vertex;
 
 	// D
 	Vertex.Position = vec3(P.x, P.y + Size.y, P.z);
 	Vertex.UV = vec2(UV.x, UV.w);
 	Vertex.Color = Color;
-	Container->push_back(Vertex);
+	Vertices->push_back(Vertex);
 
 	// A
 	Vertex.Position = P;
 	Vertex.UV = vec2(UV.x, UV.y);
 	Vertex.Color = Color;
-	Container->push_back(Vertex);
+	Vertices->push_back(Vertex);
 
 	// C
 	Vertex.Position = vec3(P.x + Size.x, P.y + Size.y, P.z);
 	Vertex.UV = vec2(UV.z, UV.w);
 	Vertex.Color = Color;
-	Container->push_back(Vertex);
+	Vertices->push_back(Vertex);
 
 	// C 
 	Vertex.Position = vec3(P.x + Size.x, P.y + Size.y, P.z);
 	Vertex.UV = vec2(UV.z, UV.w);
 	Vertex.Color = Color;
-	Container->push_back(Vertex);
+	Vertices->push_back(Vertex);
 
 	// A
 	Vertex.Position = P;
 	Vertex.UV = vec2(UV.x, UV.y);
 	Vertex.Color = Color;
-	Container->push_back(Vertex);
+	Vertices->push_back(Vertex);
 
 	// B
 	Vertex.Position = vec3(P.x + Size.x, P.y, P.z);
 	Vertex.UV = vec2(UV.z, UV.y);
 	Vertex.Color = Color;
-	Container->push_back(Vertex);
+	Vertices->push_back(Vertex);
 }
