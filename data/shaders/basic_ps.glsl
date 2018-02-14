@@ -14,6 +14,6 @@ void main()
 {
 	//OutColor = vec4( pow(fs_in.VertColor.rgb, vec3(2.2)), fs_in.VertColor.a);
 
-	OutColor = texture(Map0, fs_in.VertUV);
+	OutColor = texture(Map0, fs_in.VertUV) * fs_in.VertColor;
 
 }
