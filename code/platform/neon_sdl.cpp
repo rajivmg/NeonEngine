@@ -349,7 +349,6 @@ static void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller
 		{
 			Controller->Mouse.x = Event->motion.x;
 			Controller->Mouse.y = Platform->Height - 1 - Event->motion.y;
-			// Controller->Mouse.Y = Event->motion.y;
 		} break;
 
 		case SDL_MOUSEBUTTONDOWN:
@@ -438,8 +437,7 @@ int main(int argc, char **argv)
 
 			if(GLContext)
 			{
-				int w, h;
-				SDL_GL_GetDrawableSize(Window, &w, &h);
+				SDL_GL_SetSwapInterval(1);
 
 				LoadGameCode(&GameCode);
 				GameCode.GameCodeLoaded(Platform, ImGui::GetCurrentContext());
