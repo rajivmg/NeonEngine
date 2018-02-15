@@ -2,8 +2,8 @@
 #define NEON_MATH_H
 
 #define M_PI        3.14159265358979323846f
-#define DEG2RAD(_a) ((_a)*M_PI/180.0f)
-#define RAD2DEG(_a) ((_a)*180.0f/M_PI)
+#define DEG2RAD(Angle) ((Angle)*M_PI/180.0f)
+#define RAD2DEG(Angle) ((Angle)*180.0f/M_PI)
 #define INT_MIN     (-2147483647 - 1)
 #define INT_MAX     2147483647
 #define FLT_MAX     3.402823466e+38F
@@ -15,38 +15,6 @@
 //-----------------------------------------------------------------------------
 // Vector
 //-----------------------------------------------------------------------------
-
-//union vec2
-//{
-//	r32 Elements[2];
-//	struct
-//	{
-//		r32 x, y;
-//	};
-//	struct
-//	{
-//		r32 s, t;
-//	};
-//	struct
-//	{
-//		r32 u, v;
-//	};
-//	
-//	vec2();	
-//	vec2(r32 X, r32 Y);
-//	vec2(s32 X, s32 Y);
-//	vec2 operator+(vec2 const & V2);
-//	vec2 operator-(vec2 const & V2);
-//	vec2 operator-();
-//	vec2 operator*(r32 const & C);
-//	
-//	r32  Dot(vec2 const & V2);
-//	r32  Cross(vec2 const & V2);
-//	r32	 Length();
-//
-//	static vec2 Normalize(vec2& V2);
-//	~vec2();
-//};
 
 struct vec2
 {
@@ -92,35 +60,6 @@ FORCE_INLINE vec2& operator*=(vec2 &A, r32 Scalar) { A = A * Scalar; return A; }
 FORCE_INLINE vec2& operator/=(vec2 &A, r32 Scalar) { A = A / Scalar; return A; }
 
 FORCE_INLINE vec2 operator-(vec2 const &A) { return 0.0f - A; }
-
-//union vec3
-//{
-//	r32 Elements[3];
-//	struct
-//	{
-//		r32 x, y, z;
-//	};
-//	struct
-//	{
-//		r32 r, g, b;
-//	};
-//
-//	vec3();
-//	vec3(r32 X, r32 Y, r32 Z);
-//	vec3(s32 X, s32 Y, s32 Z);
-//	vec3(vec2 const & V2, r32 Z);
-//	vec3 operator+(vec3 const & V3);
-//	vec3 operator-(vec3 const & V3);
-//	vec3 operator-();
-//	vec3 operator*(r32 const & C);
-//	
-//	r32  Dot(vec3 const & V3);
-//	vec3 Cross(vec3 const & V3);
-//	r32	 Length();
-//
-//	static vec3 Normalize(vec3& V3);
-//	~vec3();
-//};
 
 struct vec3
 {
@@ -226,34 +165,6 @@ FORCE_INLINE vec4 operator-(vec4 const &A) { return 0.0f - A; }
 // Matrix
 //-----------------------------------------------------------------------------
 
-//union mat4
-//{
-//	r32 Elements[16];
-//	struct
-//	{
-//		r32 m00, m01, m02, m03;
-//		r32 m10, m11, m12, m13;
-//		r32 m20, m21, m22, m23;
-//		r32 m30, m31, m32, m33;
-//	};
-//
-//	mat4();
-//	mat4 operator+(mat4 const & M);
-//	mat4 operator-(mat4 const & M);
-//	mat4 operator*(mat4 const & M);
-//	mat4 operator/(mat4 const & M);
-//
-//	static mat4 Identity();
-//	static mat4 Transpose(mat4 const & M);
-//	static mat4 Translate(r32 X, r32 Y, r32 Z);
-//	static mat4 Scale(r32 Sx, r32 Sy, r32 Sz);
-//	
-//	//static mat4 LookAt(vec3 Eye, vec3 Direction, vec3 Up);
-//	static mat4 Orthographic(r32 L, r32 R, r32 T, r32 B, r32 N, r32 F);
-//	static mat4 Perspective(r32 Fov, r32 Aspect, r32 Near, r32 Far);
-//	~mat4();
-//};
-
 struct mat4
 {
 	union
@@ -304,7 +215,7 @@ FORCE_INLINE mat4& operator*=(mat4 &A, mat4 const &B)
 	A = A * B; return A;
 }
 
-FORCE_INLINE mat4 Identity()
+FORCE_INLINE mat4 Mat4Identity()
 {
 	mat4 A;
 	A.m00 = 1.0f; A.m01 = 0.0f; A.m02 = 0.0f; A.m03 = 0.0f;
@@ -317,7 +228,7 @@ FORCE_INLINE mat4 Identity()
 
 FORCE_INLINE mat4 Translate(r32 _x, r32 _y, r32 _z)
 {
-	mat4 A = Identity();
+	mat4 A = Mat4Identity();
 	A.m03 = _x;
 	A.m13 = _y;
 	A.m23 = _z;
@@ -326,7 +237,7 @@ FORCE_INLINE mat4 Translate(r32 _x, r32 _y, r32 _z)
 
 FORCE_INLINE mat4 Scale(r32 _x, r32 _y, r32 _z)
 {
-	mat4 A = Identity();
+	mat4 A = Mat4Identity();
 	A.m00 = _x;
 	A.m11 = _y;
 	A.m22 = _z;
@@ -341,6 +252,44 @@ FORCE_INLINE mat4 Orthographic(r32 L, r32 R, r32 T, r32 B, r32 N, r32 F)
 	Matrix.m10 = 0; 		Matrix.m11 = 2/(T-B); 	Matrix.m12 = 0; 		Matrix.m13 = -(T+B)/(T-B);
 	Matrix.m20 = 0; 		Matrix.m21 = 0; 		Matrix.m22 = -2/(F-N); 	Matrix.m23 = -(F+N)/(F-N);
 	Matrix.m30 = 0; 		Matrix.m31 = 0; 		Matrix.m32 = 0; 		Matrix.m33 = 1;
+
+	return Matrix;
+}
+
+FORCE_INLINE mat4 Perspective(r32 Fov, r32 Aspect, r32 Near, r32 Far)
+{
+	mat4 Matrix;
+	Matrix = Mat4Identity();
+	r32 tanThetaOver2 = tanf(Fov * (r32)M_PI/360);
+
+	Matrix.m00 = 1/tanThetaOver2;
+	Matrix.m11 = Aspect/tanThetaOver2;
+	Matrix.m22 = (Near + Far)/(Near - Far);
+	Matrix.m23 = (2 * Near * Far)/(Near - Far);
+	Matrix.m32 = -1;
+	Matrix.m33 = 0;
+
+	return Matrix;
+}
+
+FORCE_INLINE mat4 LookAt(vec3 Eye, vec3 Direction, vec3 Up)
+{
+	mat4 Matrix;
+
+	vec3 Forward = Normalize(Eye - Direction);
+	vec3 Left = Normalize(Cross(Up, Forward));
+	
+	Up = Cross(Forward, Left);
+
+	r32 TX, TY, TZ;
+	TX = -Left.x*Eye.x 		- 	Left.y*Eye.y 	- 		Left.z*Eye.z;
+	TY = -Up.x*Eye.x 		-	Up.y*Eye.y 		- 		Up.z*Eye.z;
+	TZ = -Forward.x*Eye.x 	- 	Forward.y*Eye.y -	 	Forward.z*Eye.z;
+
+	Matrix.m00 = Left.x;  	 Matrix.m01 = Left.y;  	 Matrix.m02 = Left.z;  	 Matrix.m03 = TX;
+	Matrix.m10 = Up.x;  	 Matrix.m11 = Up.y;  	 Matrix.m12 = Up.z;  	 Matrix.m13 = TY;
+	Matrix.m20 = Forward.x;  Matrix.m21 = Forward.y; Matrix.m22 = Forward.z; Matrix.m23 = TZ;
+	Matrix.m30 = 0;  		 Matrix.m31 = 0;  		 Matrix.m32 = 0;  		 Matrix.m33 = 1;
 
 	return Matrix;
 }
