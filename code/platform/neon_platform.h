@@ -15,7 +15,7 @@
 
 #include <cassert>
 
-#define ArrayCount(Array) (sizeof(Array)/sizeof((Array)[0]))
+#define ARRAY_COUNT(Array) (sizeof(Array)/sizeof((Array)[0]))
 
 #define KILOBYTE(X) 1024LL * (X)
 #define MEGABYTE(X) 1024LL * KILOBYTE(X)
@@ -26,14 +26,14 @@
 #include <cstdint>
 
 #include <cstddef>
-#define OffsetOf(TYPE, MEMBER) (uintptr_t)&(((TYPE *)0)->MEMBER)
+#define OFFSET_OF(TYPE, MEMBER) (uintptr_t)&(((TYPE *)0)->MEMBER)
 
-#define SafeFree(x)			{ if(x) { free(x);		(x) = nullptr; } }
-#define SafeDelete(x)		{ delete (x);	(x) = nullptr;	}
-#define SafeDeleteA(x)		{ delete[] (x);	(x) = nullptr;	}
+#define SAFE_FREE(x) { if(x) { free(x);	(x) = nullptr; } }
+#define SAFE_DELETE(x) { delete (x);	(x) = nullptr; }
+#define SAFE_DELETEA(x) { delete[] (x);	(x) = nullptr; }
 
-#define InvalidCodePath assert(!"Invalid code path!")
-#define InvalidDefaultCase default: {assert(!"Invalid default case!");} break
+#define INVALID_CODE_PATH assert(!"Invalid code path!")
+#define INVALID_DEFAULT_CASE default: {assert(!"Invalid default case!");} break
 
 typedef uint64_t	u64;
 typedef uint32_t	u32;

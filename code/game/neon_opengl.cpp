@@ -67,7 +67,7 @@ render_resource ogl::MakeTexture(texture *Texture)
 		// TODO: Return RenderResource of the default texture and log this error.
 	}
 
-	assert(RenderState.TextureCount < ArrayCount(RenderState.Texture));
+	assert(RenderState.TextureCount < ARRAY_COUNT(RenderState.Texture));
 
 	render_resource RenderResource;
 	RenderResource.Type = render_resource::TEXTURE;
@@ -226,9 +226,9 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 
 	if(Cmd->VertexFormat == vert_format::P1UV1C1)
 	{
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OffsetOf(vert_P1UV1C1, Position));
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OffsetOf(vert_P1UV1C1, UV));
-		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OffsetOf(vert_P1UV1C1, Color));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, Position));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, UV));
+		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, Color));
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);

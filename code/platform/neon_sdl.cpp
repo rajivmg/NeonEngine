@@ -462,7 +462,7 @@ int main(int argc, char **argv)
 				{
 					NewInput = {};
 
-					for(int ButtonIndex = 0; ButtonIndex < ArrayCount(NewInput.Buttons); ++ButtonIndex)
+					for(int ButtonIndex = 0; ButtonIndex < ARRAY_COUNT(NewInput.Buttons); ++ButtonIndex)
 					{
 						NewInput.Buttons[ButtonIndex].EndedDown = OldInput.Buttons[ButtonIndex].EndedDown;
 					}
@@ -470,7 +470,7 @@ int main(int argc, char **argv)
 					NewInput.Mouse.x = OldInput.Mouse.x;
 					NewInput.Mouse.y = OldInput.Mouse.y;
 
-					for(int ButtonIndex = 0; ButtonIndex < ArrayCount(NewInput.Mouse.Buttons); ++ButtonIndex)
+					for(int ButtonIndex = 0; ButtonIndex < ARRAY_COUNT(NewInput.Mouse.Buttons); ++ButtonIndex)
 					{
 						NewInput.Mouse.Buttons[ButtonIndex].EndedDown = OldInput.Mouse.Buttons[ButtonIndex].EndedDown;
 					}

@@ -14,7 +14,7 @@ font::font() : InstanceID(GEN_ID),
 
 font::~font()
 {
-	SafeFree(Glyphs);
+	SAFE_FREE(Glyphs);
 }
 
 void font::Load(char const *FontSrc, u32 aFontHeight)
@@ -105,7 +105,7 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 		// After glyph texture has been copied to texture atlas free the glyph texture memory
 		if(GlyphTexture->ContentSize != 0)
 		{
-			SafeFree(GlyphTexture->Content);
+			SAFE_FREE(GlyphTexture->Content);
 		}
 	}
 

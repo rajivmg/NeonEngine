@@ -94,7 +94,7 @@ render_cmd_list::render_cmd_list(u32 _BufferSize) : BufferSize(_BufferSize),
 
 render_cmd_list::~render_cmd_list()
 {
-	SafeFree(Buffer)
+	SAFE_FREE(Buffer)
 }
 
 void* render_cmd_list::AllocateMemory(u32 MemorySize)

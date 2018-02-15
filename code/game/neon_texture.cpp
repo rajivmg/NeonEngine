@@ -23,7 +23,7 @@ texture::texture() :	InstanceID(GEN_ID),
 
 texture::~texture()
 {
-	SafeFree(Content);
+	SAFE_FREE(Content);
 }
 
 void texture::LoadFile(char const * Filename, texture_type _Type, texture_filter _Filter, texture_wrap _Wrap, bool _HwGammaCorrection)
@@ -88,7 +88,7 @@ bool texture::IsValid()
 
 void texture::FreeContentMemory()
 {
-	SafeFree(Content);
+	SAFE_FREE(Content);
 	ContentSize = 0;
 }
 
@@ -110,7 +110,7 @@ void texture::FlipAroundY()
 		}
 	}
 
-	SafeFree(Data);
+	SAFE_FREE(Data);
 }
 
 void texture::CreateRenderResource()
