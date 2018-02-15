@@ -490,26 +490,31 @@ int main(int argc, char **argv)
 						}
 					}
 
-					// Imgui mark new frame start
+					// All ImGui rendering after this line
 					ImGui_NewFrame(Window);
 
 					ImGui::ShowTestWindow();
-					
-					PrevCounter = SDL_GetPerformanceCounter();
+
 					NewInput.dTFrame = FrameTime;
+
+					// Simulate and render the game
 					GameCode.GameUpdateAndRender(&NewInput);
+					
+					// Render ImGui
 					ImGui::Render();
+
+					// Swap backbuffer
 					SDL_GL_SwapWindow(Window);
 
 					OldInput = NewInput;
 
 					CurrentCounter = SDL_GetPerformanceCounter();
 					FrameTime = (r32)((CurrentCounter - PrevCounter)) / CounterFrequency;
-					char DebugCountString[100];
-					sprintf(DebugCountString, "%f ms\n", FrameTime*1000.0);
 					PrevCounter = CurrentCounter;
 
 #if defined(_MSC_VER)
+					char DebugCountString[100];
+					sprintf(DebugCountString, "%f ms\n", FrameTime*1000.0);
 					OutputDebugString(DebugCountString);
 #endif
 				}
