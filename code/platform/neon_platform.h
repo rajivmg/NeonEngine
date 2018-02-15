@@ -75,7 +75,7 @@ struct game_mouse_state
 struct game_controller_input
 {
 	game_mouse_state Mouse;
-	r32 dTFrame;
+	r32 FrameTime;
 	union
 	{
 		game_button_state Buttons[4];

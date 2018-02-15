@@ -493,7 +493,7 @@ int main(int argc, char **argv)
 
 					ImGui::ShowTestWindow();
 
-					NewInput.dTFrame = FrameTime;
+					NewInput.FrameTime = FrameTime;
 
 					// Simulate and render the game
 					GameCode.GameUpdateAndRender(&NewInput);

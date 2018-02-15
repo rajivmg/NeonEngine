@@ -74,8 +74,8 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	std::vector<vert_P1UV1C1> TextVertices;
 	PushTextSprite(&TextVertices, NeutonFont, vec3i(100, 500, 1), vec4i(1, 1, 0, 1), "Neon Text Rendering\nSucessful!");
-
-	static render_resource TextVertexBuffer = rndr::MakeVertexBuffer((u32)TextVertices.size() * sizeof(vert_P1UV1C1));
+	PushTextSprite(&TextVertices, NeutonFont, vec3i(150, 600, 1), vec4i(1, 0, 1, 1), "%0.3f ms/frame", 1000.0f * Input->FrameTime);
+	static render_resource TextVertexBuffer = rndr::MakeVertexBuffer(1000 * sizeof(vert_P1UV1C1));
 	rndr::VertexBufferData(TextVertexBuffer, 0, (u32)TextVertices.size() * sizeof(vert_P1UV1C1), &TextVertices.front());
 
 	cmd::udraw *TextC = BackbufferList->AddCommand<cmd::udraw>(10, 0);
