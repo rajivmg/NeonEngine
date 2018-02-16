@@ -146,6 +146,7 @@ void render_cmd_list::Submit()
 
 void render_cmd_list::Flush()
 {
+	memset(Buffer, 0, BaseOffset);
 	Current = 0;
 	BaseOffset = 0;
 }
