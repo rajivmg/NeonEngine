@@ -18,6 +18,11 @@ enum class texture_type;
 enum class texture_filter;
 enum class texture_wrap;
 
+struct shader_program
+{
+	GLuint	Program;
+	u32		Sampler2DCount;
+};
 
 struct render_state
 {
@@ -27,8 +32,8 @@ struct render_state
 	u32		VertBuffCount;
 	GLuint	IdxBuff[2048];
 	u32		IdxBuffCount;
-	GLuint	ShaderProg[1024];
-	u32		ShaderProgCount;
+	shader_program ShaderProgram[1024];
+	u32		ShaderProgramCount;
 
 	mat4	OrthoProjection;
 };

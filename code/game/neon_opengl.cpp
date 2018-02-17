@@ -19,13 +19,13 @@ void ogl::InitState()
 	RenderState.TextureCount = 0;
 	RenderState.VertBuffCount = 0;
 	RenderState.IdxBuffCount = 0;
-	RenderState.ShaderProgCount = 0;
+	RenderState.ShaderProgramCount = 0;
 
 	RenderState.OrthoProjection = Orthographic(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
 
 
 	// Set clear color
-	glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+	glClearColor(0.006f, 0.098f, 0.223f, 1.0f);
 
 	// Set the viewport
 	glViewport(0, 0, Platform->Width, Platform->Height);
@@ -163,7 +163,7 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 {
 	render_resource RenderResource;
 	RenderResource.Type = render_resource::SHADER_PROGRAM;
-	RenderResource.ResourceHandle = RenderState.ShaderProgCount++;
+	RenderResource.ResourceHandle = RenderState.ShaderProgramCount++;
 
 	read_file_result VsFile = Platform->ReadFile(VertShaderSrc);
 	read_file_result FsFile = Platform->ReadFile(FragShaderSrc);
@@ -180,7 +180,7 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 	glCompileShader(Vs);
 	glCompileShader(Fs);
 
-	GLuint &Program = RenderState.ShaderProg[RenderResource.ResourceHandle];
+	GLuint &Program = RenderState.ShaderProgram[RenderResource.ResourceHandle].Program;
 
 	Program = glCreateProgram();
 	glAttachShader(Program, Vs);
@@ -210,17 +210,28 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 	glDeleteShader(Vs);
 	glDeleteShader(Fs);
 
+	// Find Sampler2D uniforms count
+	char Sampler2DName[16] = "MapX";
+	for(int I = 0; I <= 9; ++I)
+	{
+		Sampler2DName[3] = '0' + I;
+		if(glGetUniformLocation(Program, Sampler2DName) != -1)
+		{
+			++RenderState.ShaderProgram[RenderState.ShaderProgramCount].Sampler2DCount;
+		}
+	}
+
 	return RenderResource;
 }
 
 void ogl::DeleteShaderProgram(render_resource ShaderProgram)
 {
-	glDeleteProgram(RenderState.ShaderProg[ShaderProgram.ResourceHandle]);
+	glDeleteProgram(RenderState.ShaderProgram[ShaderProgram.ResourceHandle].Program);
 }
 
 void ogl::UnindexedDraw(cmd::udraw *Cmd)
 {
-	glUseProgram(RenderState.ShaderProg[Cmd->ShaderProgram.ResourceHandle]);
+	glUseProgram(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].Program);
 
 	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertBuff[Cmd->VertexBuffer.ResourceHandle]);
 
@@ -237,7 +248,7 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Texture->RenderResource.ResourceHandle]);
 
-		GLint loc = glGetUniformLocation(RenderState.ShaderProg[Cmd->ShaderProgram.ResourceHandle], "Projection");
+		GLint loc = glGetUniformLocation(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].Program, "Projection");
 		glUniformMatrix4fv(loc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
 	}
 
