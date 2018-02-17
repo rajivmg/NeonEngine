@@ -17,8 +17,8 @@ static render_state RenderState = {};
 void ogl::InitState()
 {
 	RenderState.TextureCount = 0;
-	RenderState.VertBuffCount = 0;
-	RenderState.IdxBuffCount = 0;
+	RenderState.VertexBufferCount = 0;
+	RenderState.IndexBufferCount = 0;
 	RenderState.ShaderProgramCount = 0;
 
 	RenderState.OrthoProjection = Orthographic(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
@@ -103,9 +103,12 @@ render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 	render_resource RenderResource;
 
 	RenderResource.Type = render_resource::VERTEX_BUFFER;
-	RenderResource.ResourceHandle = RenderState.VertBuffCount++;
+	RenderResource.ResourceHandle = RenderState.VertexBufferCount++;
 
-	GLuint &VertexBuffer = RenderState.VertBuff[RenderResource.ResourceHandle];
+	RenderState.VertexBuffer[RenderResource.ResourceHandle].Capacity = Size;
+	RenderState.VertexBuffer[RenderResource.ResourceHandle].IsDynamic = Dynamic;
+
+	GLuint &VertexBuffer = RenderState.VertexBuffer[RenderResource.ResourceHandle].Buffer;
 
 	glGenBuffers(1, &VertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, VertexBuffer);
@@ -117,7 +120,7 @@ render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 
 void ogl::VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, void const *Data)
 {
-	GLuint &Buffer = RenderState.VertBuff[VertexBuffer.ResourceHandle];
+	GLuint &Buffer = RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Buffer;
 
 	glBindBuffer(GL_ARRAY_BUFFER, Buffer);
 	glBufferSubData(GL_ARRAY_BUFFER, Offset, Size, Data);
@@ -126,7 +129,9 @@ void ogl::VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, v
 
 void ogl::DeleteVertexBuffer(render_resource VertexBuffer)
 {
-	glDeleteBuffers(1, &RenderState.VertBuff[VertexBuffer.ResourceHandle]);
+	glDeleteBuffers(1, &RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Buffer);
+	RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Capacity = 0;
+	RenderState.VertexBuffer[VertexBuffer.ResourceHandle].IsDynamic = false;
 }
 
 render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
@@ -134,9 +139,12 @@ render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
 	render_resource RenderResource;
 	
 	RenderResource.Type = render_resource::INDEX_BUFFER;
-	RenderResource.ResourceHandle = RenderState.IdxBuffCount++;
+	RenderResource.ResourceHandle = RenderState.IndexBufferCount++;
+
+	RenderState.IndexBuffer[RenderResource.ResourceHandle].Capacity = Size;
+	RenderState.IndexBuffer[RenderResource.ResourceHandle].IsDynamic = Dynamic;
 	
-	GLuint &IndexBuffer = RenderState.IdxBuff[RenderResource.ResourceHandle];
+	GLuint &IndexBuffer = RenderState.IndexBuffer[RenderResource.ResourceHandle].Buffer;
 
 	glGenBuffers(1, &IndexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IndexBuffer);
@@ -147,7 +155,7 @@ render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
 
 void ogl::IndexBufferData(render_resource IndexBuffer, u32 Offset, u32 Size, void const *Data)
 {
-	GLuint &Buffer = RenderState.IdxBuff[IndexBuffer.ResourceHandle];
+	GLuint &Buffer = RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Buffer;
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, Offset, Size, Data);
@@ -156,7 +164,9 @@ void ogl::IndexBufferData(render_resource IndexBuffer, u32 Offset, u32 Size, voi
 
 void ogl::DeleteIndexBuffer(render_resource IndexBuffer)
 {
-	glDeleteBuffers(1, &RenderState.IdxBuff[IndexBuffer.ResourceHandle]);
+	glDeleteBuffers(1, &RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Buffer);
+	RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Capacity = 0;
+	RenderState.IndexBuffer[IndexBuffer.ResourceHandle].IsDynamic = false;
 }
 
 render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc)
@@ -233,7 +243,7 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 {
 	glUseProgram(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].Program);
 
-	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertBuff[Cmd->VertexBuffer.ResourceHandle]);
+	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertexBuffer[Cmd->VertexBuffer.ResourceHandle].Buffer);
 
 	if(Cmd->VertexFormat == vert_format::P1UV1C1)
 	{

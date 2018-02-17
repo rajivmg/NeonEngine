@@ -18,6 +18,13 @@ enum class texture_type;
 enum class texture_filter;
 enum class texture_wrap;
 
+struct buffer_object
+{
+	GLuint	Buffer;
+	s32		Capacity;
+	bool	IsDynamic;
+};
+
 struct shader_program
 {
 	GLuint	Program;
@@ -26,16 +33,16 @@ struct shader_program
 
 struct render_state
 {
-	GLuint	Texture[1024];
-	u32		TextureCount;
-	GLuint	VertBuff[2048];
-	u32		VertBuffCount;
-	GLuint	IdxBuff[2048];
-	u32		IdxBuffCount;
-	shader_program ShaderProgram[1024];
-	u32		ShaderProgramCount;
+	GLuint			Texture[1024];
+	s32				TextureCount;
+	buffer_object	VertexBuffer[2048];
+	s32				VertexBufferCount;
+	buffer_object	IndexBuffer[2048];
+	s32				IndexBufferCount;
+	shader_program	ShaderProgram[1024];
+	s32				ShaderProgramCount;
 
-	mat4	OrthoProjection;
+	mat4			OrthoProjection;
 };
 
 namespace ogl
