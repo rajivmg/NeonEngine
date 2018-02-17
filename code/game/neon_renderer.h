@@ -60,7 +60,7 @@ struct render_resource
 	};
 
 	resource_type	Type;
-	u32				ResourceHandle;
+	s32				ResourceHandle;
 };
 
 namespace rndr
