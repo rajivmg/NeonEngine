@@ -54,7 +54,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		BasicShader = rndr::MakeShaderProgram("shaders/basic_vs.glsl", "shaders/basic_ps.glsl");
 
 		DebugFont->Load("fonts/Inconsolata/Inconsolata-Regular.ttf", 16);
-		NeutonFont->Load("fonts/Neuton/Neuton-Regular.ttf", 48);
+		NeutonFont->Load("fonts/Neuton/Neuton-Regular.ttf", 32);
 
 		vec3 va = vec3i(1, 1, 1);
 		vec3 vb = va + 2.0f;
@@ -74,7 +74,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	std::vector<vert_P1UV1C1> TextVertices;
 	PushTextSprite(&TextVertices, NeutonFont, vec3i(100, 500, 1), vec4i(1, 1, 0, 1), "Neon Text Rendering\nSucessful!");
-	PushTextSprite(&TextVertices, NeutonFont, vec3i(150, 600, 1), vec4i(1, 0, 1, 1), "%0.3f ms/frame", 1000.0f * Input->FrameTime);
+	PushTextSprite(&TextVertices, NeutonFont, vec3i(150, 600, 1), vec4i(1, 1, 1, 1), "%0.3f ms/frame", 1000.0f * Input->FrameTime);
 	static render_resource TextVertexBuffer = rndr::MakeVertexBuffer(1000 * sizeof(vert_P1UV1C1));
 	rndr::VertexBufferData(TextVertexBuffer, 0, (u32)TextVertices.size() * sizeof(vert_P1UV1C1), &TextVertices.front());
 
@@ -83,7 +83,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	TextC->VertexFormat = vert_format::P1UV1C1;
 	TextC->StartVertex = 0;
 	TextC->VertexCount = (u32)TextVertices.size();
-	TextC->Texture = &NeutonFont->TextureAtlas.Texture;
+	TextC->Texture = NeutonFont->TextureAtlas.Texture.RenderResource;
 	TextC->ShaderProgram = BasicShader;
 
 	BackbufferList->Sort();

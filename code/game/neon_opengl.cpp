@@ -246,7 +246,7 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 		glEnableVertexAttribArray(2);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Texture->RenderResource.ResourceHandle]);
+		glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Texture.ResourceHandle]);
 
 		GLint loc = glGetUniformLocation(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].Program, "Projection");
 		glUniformMatrix4fv(loc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);

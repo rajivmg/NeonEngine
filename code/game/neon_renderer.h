@@ -201,7 +201,7 @@ namespace cmd
 		vert_format			VertexFormat;
 		u32					StartVertex;
 		u32					VertexCount;
-		texture				*Texture;
+		render_resource		Texture;
 		render_resource		ShaderProgram;
 
 		static const dispatch_fn DISPATCH_FUNCTION;
