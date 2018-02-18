@@ -233,6 +233,9 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 		}
 	}
 
+	// Projection matrix location
+	ShaderProgram->ProjectionMat4Loc = glGetUniformLocation(ShaderProgram->Program, "Projection");
+
 	return RenderResource;
 }
 
@@ -261,8 +264,7 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Texture.ResourceHandle]);
 
-		GLint loc = glGetUniformLocation(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].Program, "Projection");
-		glUniformMatrix4fv(loc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
+		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjectionMat4Loc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
 	}
 
 	glDrawArrays(GL_TRIANGLES, Cmd->StartVertex, Cmd->VertexCount);
