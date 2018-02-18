@@ -108,10 +108,10 @@ render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 	RenderState.VertexBuffer[RenderResource.ResourceHandle].Capacity = Size;
 	RenderState.VertexBuffer[RenderResource.ResourceHandle].IsDynamic = Dynamic;
 
-	GLuint &VertexBuffer = RenderState.VertexBuffer[RenderResource.ResourceHandle].Buffer;
+	GLuint *VertexBuffer = &RenderState.VertexBuffer[RenderResource.ResourceHandle].Buffer;
 
-	glGenBuffers(1, &VertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, VertexBuffer);
+	glGenBuffers(1, VertexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, *VertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, Size, nullptr, Dynamic ? GL_STREAM_DRAW : GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
@@ -120,9 +120,9 @@ render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 
 void ogl::VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, void const *Data)
 {
-	GLuint &Buffer = RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Buffer;
+	GLuint *Buffer = &RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Buffer;
 
-	glBindBuffer(GL_ARRAY_BUFFER, Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, *Buffer);
 	glBufferSubData(GL_ARRAY_BUFFER, Offset, Size, Data);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
@@ -144,10 +144,10 @@ render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
 	RenderState.IndexBuffer[RenderResource.ResourceHandle].Capacity = Size;
 	RenderState.IndexBuffer[RenderResource.ResourceHandle].IsDynamic = Dynamic;
 	
-	GLuint &IndexBuffer = RenderState.IndexBuffer[RenderResource.ResourceHandle].Buffer;
+	GLuint *IndexBuffer = &RenderState.IndexBuffer[RenderResource.ResourceHandle].Buffer;
 
-	glGenBuffers(1, &IndexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IndexBuffer);
+	glGenBuffers(1, IndexBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *IndexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Size, nullptr, Dynamic ? GL_STREAM_DRAW : GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	return RenderResource;
@@ -155,9 +155,9 @@ render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
 
 void ogl::IndexBufferData(render_resource IndexBuffer, u32 Offset, u32 Size, void const *Data)
 {
-	GLuint &Buffer = RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Buffer;
+	GLuint *Buffer = &RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Buffer;
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *Buffer);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, Offset, Size, Data);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
