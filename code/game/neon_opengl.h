@@ -29,18 +29,19 @@ struct shader_program
 {
 	GLuint	Program;
 	u32		Sampler2DCount;
+	GLint	Sampler2DLoc[10];
 };
 
 struct render_state
 {
 	GLuint			Texture[1024];
-	s32				TextureCount;
+	s32				TextureCurrent;
 	buffer_object	VertexBuffer[2048];
-	s32				VertexBufferCount;
+	s32				VertexBufferCurrent;
 	buffer_object	IndexBuffer[2048];
-	s32				IndexBufferCount;
+	s32				IndexBufferCurrent;
 	shader_program	ShaderProgram[1024];
-	s32				ShaderProgramCount;
+	s32				ShaderProgramCurrent;
 
 	mat4			OrthoProjection;
 };

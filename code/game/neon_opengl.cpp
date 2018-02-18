@@ -16,10 +16,10 @@ static render_state RenderState = {};
 
 void ogl::InitState()
 {
-	RenderState.TextureCount = 0;
-	RenderState.VertexBufferCount = 0;
-	RenderState.IndexBufferCount = 0;
-	RenderState.ShaderProgramCount = 0;
+	RenderState.TextureCurrent = 0;
+	RenderState.VertexBufferCurrent = 0;
+	RenderState.IndexBufferCurrent = 0;
+	RenderState.ShaderProgramCurrent = 0;
 
 	RenderState.OrthoProjection = Orthographic(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
 
@@ -67,11 +67,11 @@ render_resource ogl::MakeTexture(texture *Texture)
 		// TODO: Return RenderResource of the default texture and log this error.
 	}
 
-	assert(RenderState.TextureCount < ARRAY_COUNT(RenderState.Texture));
+	assert(RenderState.TextureCurrent < ARRAY_COUNT(RenderState.Texture));
 
 	render_resource RenderResource;
 	RenderResource.Type = render_resource::TEXTURE;
-	RenderResource.ResourceHandle = RenderState.TextureCount++;
+	RenderResource.ResourceHandle = RenderState.TextureCurrent++;
 
 	// Generate and bind Texture
 	glGenTextures(1, &RenderState.Texture[RenderResource.ResourceHandle]);
@@ -103,7 +103,7 @@ render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 	render_resource RenderResource;
 
 	RenderResource.Type = render_resource::VERTEX_BUFFER;
-	RenderResource.ResourceHandle = RenderState.VertexBufferCount++;
+	RenderResource.ResourceHandle = RenderState.VertexBufferCurrent++;
 
 	RenderState.VertexBuffer[RenderResource.ResourceHandle].Capacity = Size;
 	RenderState.VertexBuffer[RenderResource.ResourceHandle].IsDynamic = Dynamic;
@@ -139,7 +139,7 @@ render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
 	render_resource RenderResource;
 	
 	RenderResource.Type = render_resource::INDEX_BUFFER;
-	RenderResource.ResourceHandle = RenderState.IndexBufferCount++;
+	RenderResource.ResourceHandle = RenderState.IndexBufferCurrent++;
 
 	RenderState.IndexBuffer[RenderResource.ResourceHandle].Capacity = Size;
 	RenderState.IndexBuffer[RenderResource.ResourceHandle].IsDynamic = Dynamic;
@@ -173,7 +173,7 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 {
 	render_resource RenderResource;
 	RenderResource.Type = render_resource::SHADER_PROGRAM;
-	RenderResource.ResourceHandle = RenderState.ShaderProgramCount++;
+	RenderResource.ResourceHandle = RenderState.ShaderProgramCurrent++;
 
 	read_file_result VsFile = Platform->ReadFile(VertShaderSrc);
 	read_file_result FsFile = Platform->ReadFile(FragShaderSrc);
@@ -190,17 +190,16 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 	glCompileShader(Vs);
 	glCompileShader(Fs);
 
-	GLuint &Program = RenderState.ShaderProgram[RenderResource.ResourceHandle].Program;
+	shader_program *ShaderProgram = &RenderState.ShaderProgram[RenderResource.ResourceHandle];
 
-	Program = glCreateProgram();
-	glAttachShader(Program, Vs);
-	glAttachShader(Program, Fs);
+	ShaderProgram->Program = glCreateProgram();
+	glAttachShader(ShaderProgram->Program, Vs);
+	glAttachShader(ShaderProgram->Program, Fs);
+	glLinkProgram(ShaderProgram->Program);
 
-	glLinkProgram(Program);
-
-	glValidateProgram(Program);
+	glValidateProgram(ShaderProgram->Program);
 	GLint Validated;
-	glGetProgramiv(Program, GL_VALIDATE_STATUS, &Validated);
+	glGetProgramiv(ShaderProgram->Program, GL_VALIDATE_STATUS, &Validated);
 
 	if(!Validated)
 	{
@@ -209,25 +208,28 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 		char ProgramErrors[8192];
 		glGetShaderInfoLog(Vs, sizeof(VsErrors), 0, VsErrors);
 		glGetShaderInfoLog(Fs, sizeof(FsErrors), 0, FsErrors);
-		glGetProgramInfoLog(Program, sizeof(ProgramErrors), 0, ProgramErrors);
+		glGetProgramInfoLog(ShaderProgram->Program, sizeof(ProgramErrors), 0, ProgramErrors);
 
 		assert(!"Shader compilation and/or linking failed");
 	}
 
-	glDetachShader(Program, Vs);
-	glDetachShader(Program, Fs);
-
+	glDetachShader(ShaderProgram->Program, Vs);
+	glDetachShader(ShaderProgram->Program, Fs);
 	glDeleteShader(Vs);
 	glDeleteShader(Fs);
 
 	// Find Sampler2D uniforms count
+	glUseProgram(ShaderProgram->Program); // Bind shader program to use glUniform
+
 	char Sampler2DName[16] = "MapX";
-	for(int I = 0; I <= 9; ++I)
+	for(int I = 0; I < ARRAY_COUNT(ShaderProgram->Sampler2DLoc); ++I)
 	{
 		Sampler2DName[3] = '0' + I;
-		if(glGetUniformLocation(Program, Sampler2DName) != -1)
+		ShaderProgram->Sampler2DLoc[I] = glGetUniformLocation(ShaderProgram->Program, Sampler2DName);
+		if(ShaderProgram->Sampler2DLoc[I] != -1)
 		{
-			++RenderState.ShaderProgram[RenderState.ShaderProgramCount].Sampler2DCount;
+			glUniform1i(ShaderProgram->Sampler2DLoc[I], I);
+			++ShaderProgram->Sampler2DCount;
 		}
 	}
 
@@ -237,6 +239,7 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 void ogl::DeleteShaderProgram(render_resource ShaderProgram)
 {
 	glDeleteProgram(RenderState.ShaderProgram[ShaderProgram.ResourceHandle].Program);
+	RenderState.ShaderProgram[ShaderProgram.ResourceHandle].Sampler2DCount = 0;
 }
 
 void ogl::UnindexedDraw(cmd::udraw *Cmd)
