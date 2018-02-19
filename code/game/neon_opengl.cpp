@@ -265,11 +265,13 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 		glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Texture.ResourceHandle]);
 
 		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjectionMat4Loc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
+
+		glDrawArrays(GL_TRIANGLES, Cmd->StartVertex, Cmd->VertexCount);
+
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
 	}
-
-	glDrawArrays(GL_TRIANGLES, Cmd->StartVertex, Cmd->VertexCount);
-
-	glDisableVertexAttribArray(0);
 }
 
 //-----------------------------------------------------------------------------
