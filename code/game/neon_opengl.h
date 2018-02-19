@@ -30,7 +30,7 @@ struct shader_program
 	GLuint	Program;
 	u32		Sampler2DCount;
 	GLint	Sampler2DLoc[10];
-	GLint	ProjectionMat4Loc;
+	GLint	ProjMatrixLoc;
 };
 
 struct render_state

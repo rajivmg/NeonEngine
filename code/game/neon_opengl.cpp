@@ -218,7 +218,7 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 	glDeleteShader(Vs);
 	glDeleteShader(Fs);
 
-	// Find Sampler2D uniforms count
+	// Store sampler2D information
 	glUseProgram(ShaderProgram->Program); // Bind shader program to use glUniform
 
 	char Sampler2DName[16] = "MapX";
@@ -233,8 +233,8 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 		}
 	}
 
-	// Projection matrix location
-	ShaderProgram->ProjectionMat4Loc = glGetUniformLocation(ShaderProgram->Program, "Projection");
+	// Store projection matrix location
+	ShaderProgram->ProjMatrixLoc = glGetUniformLocation(ShaderProgram->Program, "Projection");
 
 	return RenderResource;
 }
@@ -264,7 +264,7 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Texture.ResourceHandle]);
 
-		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjectionMat4Loc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
+		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
 
 		glDrawArrays(GL_TRIANGLES, Cmd->StartVertex, Cmd->VertexCount);
 
