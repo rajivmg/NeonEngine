@@ -55,8 +55,8 @@ struct render_resource
 {
 	enum resource_type : u32
 	{
+		NOT_INITIALIZED = 0x00000000,
 		VERTEX_BUFFER, INDEX_BUFFER, SHADER_PROGRAM, TEXTURE, RENDER_TARGET,
-		NOT_INITIALIZED = 0xFFFFFFFF
 	};
 
 	resource_type	Type;
