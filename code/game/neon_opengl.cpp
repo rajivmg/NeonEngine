@@ -23,7 +23,6 @@ void ogl::InitState()
 
 	RenderState.OrthoProjection = Orthographic(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
 
-
 	// Set clear color
 	glClearColor(0.006f, 0.098f, 0.223f, 1.0f);
 
@@ -64,7 +63,7 @@ render_resource ogl::MakeTexture(texture *Texture)
 {
 	if(!Texture->IsValid())
 	{
-		// TODO: Return RenderResource of the default texture and log this error.
+		assert(!"Texture is invalid.");
 	}
 
 	assert(RenderState.TextureCurrent < ARRAY_COUNT(RenderState.Texture));
@@ -221,10 +220,10 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 	// Store sampler2D information
 	glUseProgram(ShaderProgram->Program); // Bind shader program to use glUniform
 
-	char Sampler2DName[16] = "MapX";
+	char Sampler2DName[16] = "SamplerX";
 	for(int I = 0; I < ARRAY_COUNT(ShaderProgram->Sampler2DLoc); ++I)
 	{
-		Sampler2DName[3] = '0' + I;
+		Sampler2DName[7] = '0' + I;
 		ShaderProgram->Sampler2DLoc[I] = glGetUniformLocation(ShaderProgram->Program, Sampler2DName);
 		if(ShaderProgram->Sampler2DLoc[I] != -1)
 		{
