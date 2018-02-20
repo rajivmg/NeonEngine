@@ -88,6 +88,7 @@ render_cmd_list::render_cmd_list(u32 _BufferSize) : BufferSize(_BufferSize),
 	const u32 MaxPacketsInList = 2048;
 
 	Buffer = malloc(BufferSize);
+	memset(Buffer, 0, BufferSize);
 	Keys = (u32 *)malloc(sizeof(u32) * MaxPacketsInList);
 	Packets = (cmd_packet **)malloc(sizeof(cmd_packet *) * (MaxPacketsInList));
 }
