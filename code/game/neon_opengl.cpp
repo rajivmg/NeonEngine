@@ -260,8 +260,14 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Texture.ResourceHandle]);
+		for(int I = 0; I < RenderState.ShaderProgram->Sampler2DCount; ++I)
+		{
+			if(Cmd->Textures[I].Type != render_resource::NOT_INITIALIZED)
+			{
+				glActiveTexture(GL_TEXTURE0 + I);
+				glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Textures[I].ResourceHandle]);
+			}
+		}
 
 		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
 

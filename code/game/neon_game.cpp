@@ -83,7 +83,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	TextC->VertexFormat = vert_format::P1UV1C1;
 	TextC->StartVertex = 0;
 	TextC->VertexCount = (u32)TextVertices.size();
-	TextC->Texture = NeutonFont->TextureAtlas.Texture.RenderResource;
+	TextC->Textures[0] = NeutonFont->TextureAtlas.Texture.RenderResource;
 	TextC->ShaderProgram = BasicShader;
 
 	BackbufferList->Sort();
