@@ -1,7 +1,6 @@
 #include "neon_game.h"
 
 #include "neon_font.h"
-#include "neon_opengl.h"
 
 #include "neon_primitive_mesh.h"
 
