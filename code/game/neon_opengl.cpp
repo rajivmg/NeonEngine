@@ -21,7 +21,7 @@ void ogl::InitState()
 	RenderState.IndexBufferCurrent = 0;
 	RenderState.ShaderProgramCurrent = 0;
 
-	RenderState.OrthoProjection = Orthographic(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, 1.0f);
+	RenderState.OrthoProjection = Orthographic(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, -10.0f);
 
 	// Set clear color
 	glClearColor(0.006f, 0.098f, 0.223f, 1.0f);
