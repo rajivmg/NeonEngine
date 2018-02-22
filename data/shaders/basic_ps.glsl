@@ -1,6 +1,6 @@
 #version 330
 
-uniform sampler2D Map0;
+uniform sampler2D Sampler0;
 
 in VS_OUT
 {
@@ -14,6 +14,6 @@ void main()
 {
 	//OutColor = vec4( pow(fs_in.VertColor.rgb, vec3(2.2)), fs_in.VertColor.a);
 
-	OutColor = texture(Map0, fs_in.VertUV) * fs_in.VertColor;
+	OutColor = texture(Sampler0, fs_in.VertUV) * fs_in.VertColor;
 
 }
