@@ -84,45 +84,48 @@ struct game_controller_input
 	};
 };
 
-enum log_level
+struct file_content
 {
-	INFO, WARN, ERR
-};
-
-struct read_file_result
-{
-	u32	 ContentSize;
+	bool NoError;
+	s64	Size;
 	void *Content;
 };
 
-#define PLATFORM_READ_FILE(Name) read_file_result (Name)(char const *Filename)
+#define PLATFORM_READ_FILE(Name) file_content (Name)(char const *Filename)
 typedef PLATFORM_READ_FILE(platform_read_file);
-#define PLATFORM_WRITE_FILE(Name) void (Name)(char const *Filename, s32 BytesToWrite, void *FileContent)
+
+#define PLATFORM_FREE_FILE_CONTENT(Name) void (Name)(file_content *FileContent)
+typedef PLATFORM_FREE_FILE_CONTENT(platform_free_file_content);
+
+#define PLATFORM_WRITE_FILE(Name) void (Name)(char const *Filename, s32 BytesToWrite, void *Content)
 typedef PLATFORM_WRITE_FILE(platform_write_file);
-#define PLATFORM_FREE_FILE_MEMORY(Name) void (Name)(read_file_result *ReadFileResult)
-typedef PLATFORM_FREE_FILE_MEMORY(platform_free_file_memory);
-#define PLATFORM_LOG(Name) void (Name)(log_level Level, char const * Fmt, ...)
+
+#define PLATFORM_LOG(Name) void (Name)(char const *Format, ...)
 typedef PLATFORM_LOG(platform_log);
+
+#define PLATFORM_LOG_ERROR(Name) void (Name)(char const *Format, ...)
+typedef PLATFORM_LOG_ERROR(platform_log_error);
 
 struct platform_t
 {
-	s32							Width;
-	s32							Height;
-	platform_read_file			*ReadFile;
-	platform_write_file			*WriteFile;
-	platform_free_file_memory	*FreeFileMemory;
-	platform_log				*Log;
+	s32	Width;
+	s32	Height;
+	platform_read_file *ReadFile;
+	platform_free_file_content *FreeFileContent;
+	platform_write_file	*WriteFile;
+	platform_log *Log;
+	platform_log_error *LogError;
 };
 
-extern platform_t *Platform;
+extern platform_t Platform;
 
 #include <imgui.h>
 
+#define GAME_SETUP(Name) void (Name)(platform_t _Platform, ImGuiContext *_ImGuiCtx)
+typedef GAME_SETUP(game_setup);
+
 #define GAME_UPDATE_AND_RENDER(Name) void (Name)(game_controller_input *Input)
 typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
-
-#define GAME_CODE_LOADED(Name) void (Name)(platform_t *_Platform, ImGuiContext *_ImGuiCtx)
-typedef GAME_CODE_LOADED(game_code_loaded);
 
 #define IMGUI_RENDER_DRAW_LISTS(Name) void (Name)(ImDrawData* draw_data)
 typedef IMGUI_RENDER_DRAW_LISTS(imgui_render_draw_lists);

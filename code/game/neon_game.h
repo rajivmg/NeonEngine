@@ -6,6 +6,6 @@
 #include "neon_renderer.h"
 #include "neon_math.h"
 
-platform_t *Platform;
+platform_t Platform;
 
 #endif

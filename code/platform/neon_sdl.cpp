@@ -7,17 +7,13 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
 
-#include <cstdio>
-
-#if defined(_MSC_VER)
-#include <Windows.h>
-#endif
+#include <cstdio> // vsnprintf
 
 #include "neon_sdl.h"
 
 #include <imgui.h>
 
-platform_t *Platform;
+platform_t Platform;
 
 static game_code GameCode = {};
 
@@ -29,105 +25,111 @@ static bool 	imgui_FontTextureCreated = false;
 
 PLATFORM_LOG(Log)
 {
-	va_list Arguments;
-	va_start(Arguments, Fmt);
+	va_list ArgList;
+	va_start(ArgList, Format);
 
-	switch(Level)
-	{
-		case INFO:
-			SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO, Fmt, Arguments);
-			break;
-		
-		case WARN:
-			SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_WARN, Fmt, Arguments);
-			break;
+	SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO, Format, ArgList);
+	
+	va_end(ArgList);
+}
 
-		case ERR:
-		{
-			SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_ERROR, Fmt, Arguments);
-			char Temp[200];
-			vsnprintf(Temp, 200, Fmt, Arguments);
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", Temp, 0);
+PLATFORM_LOG_ERROR(LogError)
+{
+	va_list ArgList;
+	va_start(ArgList, Format);
 
-			SDL_Event QuitEvent;
-			QuitEvent.type = SDL_QUIT;
-			SDL_PushEvent(&QuitEvent);
-		} break;
+	char Buffer[2048];
+	vsnprintf(Buffer, 2048, Format, ArgList);
+	SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_ERROR, Format, ArgList);
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", Buffer, 0);
 
-		default:
-			SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO, Fmt, Arguments);
-			break;
-	}
+	va_end(ArgList);
 
-	va_end(Arguments);
+	// After logging error quit
+	SDL_Event QuitE;
+	QuitE.type = SDL_QUIT;
+	SDL_PushEvent(&QuitE);
 }
 
 PLATFORM_READ_FILE(ReadFile)
 {
-	read_file_result Result = {};
+	file_content Result = {};
+
+	// Open file
 	SDL_RWops *Fp = SDL_RWFromFile(Filename, "rb");
-	assert(Fp != 0);
+	
+	// If file is opened
 	if(Fp != 0)
 	{
-		Platform->Log(INFO, "File: %s read sucessfully.\n", Filename);
+		// Seek the FP at end
 		SDL_RWseek(Fp, 0, RW_SEEK_END);
-		s64 Temp = (s64)SDL_RWtell(Fp);
-		if(Temp != -1L && Temp >= 0)
+
+		// Calculate file size
+		Result.Size = (s64)SDL_RWtell(Fp);
+
+		// Check if the file size is valid
+		if(Result.Size == -1 || Result.Size <= 0)
 		{
-			Result.ContentSize = (u32)Temp;
-		}
-		else
-		{
-			Platform->Log(ERR, "File: %s size is zero.\n", Filename);
+			Result.NoError = false;
 		}
 
-		// Set the position indicator to the start of the file
+		// Set the FP to the start of the file
 		SDL_RWseek(Fp, 0, RW_SEEK_SET);
+
 		// Allocate the required memory
-		Result.Content = (void *)malloc(sizeof(char) * Result.ContentSize);
-		if(Result.Content == 0)
+		Result.Content = (void *)malloc(sizeof(char) * Result.Size);
+		if(Result.Content == nullptr)
 		{
-			Platform->Log(ERR, "Memory allocation to read %s failed.\n", Filename);
+			Result.NoError = false;
 		}
 
 		// Read the file contents
-		size_t ContentReadSize = SDL_RWread(Fp, Result.Content, sizeof(char), Result.ContentSize);
-		if(ContentReadSize == 0 || ContentReadSize != Result.ContentSize)
+		size_t ContentReadSize = SDL_RWread(Fp, Result.Content, sizeof(char), Result.Size);
+		if(ContentReadSize != Result.Size)
 		{
-			Platform->Log(ERR, "File: %s is empty or read incompletely.\n", Filename);
+			Result.NoError = false;
 		}
 
+		// Close FP
 		SDL_RWclose(Fp);
+
+		Result.NoError = true;
 	}
+	// If file can't be opened
 	else
 	{
-		Platform->Log(ERR, "File: %s not found or cannot be opened for read.\n", Filename);
+		Platform.Log("Can't open file %s for reading\n", Filename);
+		Result.NoError = false;
 	}
+
 	return Result;
 }
 
-PLATFORM_FREE_FILE_MEMORY(FreeFileMemory)
+PLATFORM_FREE_FILE_CONTENT(FreeFileContent)
 {
-	free(ReadFileResult->Content);
+	SAFE_FREE(FileContent->Content);
 }
 
 PLATFORM_WRITE_FILE(WriteFile)
 {
+	// Open file for writing
 	SDL_RWops *Fp = SDL_RWFromFile(Filename, "wb");
-	assert(Fp != 0);
+
+	// If file is opened
 	if(Fp != 0)
 	{
-		size_t BytesWritten = SDL_RWwrite(Fp, FileContent, sizeof(u8), BytesToWrite);
+		size_t BytesWritten = SDL_RWwrite(Fp, Content, sizeof(u8), BytesToWrite);
 		if(BytesWritten != (size_t)BytesToWrite)
 		{
-			Platform->Log(WARN, "File: %s cannot be written completely.\n", Filename);
+			Platform.Log("Can't write file %s completely\n", Filename);
 		}
+
 		SDL_RWclose(Fp);
-		Platform->Log(INFO, "File: %s written sucessfully.\n", Filename);
 	}
+	// If file can't be opened
 	else
 	{
-		Platform->Log(WARN, "File: %s cannot be opened for writing.\n");
+		Platform.Log("Can't open file %s for writing\n", Filename);
 	}
 }
 
@@ -288,13 +290,13 @@ static void LoadGameCode(game_code *GameCode)
 	
 	if(!GameCode->Handle)
 	{
-		Log(ERR, SDL_GetError());
+		Log(SDL_GetError());
 	}
 
 	assert(GameCode->Handle != nullptr);
 
 	GameCode->GameUpdateAndRender = (game_update_and_render *)LoadFuncFromDLL(GameCode->Handle, "GameUpdateAndRender");
-	GameCode->GameCodeLoaded = (game_code_loaded *)LoadFuncFromDLL(GameCode->Handle, "GameCodeLoaded");
+	GameCode->GameSetup = (game_setup *)LoadFuncFromDLL(GameCode->Handle, "GameSetup");
 	GameCode->ImGui_RenderDrawLists = (imgui_render_draw_lists *)LoadFuncFromDLL(GameCode->Handle, "ImGui_RenderDrawLists");
 	GameCode->ImGui_CreateDeviceObjects = (imgui_create_device_objects *)LoadFuncFromDLL(GameCode->Handle, "ImGui_CreateDeviceObjects");
 	GameCode->ImGui_InvalidateDeviceObjects = (imgui_invalidate_device_objects *)LoadFuncFromDLL(GameCode->Handle, "ImGui_InvalidateDeviceObjects");
@@ -348,7 +350,7 @@ static void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller
 		case SDL_MOUSEMOTION:
 		{
 			Controller->Mouse.x = Event->motion.x;
-			Controller->Mouse.y = Platform->Height - 1 - Event->motion.y;
+			Controller->Mouse.y = Platform.Height - 1 - Event->motion.y;
 		} break;
 
 		case SDL_MOUSEBUTTONDOWN:
@@ -382,8 +384,8 @@ static void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller
 			{
 				case SDL_WINDOWEVENT_RESIZED:
 				{
-					Platform->Width = Event->window.data1;
-					Platform->Height = Event->window.data2;
+					Platform.Width = Event->window.data1;
+					Platform.Height = Event->window.data2;
 				} break;
 			}
 
@@ -394,10 +396,11 @@ static void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller
 
 int main(int argc, char **argv)
 {
-	Platform = (platform_t *)malloc(sizeof(platform_t));
-	Platform->Log = &Log;
-	Platform->Width = 1280;
-	Platform->Height = 720;
+	//Platform = (platform_t *)malloc(sizeof(platform_t));
+	Platform.Log = &Log;
+	Platform.LogError = &LogError;
+	Platform.Width = 1280;
+	Platform.Height = 720;
 
 	if(SDL_Init(SDL_INIT_VIDEO) == 0)
 	{
@@ -424,12 +427,12 @@ int main(int argc, char **argv)
 		SDL_Window *Window;
 		Window = SDL_CreateWindow("Neon",
 			SDL_WINDOWPOS_UNDEFINED,
-			SDL_WINDOWPOS_UNDEFINED, Platform->Width, Platform->Height,
+			SDL_WINDOWPOS_UNDEFINED, Platform.Width, Platform.Height,
 			SDL_WINDOW_OPENGL);
 
-		Platform->ReadFile = &ReadFile;
-		Platform->WriteFile = &WriteFile;
-		Platform->FreeFileMemory = &FreeFileMemory;
+		Platform.ReadFile = &ReadFile;
+		Platform.WriteFile = &WriteFile;
+		Platform.FreeFileContent = &FreeFileContent;
 
 		if(Window)
 		{
@@ -440,7 +443,7 @@ int main(int argc, char **argv)
 				SDL_GL_SetSwapInterval(1);
 
 				LoadGameCode(&GameCode);
-				GameCode.GameCodeLoaded(Platform, ImGui::GetCurrentContext());
+				GameCode.GameSetup(Platform, ImGui::GetCurrentContext());
 
 				// Setup Imgui binding
 				ImGui_Init(Window, GameCode.ImGui_RenderDrawLists);
@@ -509,28 +512,22 @@ int main(int argc, char **argv)
 					CurrentCounter = SDL_GetPerformanceCounter();
 					FrameTime = (r32)((CurrentCounter - PrevCounter)) / CounterFrequency;
 					PrevCounter = CurrentCounter;
-
-#if defined(_MSC_VER)
-					char DebugCountString[100];
-					sprintf(DebugCountString, "%f ms\n", FrameTime*1000.0);
-					OutputDebugString(DebugCountString);
-#endif
 				}
 			}
 			else
 			{
-				Platform->Log(ERR, "Failed to create OpenGL context.\n");
+				Platform.Log("Failed to create OpenGL context.\n");
 			}
 		}
 		else
 		{
-			Platform->Log(ERR, "Failed to create a window.\n");
+			Platform.Log("Failed to create a window.\n");
 		}
 
 	}
 	else
 	{
-		Platform->Log(ERR, "%s\n", SDL_GetError());
+		Platform.Log("%s\n", SDL_GetError());
 	}
 
 	ImGui_Shutdown();

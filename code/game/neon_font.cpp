@@ -33,9 +33,10 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 		assert(!"Error initialising the FreeType library.");
 	}
 
-	read_file_result FontData = Platform->ReadFile(FontSrc);
+	file_content FontData = Platform.ReadFile(FontSrc);
+	assert(FontData.NoError);
 
-	Error = FT_New_Memory_Face(FTLib, (const FT_Byte *)FontData.Content, FontData.ContentSize, 0, &Face);
+	Error = FT_New_Memory_Face(FTLib, (const FT_Byte *)FontData.Content, (FT_Long)FontData.Size, 0, &Face);
 	if(Error == FT_Err_Unknown_File_Format)
 	{
 		assert(!"File format is not supported.");
@@ -113,7 +114,7 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 
 	Initialised = true;
 
-
+	Platform.FreeFileContent(&FontData);
 	// Debugging
 	// DebugTextureSave("FontAtlas.tga", &Atlas.Texture);
 }

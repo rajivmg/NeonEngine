@@ -21,13 +21,13 @@ void ogl::InitState()
 	RenderState.IndexBufferCurrent = 0;
 	RenderState.ShaderProgramCurrent = 0;
 
-	RenderState.OrthoProjection = Orthographic(0.0f, (r32)Platform->Width, (r32)Platform->Height, 0.0f, -1.0f, -10.0f);
+	RenderState.OrthoProjection = Orthographic(0.0f, (r32)Platform.Width, (r32)Platform.Height, 0.0f, -1.0f, -10.0f);
 
 	// Set clear color
 	glClearColor(0.006f, 0.098f, 0.223f, 1.0f);
 
 	// Set the viewport
-	glViewport(0, 0, Platform->Width, Platform->Height);
+	glViewport(0, 0, Platform.Width, Platform.Height);
 
 	// Enable depth testing
 	glEnable(GL_DEPTH_TEST);
@@ -174,17 +174,19 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 	RenderResource.Type = render_resource::SHADER_PROGRAM;
 	RenderResource.ResourceHandle = RenderState.ShaderProgramCurrent++;
 
-	read_file_result VsFile = Platform->ReadFile(VertShaderSrc);
-	read_file_result FsFile = Platform->ReadFile(FragShaderSrc);
-	
+	file_content VsFile = Platform.ReadFile(VertShaderSrc);
+	file_content FsFile = Platform.ReadFile(FragShaderSrc);
+	assert(VsFile.NoError);
+	assert(FsFile.NoError);
+
 	GLuint Vs = glCreateShader(GL_VERTEX_SHADER);
 	GLuint Fs = glCreateShader(GL_FRAGMENT_SHADER);
 
-	glShaderSource(Vs, 1, (GLchar * const *)(&VsFile.Content), (const GLint *)(&VsFile.ContentSize));
-	glShaderSource(Fs, 1, (GLchar * const *)(&FsFile.Content), (const GLint *)(&FsFile.ContentSize));
+	glShaderSource(Vs, 1, (GLchar * const *)(&VsFile.Content), (const GLint *)(&VsFile.Size));
+	glShaderSource(Fs, 1, (GLchar * const *)(&FsFile.Content), (const GLint *)(&FsFile.Size));
 
-	Platform->FreeFileMemory(&VsFile);
-	Platform->FreeFileMemory(&FsFile);
+	Platform.FreeFileContent(&VsFile);
+	Platform.FreeFileContent(&FsFile);
 
 	glCompileShader(Vs);
 	glCompileShader(Fs);

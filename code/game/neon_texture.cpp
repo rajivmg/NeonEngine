@@ -28,7 +28,7 @@ texture::~texture()
 
 void texture::LoadFile(char const * Filename, texture_type _Type, texture_filter _Filter, texture_wrap _Wrap, bool _HwGammaCorrection)
 {
-	read_file_result File = Platform->ReadFile(Filename);
+	file_content File = Platform.ReadFile(Filename);
 
 	u8 *InBytes = (u8*)File.Content;
 
@@ -72,7 +72,7 @@ void texture::LoadFile(char const * Filename, texture_type _Type, texture_filter
 		*Pixel = R | G | B | A;
 	}
 
-	Platform->FreeFileMemory(&File);
+	Platform.FreeFileContent(&File);
 
 	FlippedAroundY = false;
 
@@ -177,7 +177,7 @@ void DebugTextureSave_(char const * Filename, texture *Texture)
 	void *FileContent = malloc(sizeof(tga_header) + Texture->ContentSize);
 	memcpy(FileContent, &Header, sizeof(tga_header));
 	memcpy((u8 *)FileContent + sizeof(tga_header), PixelPointer, Texture->ContentSize);
-	Platform->WriteFile(Filename, sizeof(tga_header) + Texture->ContentSize, FileContent);
+	Platform.WriteFile(Filename, sizeof(tga_header) + Texture->ContentSize, FileContent);
 
 	free(FileContent);
 }
