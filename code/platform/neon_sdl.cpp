@@ -1,7 +1,3 @@
-#ifndef SDL_MAIN_HANDLED
-#define SDL_MAIN_HANDLED 1
-#endif
-
 #include "neon_platform.h"
 
 #include <SDL2/SDL.h>

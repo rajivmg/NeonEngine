@@ -36,12 +36,14 @@ if(WIN32)
 	file(GLOB GAME_SRC "code/game/*.cpp" "code/game/*.h" ${IMGUI_SRC})
 	add_library(Game SHARED ${GAME_SRC})
 	target_link_libraries(Game ${GAME_LAYER_LIBS})
+	set_target_properties(Game PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
 
 # ===Neon===	
 	file(GLOB PLATFORM_SRC "code/platform/*.cpp" "code/platform/*.h" ${IMGUI_SRC})
 	add_executable(Neon ${PLATFORM_SRC})
 	target_link_libraries(Neon ${PLATFORM_LAYER_LIBS})
 	set_target_properties(Neon PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data")
+	set_target_properties(Neon PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
 
 	# Make Neon depend on Game so we don't need to manually build Game everytime
 	add_dependencies(Neon Game)
