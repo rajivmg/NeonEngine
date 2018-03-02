@@ -223,6 +223,7 @@ namespace cmd
 	static_assert(std::is_pod<idraw>::value == true, "Must be a POD.");
 }
 
+// NOTE: P is top left point.
 void PushTextSprite(std::vector<vert_P1UV1C1> *Vertices, font *Font, vec3 P, vec4 Color, char const * Format, ...);
 
 #endif

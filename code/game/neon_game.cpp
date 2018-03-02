@@ -53,7 +53,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	std::vector<vert_P1UV1C1> TextVertices;
 	PushTextSprite(&TextVertices, DebugFont, vec3i(0, 720, 1), vec4i(1, 1, 1, 1), "%0.3f ms/frame", 1000.0f * Input->FrameTime);
-	PushTextSprite(&TextVertices, DebugFont, vec3i(0, 16, 1), vec4i(1, 1, 1, 1), "%s @ %s", __DATE__,  __TIME__);
+	//PushTextSprite(&TextVertices, DebugFont, vec3i(0, 16, 1), vec4i(1, 1, 1, 1), "%s @ %s", __DATE__,  __TIME__);
 	static render_resource TextVertexBuffer = rndr::MakeVertexBuffer(1000 * sizeof(vert_P1UV1C1));
 	rndr::VertexBufferData(TextVertexBuffer, 0, (u32)TextVertices.size() * sizeof(vert_P1UV1C1), &TextVertices.front());
 

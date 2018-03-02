@@ -44,6 +44,8 @@ typedef double		r64;
 static u32 neon__COUNTER__ = 0; 
 #define GEN_ID ++neon__COUNTER__
 
+#define local_persist static
+
 struct game_button_state
 {
 	bool EndedDown;
