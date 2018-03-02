@@ -23,7 +23,7 @@ if(WIN32)
 #	MESSAGE(STATUS "DEBUG_FLAGS: " ${CMAKE_CXX_FLAGS_DEBUG})
 #	MESSAGE(STATUS "RELEASE_FLAGS: " ${CMAKE_CXX_FLAGS_RELEASE})
 
-	set(GAME_LAYER_LIBS debug freetypeMTd optimized freetypeMT general opengl32)
+	set(GAME_LAYER_LIBS debug freetypeMTd optimized freetypeMT general opengl32 assimp-vc140-mt)
 	set(PLATFORM_LAYER_LIBS general SDL2main SDL2 opengl32)
 
 	file(GLOB DLL_FILES "lib/x64/*.dll")
