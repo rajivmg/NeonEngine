@@ -2,6 +2,7 @@
 
 #include "neon_font.h"
 #include "neon_primitive_mesh.h"
+#include "neon_mesh.h"
 
 DLLEXPORT
 GAME_SETUP(GameSetup)
@@ -33,6 +34,8 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	static font *NeutonFont = new font;
 	static render_cmd_list *RenderCmdList = new render_cmd_list(MEGABYTE(5));
 	static render_resource BasicShader;
+	static render_resource TerrainVB;
+	static render_resource TerrainIB;
 
 	if(!FirstCall)
 	{
@@ -48,6 +51,15 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		DebugFont->Load("fonts/Inconsolata/Inconsolata-Regular.ttf", 16);
 		NeutonFont->Load("fonts/Neuton/Neuton-Regular.ttf", 32);
 
+		std::vector<vert_P1UV1C1> TerrainVertices;
+		std::vector<vert_index> TerrainIndices;
+
+		PushMesh(&TerrainVertices, &TerrainIndices, "models/hex.fbx", 0);
+		TerrainVB = rndr::MakeVertexBuffer(TerrainVertices.size() * sizeof(vert_P1UV1C1), false);
+		TerrainIB = rndr::MakeIndexBuffer(TerrainIndices.size() * sizeof(vert_index), false);
+		rndr::VertexBufferData(TerrainVB, 0, TerrainVertices.size() * sizeof(vert_P1UV1C1), &TerrainVertices.front());
+		rndr::IndexBufferData(TerrainIB, 0, TerrainIndices.size() * sizeof(vert_index), &TerrainIndices.front());
+		
 		vec3 va = vec3i(1, 1, 1);
 	}
 
@@ -64,6 +76,14 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	TextC->VertexCount = (u32)TextVertices.size();
 	TextC->Textures[0] = DebugFont->TextureAtlas.Texture.RenderResource;
 	TextC->ShaderProgram = BasicShader;
+
+	cmd::idraw *TerrainCmd = RenderCmdList->AddCommand<cmd::idraw>(11, 0);
+	TerrainCmd->VertexBuffer = TerrainVB;
+	TerrainCmd->VertexFormat = vert_format::P1UV1C1;
+	TerrainCmd->IndexBuffer = TerrainIB;
+	TerrainCmd->IndexCount = 12;
+	TerrainCmd->Textures[0] = DebugFont->TextureAtlas.Texture.RenderResource;
+	TerrainCmd->ShaderProgram = BasicShader;
 
 	RenderCmdList->Sort();
 	RenderCmdList->Submit();

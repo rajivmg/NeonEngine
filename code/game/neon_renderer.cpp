@@ -5,6 +5,7 @@
 #include "neon_primitive_mesh.h"
 
 const dispatch_fn cmd::udraw::DISPATCH_FUNCTION = &rndr::UnindexedDraw;
+const dispatch_fn cmd::idraw::DISPATCH_FUNCTION = &rndr::IndexedDraw;
 
 //-----------------------------------------------------------------------------
 // Renderer Wrapper
@@ -73,6 +74,14 @@ void rndr::UnindexedDraw(void const *Data)
 {
 	cmd::udraw *Cmd = (cmd::udraw *)Data;
 	ogl::UnindexedDraw(Cmd);
+	//Platform->Log(INFO, "TexID = %d\n", Cmd->TexID);
+
+}
+
+void rndr::IndexedDraw(void const *Data)
+{
+	cmd::idraw *Cmd = (cmd::idraw *)Data;
+	ogl::IndexedDraw(Cmd);
 	//Platform->Log(INFO, "TexID = %d\n", Cmd->TexID);
 
 }

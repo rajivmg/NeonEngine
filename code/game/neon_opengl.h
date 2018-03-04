@@ -12,6 +12,7 @@ struct render_resource;
 namespace cmd
 {
 	struct udraw;
+	struct idraw;
 }
 
 enum class texture_type;
@@ -61,6 +62,7 @@ namespace ogl
 	render_resource MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc);
 	void			DeleteShaderProgram(render_resource ShaderProgram);
 	void			UnindexedDraw(cmd::udraw *Cmd);
+	void			IndexedDraw(cmd::idraw *Cmd);
 }
 
 #endif

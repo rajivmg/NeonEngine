@@ -37,7 +37,7 @@ void ogl::InitState()
 	glFrontFace(GL_CCW);
 
 	// Enable back-face culling
-	glEnable(GL_CULL_FACE);
+	//glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
 	// Enable the alpha blending
@@ -274,6 +274,42 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
 
 		glDrawArrays(GL_TRIANGLES, Cmd->StartVertex, Cmd->VertexCount);
+
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+	}
+}
+
+void ogl::IndexedDraw(cmd::idraw *Cmd)
+{
+	glUseProgram(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].Program);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RenderState.IndexBuffer[Cmd->IndexBuffer.ResourceHandle].Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertexBuffer[Cmd->VertexBuffer.ResourceHandle].Buffer);
+
+	if(Cmd->VertexFormat == vert_format::P1UV1C1)
+	{
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, Position));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, UV));
+		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, Color));
+
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
+
+		for(int I = 0; I < RenderState.ShaderProgram->Sampler2DCount; ++I)
+		{
+			if(Cmd->Textures[I].Type != render_resource::NOT_INITIALIZED)
+			{
+				glActiveTexture(GL_TEXTURE0 + I);
+				glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Textures[I].ResourceHandle]);
+			}
+		}
+
+		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
+
+		glDrawElements(GL_TRIANGLES, Cmd->IndexCount, GL_UNSIGNED_SHORT, 0);
 
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);

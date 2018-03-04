@@ -13,6 +13,7 @@ enum class texture_filter;
 enum class texture_wrap;
 
 typedef void (*dispatch_fn)(void const *Data);
+typedef u16 vert_index;
 
 //
 //	NOTE:
@@ -82,6 +83,7 @@ namespace rndr
 	void			DeleteShaderProgram(render_resource ShaderProgram);
 
 	void			UnindexedDraw(void const *Data);
+	void			IndexedDraw(void const *Data);
 }
 
 //-----------------------------------------------------------------------------
@@ -210,12 +212,11 @@ namespace cmd
 
 	struct idraw
 	{
-		render_resource		IndexBuffer;
 		render_resource		VertexBuffer;
 		vert_format			VertexFormat;
-		u32					StartVertex;
+		render_resource		IndexBuffer;
 		u32					IndexCount;
-		texture				*Texture;
+		render_resource		Textures[10];
 		render_resource		ShaderProgram;
 
 		static const dispatch_fn DISPATCH_FUNCTION;
