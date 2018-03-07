@@ -181,6 +181,10 @@ struct mat4
 	};
 
 	FORCE_INLINE mat4() { }
+	FORCE_INLINE explicit mat4(r32 e) { m00 = e; m10 = e; m20 = e; m30 = e; 
+										m01 = e; m11 = e; m21 = e; m31 = e;
+										m02 = e; m12 = e; m22 = e; m32 = e;
+										m03 = e; m13 = e; m23 = e; m33 = e; }
 };
 
 FORCE_INLINE mat4 operator*(mat4 const &A, mat4 const &B)
@@ -222,7 +226,6 @@ FORCE_INLINE mat4 Mat4Identity()
 	A.m10 = 0.0f; A.m11 = 1.0f; A.m12 = 0.0f; A.m13 = 0.0f;
 	A.m20 = 0.0f; A.m21 = 0.0f; A.m22 = 1.0f; A.m23 = 0.0f;
 	A.m30 = 0.0f; A.m31 = 0.0f; A.m32 = 0.0f; A.m33 = 1.0f;
-
 	return A;
 }
 
@@ -244,30 +247,46 @@ FORCE_INLINE mat4 Scale(r32 _x, r32 _y, r32 _z)
 	return A;
 }
 
-FORCE_INLINE mat4 Orthographic(r32 L, r32 R, r32 T, r32 B, r32 N, r32 F)
+FORCE_INLINE mat4 Screenspace(s32 WindowWidth, s32 WindowHeight)
 {
-	mat4 Matrix;
+	mat4 Matrix = mat4(0.0f);
 
-	Matrix.m00 = 2/(R-L); 	Matrix.m01 = 0; 		Matrix.m02 = 0; 		Matrix.m03 = -(R+L)/(R-L);
-	Matrix.m10 = 0; 		Matrix.m11 = 2/(T-B); 	Matrix.m12 = 0; 		Matrix.m13 = -(T+B)/(T-B);
-	Matrix.m20 = 0; 		Matrix.m21 = 0; 		Matrix.m22 = -2/(F-N); 	Matrix.m23 = -(F+N)/(F-N);
-	Matrix.m30 = 0; 		Matrix.m31 = 0; 		Matrix.m32 = 0; 		Matrix.m33 = 1;
+	Matrix.m00 = 2.0f / WindowWidth;
+	Matrix.m03 = -1.0f;
+	Matrix.m11 = 2.0f / WindowHeight;
+	Matrix.m13 = -1.0f;
+	Matrix.m22 = 1.0f;
+	Matrix.m33 = 1.0f;
+
+	return Matrix;
+}
+
+FORCE_INLINE mat4 Orthographic(r32 Left, r32 Right, r32 Top, r32 Bottom, r32 Near, r32 Far)
+{
+	mat4 Matrix = mat4(0.0f);
+
+	Matrix.m00 = 2.0f / (Right - Left);
+	Matrix.m03 = -(Right + Left) / (Right - Left);
+	Matrix.m11 = 2.0f / (Top - Bottom);
+	Matrix.m13 = -(Top + Bottom) / (Top - Bottom);
+	Matrix.m22 = -2.0f / (Far - Near);
+	Matrix.m23 = -(Far + Near) / (Far - Near);
+	Matrix.m33 = 1.0f;
 
 	return Matrix;
 }
 
 FORCE_INLINE mat4 Perspective(r32 Fov, r32 Aspect, r32 Near, r32 Far)
 {
-	mat4 Matrix;
-	Matrix = Mat4Identity();
-	r32 tanThetaOver2 = tanf(Fov * (r32)M_PI/360);
+	mat4 Matrix = mat4(0.0f);
 
-	Matrix.m00 = 1/tanThetaOver2;
-	Matrix.m11 = Aspect/tanThetaOver2;
-	Matrix.m22 = (Near + Far)/(Near - Far);
-	Matrix.m23 = (2 * Near * Far)/(Near - Far);
-	Matrix.m32 = -1;
-	Matrix.m33 = 0;
+	r32 TanFovOver2 = tanf(Fov / 2.0f);
+
+	Matrix.m00 = 1.0f / (Aspect * TanFovOver2);
+	Matrix.m11 = 1.0f / TanFovOver2;
+	Matrix.m22 = -(Far + Near) / (Far - Near);
+	Matrix.m23 = -(2.0f * Far * Near) / (Far - Near);
+	Matrix.m32 = -1.0f;
 
 	return Matrix;
 }
