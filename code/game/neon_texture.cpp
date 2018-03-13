@@ -79,6 +79,7 @@ void texture::LoadFile(char const * Filename, texture_type _Type, texture_filter
 	Type = _Type;
 	Filter = _Filter;
 	Wrap = _Wrap;
+	HwGammaCorrection = _HwGammaCorrection;
 }
 
 bool texture::IsValid()
