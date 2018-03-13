@@ -255,7 +255,7 @@ FORCE_INLINE mat4 Screenspace(s32 WindowWidth, s32 WindowHeight)
 	Matrix.m03 = -1.0f;
 	Matrix.m11 = 2.0f / WindowHeight;
 	Matrix.m13 = -1.0f;
-	Matrix.m22 = 1.0f;
+	Matrix.m22 = -1.0f;
 	Matrix.m33 = 1.0f;
 
 	return Matrix;
