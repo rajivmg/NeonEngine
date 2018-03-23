@@ -69,7 +69,11 @@ namespace rndr
 	void			Init();
 	void			Clear();
 	
+	void			SetViewMatrix(mat4 Matrix);
+	void			SetProjectionMatrix(mat4 Matrix);
+
 	render_resource MakeTexture(texture *Texture);
+	void			DeleteTexture(render_resource Texture);
 	
 	render_resource	MakeVertexBuffer(u32 Size, bool Dynamic = true);
 	void			VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, void const *Data);
@@ -82,8 +86,8 @@ namespace rndr
 	render_resource MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc);
 	void			DeleteShaderProgram(render_resource ShaderProgram);
 
-	void			UnindexedDraw(void const *Data);
-	void			IndexedDraw(void const *Data);
+	void			Draw(void const *Data);
+	void			DrawIndexed(void const *Data);
 }
 
 //-----------------------------------------------------------------------------
@@ -115,6 +119,8 @@ struct render_cmd_list
 	u32		BaseOffset;		// Number of bytes used in the memory buffer
 	
 	// TODO: Add camera info and render target info
+	mat4	ViewMatrix;
+	mat4	ProjectionMatrix;
 
 	render_cmd_list(u32 _BufferSize);
 	~render_cmd_list();
@@ -185,19 +191,27 @@ inline U* render_cmd_list::AppendCommand(V *Cmd, u32 AuxMemorySize)
 
 enum class vert_format
 {
-	P1UV1C1
+	P1C1UV1,
+	P1N1UV1
 };
 
-struct vert_P1UV1C1
+struct vert_P1C1UV1
 {
 	vec3 Position;
 	vec2 UV;
 	vec4 Color;
 };
 
+struct vert_P1N1UV1
+{
+	vec3 Position;
+	vec3 Normal;
+	vec2 UV;
+};
+
 namespace cmd
 {
-	struct udraw
+	struct draw
 	{
 		render_resource		VertexBuffer;
 		vert_format			VertexFormat;
@@ -208,9 +222,9 @@ namespace cmd
 
 		static const dispatch_fn DISPATCH_FUNCTION;
 	};
-	static_assert(std::is_pod<udraw>::value == true, "Must be a POD.");
+	static_assert(std::is_pod<draw>::value == true, "Must be a POD.");
 
-	struct idraw
+	struct draw_indexed
 	{
 		render_resource		VertexBuffer;
 		vert_format			VertexFormat;
@@ -221,10 +235,10 @@ namespace cmd
 
 		static const dispatch_fn DISPATCH_FUNCTION;
 	};
-	static_assert(std::is_pod<idraw>::value == true, "Must be a POD.");
+	static_assert(std::is_pod<draw_indexed>::value == true, "Must be a POD.");
 }
 
 // NOTE: P is top left point.
-void PushTextSprite(std::vector<vert_P1UV1C1> *Vertices, font *Font, vec3 P, vec4 Color, char const * Format, ...);
+void PushTextSprite(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const * Format, ...);
 
 #endif

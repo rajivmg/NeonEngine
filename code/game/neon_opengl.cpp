@@ -21,7 +21,7 @@ void ogl::InitState()
 	RenderState.IndexBufferCurrent = 0;
 	RenderState.ShaderProgramCurrent = 0;
 
-	RenderState.OrthoProjection = Orthographic(0.0f, (r32)Platform.Width, (r32)Platform.Height, 0.0f, -1.0f, -10.0f);
+	RenderState.ProjectionMatrix = Orthographic(0.0f, (r32)Platform.Width, (r32)Platform.Height, 0.0f, -1.0f, -10.0f);
 
 	// Set clear color
 	glClearColor(0.006f, 0.098f, 0.223f, 1.0f);
@@ -37,7 +37,7 @@ void ogl::InitState()
 	glFrontFace(GL_CCW);
 
 	// Enable back-face culling
-	//glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
 	// Enable the alpha blending
@@ -57,6 +57,16 @@ void ogl::InitState()
 void ogl::Clear()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void ogl::SetViewMatrix(mat4 Matrix)
+{
+	RenderState.ViewMatrix = Matrix;
+}
+
+void ogl::SetProjectionMatrix(mat4 Matrix)
+{
+	RenderState.ProjectionMatrix = Matrix;
 }
 
 render_resource ogl::MakeTexture(texture *Texture)
@@ -97,6 +107,11 @@ render_resource ogl::MakeTexture(texture *Texture)
 	return RenderResource;
 }
 
+void ogl::DeleteTexture(render_resource Texture)
+{
+	glDeleteTextures(1, &RenderState.Texture[Texture.ResourceHandle]);
+}
+
 render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 {
 	render_resource RenderResource;
@@ -119,6 +134,8 @@ render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 
 void ogl::VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, void const *Data)
 {
+	assert(VertexBuffer.Type == render_resource::VERTEX_BUFFER);
+
 	GLuint *Buffer = &RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Buffer;
 
 	glBindBuffer(GL_ARRAY_BUFFER, *Buffer);
@@ -128,6 +145,8 @@ void ogl::VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, v
 
 void ogl::DeleteVertexBuffer(render_resource VertexBuffer)
 {
+	assert(VertexBuffer.Type == render_resource::VERTEX_BUFFER);
+
 	glDeleteBuffers(1, &RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Buffer);
 	RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Capacity = 0;
 	RenderState.VertexBuffer[VertexBuffer.ResourceHandle].IsDynamic = false;
@@ -154,6 +173,8 @@ render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
 
 void ogl::IndexBufferData(render_resource IndexBuffer, u32 Offset, u32 Size, void const *Data)
 {
+	assert(IndexBuffer.Type == render_resource::INDEX_BUFFER);
+
 	GLuint *Buffer = &RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Buffer;
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *Buffer);
@@ -163,6 +184,8 @@ void ogl::IndexBufferData(render_resource IndexBuffer, u32 Offset, u32 Size, voi
 
 void ogl::DeleteIndexBuffer(render_resource IndexBuffer)
 {
+	assert(IndexBuffer.Type == render_resource::INDEX_BUFFER);
+
 	glDeleteBuffers(1, &RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Buffer);
 	RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Capacity = 0;
 	RenderState.IndexBuffer[IndexBuffer.ResourceHandle].IsDynamic = false;
@@ -236,27 +259,29 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 
 	// Store projection matrix location
 	ShaderProgram->ProjMatrixLoc = glGetUniformLocation(ShaderProgram->Program, "Projection");
+	ShaderProgram->ViewMatrixLoc = glGetUniformLocation(ShaderProgram->Program, "View");
 
 	return RenderResource;
 }
 
 void ogl::DeleteShaderProgram(render_resource ShaderProgram)
 {
+	assert(ShaderProgram.Type == render_resource::SHADER_PROGRAM);
 	glDeleteProgram(RenderState.ShaderProgram[ShaderProgram.ResourceHandle].Program);
 	RenderState.ShaderProgram[ShaderProgram.ResourceHandle].Sampler2DCount = 0;
 }
 
-void ogl::UnindexedDraw(cmd::udraw *Cmd)
+void ogl::Draw(cmd::draw *Cmd)
 {
 	glUseProgram(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].Program);
 
 	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertexBuffer[Cmd->VertexBuffer.ResourceHandle].Buffer);
 
-	if(Cmd->VertexFormat == vert_format::P1UV1C1)
+	if(Cmd->VertexFormat == vert_format::P1C1UV1)
 	{
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, Position));
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, UV));
-		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, Color));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1C1UV1), (void *)OFFSET_OF(vert_P1C1UV1, Position));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vert_P1C1UV1), (void *)OFFSET_OF(vert_P1C1UV1, UV));
+		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vert_P1C1UV1), (void *)OFFSET_OF(vert_P1C1UV1, Color));
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
@@ -271,7 +296,8 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 			}
 		}
 
-		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
+		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.ProjectionMatrix.Elements);
+		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ViewMatrixLoc, 1, GL_FALSE, RenderState.ViewMatrix.Elements);
 
 		glDrawArrays(GL_TRIANGLES, Cmd->StartVertex, Cmd->VertexCount);
 
@@ -281,18 +307,18 @@ void ogl::UnindexedDraw(cmd::udraw *Cmd)
 	}
 }
 
-void ogl::IndexedDraw(cmd::idraw *Cmd)
+void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
 {
 	glUseProgram(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].Program);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RenderState.IndexBuffer[Cmd->IndexBuffer.ResourceHandle].Buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertexBuffer[Cmd->VertexBuffer.ResourceHandle].Buffer);
 
-	if(Cmd->VertexFormat == vert_format::P1UV1C1)
+	if(Cmd->VertexFormat == vert_format::P1C1UV1)
 	{
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, Position));
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, UV));
-		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vert_P1UV1C1), (void *)OFFSET_OF(vert_P1UV1C1, Color));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1C1UV1), (void *)OFFSET_OF(vert_P1C1UV1, Position));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vert_P1C1UV1), (void *)OFFSET_OF(vert_P1C1UV1, UV));
+		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vert_P1C1UV1), (void *)OFFSET_OF(vert_P1C1UV1, Color));
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
@@ -307,7 +333,8 @@ void ogl::IndexedDraw(cmd::idraw *Cmd)
 			}
 		}
 
-		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.OrthoProjection.Elements);
+		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.ProjectionMatrix.Elements);
+		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ViewMatrixLoc, 1, GL_FALSE, RenderState.ViewMatrix.Elements);
 
 		glDrawElements(GL_TRIANGLES, Cmd->IndexCount, GL_UNSIGNED_SHORT, 0);
 

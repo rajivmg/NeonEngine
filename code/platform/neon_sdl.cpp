@@ -309,24 +309,28 @@ static void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller
 			{
 				switch(Event->key.keysym.sym)
 				{
+					case SDLK_w:
 					case SDLK_UP:
 					{
 						Controller->Up.EndedDown = Event->key.state == SDL_PRESSED ? true : false;
 						++(Controller->Up.HalfTransitionCount);
 					} break;
 
+					case SDLK_s:
 					case SDLK_DOWN:
 					{
 						Controller->Down.EndedDown = Event->key.state == SDL_PRESSED ? true : false;
 						++(Controller->Down.HalfTransitionCount);
 					} break;
 
+					case SDLK_a:
 					case SDLK_LEFT:
 					{
 						Controller->Left.EndedDown = Event->key.state == SDL_PRESSED ? true : false;
 						++(Controller->Left.HalfTransitionCount);
 					} break;
 
+					case SDLK_d:
 					case SDLK_RIGHT:
 					{
 						Controller->Right.EndedDown = Event->key.state == SDL_PRESSED ? true : false;

@@ -11,8 +11,8 @@ struct render_resource;
 
 namespace cmd
 {
-	struct udraw;
-	struct idraw;
+	struct draw;
+	struct draw_indexed;
 }
 
 enum class texture_type;
@@ -32,6 +32,7 @@ struct shader_program
 	s32		Sampler2DCount;
 	GLint	Sampler2DLoc[10];
 	GLint	ProjMatrixLoc;
+	GLint	ViewMatrixLoc;
 };
 
 struct render_state
@@ -45,14 +46,18 @@ struct render_state
 	shader_program	ShaderProgram[1024];
 	s32				ShaderProgramCurrent;
 
-	mat4			OrthoProjection;
+	mat4			ViewMatrix;
+	mat4			ProjectionMatrix;
 };
 
 namespace ogl
 {
 	void			InitState();
 	void			Clear();
+	void			SetViewMatrix(mat4 Matrix);
+	void			SetProjectionMatrix(mat4 Matrix);
 	render_resource MakeTexture(texture *Texture);
+	void			DeleteTexture(render_resource Texture);
 	render_resource	MakeVertexBuffer(u32 Size, bool Dynamic = true);
 	void			VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, void const *Data);
 	void			DeleteVertexBuffer(render_resource VertexBuffer);
@@ -61,8 +66,8 @@ namespace ogl
 	void			DeleteIndexBuffer(render_resource IndexBuffer);
 	render_resource MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc);
 	void			DeleteShaderProgram(render_resource ShaderProgram);
-	void			UnindexedDraw(cmd::udraw *Cmd);
-	void			IndexedDraw(cmd::idraw *Cmd);
+	void			Draw(cmd::draw *Cmd);
+	void			DrawIndexed(cmd::draw_indexed *Cmd);
 }
 
 #endif

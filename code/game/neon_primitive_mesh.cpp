@@ -1,7 +1,7 @@
 #include "neon_primitive_mesh.h"
 #include "neon_renderer.h"
 
-void PushSprite(std::vector<vert_P1UV1C1> *Vertices, vec3 P, vec2 Size, vec4 Color, vec4 UV)
+void PushSprite(std::vector<vert_P1C1UV1> *Vertices, vec3 P, vec2 Size, vec4 Color, vec4 UV)
 {
 	/*
 	D--------C
@@ -38,7 +38,7 @@ void PushSprite(std::vector<vert_P1UV1C1> *Vertices, vec3 P, vec2 Size, vec4 Col
 
 	Vertices->reserve(Vertices->size() + 6);
 
-	vert_P1UV1C1 Vertex;
+	vert_P1C1UV1 Vertex;
 
 	// D
 	Vertex.Position = vec3(P.x, P.y + Size.y, P.z);
@@ -76,3 +76,8 @@ void PushSprite(std::vector<vert_P1UV1C1> *Vertices, vec3 P, vec2 Size, vec4 Col
 	Vertex.Color = Color;
 	Vertices->push_back(Vertex);
 }
+
+//void PushSprite(std::vector<vert_P1C1UV1> *Vertices, vec3 P, r32 Height, vec4 Color, vec4 UV)
+//{
+//
+//}

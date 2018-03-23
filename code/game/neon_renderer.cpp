@@ -4,8 +4,8 @@
 #include "neon_opengl.h"
 #include "neon_primitive_mesh.h"
 
-const dispatch_fn cmd::udraw::DISPATCH_FUNCTION = &rndr::UnindexedDraw;
-const dispatch_fn cmd::idraw::DISPATCH_FUNCTION = &rndr::IndexedDraw;
+const dispatch_fn cmd::draw::DISPATCH_FUNCTION = &rndr::Draw;
+const dispatch_fn cmd::draw_indexed::DISPATCH_FUNCTION = &rndr::DrawIndexed;
 
 //-----------------------------------------------------------------------------
 // Renderer Wrapper
@@ -25,9 +25,24 @@ void rndr::Clear()
 	ogl::Clear();
 }
 
+void rndr::SetViewMatrix(mat4 Matrix)
+{
+	ogl::SetViewMatrix(Matrix);
+}
+
+void rndr::SetProjectionMatrix(mat4 Matrix)
+{
+	ogl::SetProjectionMatrix(Matrix);
+}
+
 render_resource rndr::MakeTexture(texture * Texture)
 {
 	return ogl::MakeTexture(Texture);
+}
+
+void rndr::DeleteTexture(render_resource Texture)
+{
+	ogl::DeleteTexture(Texture);
 }
 
 render_resource rndr::MakeVertexBuffer(u32 Size, bool Dynamic)
@@ -70,20 +85,16 @@ void rndr::DeleteShaderProgram(render_resource ShaderProgram)
 	ogl::DeleteShaderProgram(ShaderProgram);
 }
 
-void rndr::UnindexedDraw(void const *Data)
+void rndr::Draw(void const *Data)
 {
-	cmd::udraw *Cmd = (cmd::udraw *)Data;
-	ogl::UnindexedDraw(Cmd);
-	//Platform->Log(INFO, "TexID = %d\n", Cmd->TexID);
-
+	cmd::draw *Cmd = (cmd::draw *)Data;
+	ogl::Draw(Cmd);
 }
 
-void rndr::IndexedDraw(void const *Data)
+void rndr::DrawIndexed(void const *Data)
 {
-	cmd::idraw *Cmd = (cmd::idraw *)Data;
-	ogl::IndexedDraw(Cmd);
-	//Platform->Log(INFO, "TexID = %d\n", Cmd->TexID);
-
+	cmd::draw_indexed *Cmd = (cmd::draw_indexed *)Data;
+	ogl::DrawIndexed(Cmd);
 }
 
 //-----------------------------------------------------------------------------
@@ -136,6 +147,8 @@ void render_cmd_list::Sort()
 
 void render_cmd_list::Submit()
 {
+	rndr::SetViewMatrix(ViewMatrix);
+	rndr::SetProjectionMatrix(ProjectionMatrix);
 	for(u32 I = 0; I < Current; ++I)
 	{
 		cmd_packet *Packet = Packets[I];
@@ -161,7 +174,7 @@ void render_cmd_list::Flush()
 	BaseOffset = 0;
 }
 
-void PushTextSprite(std::vector<vert_P1UV1C1> *Vertices, font *Font, vec3 P, vec4 Color, char const * Format, ...)
+void PushTextSprite(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const *Format, ...)
 {
 	char Text[8192];
 

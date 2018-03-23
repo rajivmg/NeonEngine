@@ -5,8 +5,8 @@
 
 #include <vector>
 
-struct vert_P1UV1C1;
+struct vert_P1C1UV1;
 
-void PushSprite(std::vector<vert_P1UV1C1> *Vertices, vec3 P, vec2 Size, vec4 Color, vec4 UV);
+void PushSprite(std::vector<vert_P1C1UV1> *Vertices, vec3 P, vec2 Size, vec4 Color, vec4 UV);
 
 #endif

@@ -127,8 +127,7 @@ void texture::FreeRenderResource()
 {
 	if(RenderResourceCreated)
 	{
-		// TODO: Free texture render resource from GPU
-		// rndr::FreeTexture()
+		rndr::DeleteTexture(RenderResource);
 		RenderResourceCreated = false;
 	}
 }

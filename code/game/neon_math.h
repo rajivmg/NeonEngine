@@ -229,6 +229,21 @@ FORCE_INLINE mat4 Mat4Identity()
 	return A;
 }
 
+FORCE_INLINE mat4 Transpose(mat4 const &A)
+{
+	mat4 Result;
+
+	for(int I = 0; I <= 3; ++I)
+	{
+		for(int J = 0; J <= 3; ++J)
+		{
+			Result.Elements[4 * I + J] = A.Elements[I + J * 4];
+		}
+	}
+
+	return Result;
+}
+
 FORCE_INLINE mat4 Translate(r32 _x, r32 _y, r32 _z)
 {
 	mat4 A = Mat4Identity();
@@ -244,6 +259,51 @@ FORCE_INLINE mat4 Scale(r32 _x, r32 _y, r32 _z)
 	A.m00 = _x;
 	A.m11 = _y;
 	A.m22 = _z;
+	return A;
+}
+
+FORCE_INLINE mat4 XRotation(r32 Angle)
+{
+	r32 C = cosf(Angle);
+	r32 S = sinf(Angle);
+
+	mat4 A;
+	
+	A.m11 = C;
+	A.m12 = -S;
+	A.m21 = S;
+	A.m22 = C;
+
+	return A;
+}
+
+FORCE_INLINE mat4 YRotation(r32 Angle)
+{
+	r32 C = cosf(Angle);
+	r32 S = sinf(Angle);
+
+	mat4 A = Mat4Identity();
+
+	A.m00 = C;
+	A.m02 = S;
+	A.m20 = -S;
+	A.m22 = C;
+
+	return A;
+}
+
+FORCE_INLINE mat4 ZRotation(r32 Angle)
+{
+	r32 C = cosf(Angle);
+	r32 S = sinf(Angle);
+
+	mat4 A = Mat4Identity();
+
+	A.m00 = C;
+	A.m01 = -S;
+	A.m10 = S;
+	A.m11 = C;
+
 	return A;
 }
 
@@ -304,6 +364,15 @@ FORCE_INLINE mat4 LookAt(vec3 Eye, vec3 Direction, vec3 Up)
 	TX = -Left.x*Eye.x 		- 	Left.y*Eye.y 	- 		Left.z*Eye.z;
 	TY = -Up.x*Eye.x 		-	Up.y*Eye.y 		- 		Up.z*Eye.z;
 	TZ = -Forward.x*Eye.x 	- 	Forward.y*Eye.y -	 	Forward.z*Eye.z;
+
+	r32 TXa, TYa, TZa;
+	TXa = Dot(Left, -Eye);
+	TYa = Dot(Up, -Eye);
+	TZa = Dot(Forward, -Eye);
+
+	assert(TX == TXa);
+	assert(TY == TYa);
+	assert(TZ == TZa);
 
 	Matrix.m00 = Left.x;  	 Matrix.m01 = Left.y;  	 Matrix.m02 = Left.z;  	 Matrix.m03 = TX;
 	Matrix.m10 = Up.x;  	 Matrix.m11 = Up.y;  	 Matrix.m12 = Up.z;  	 Matrix.m13 = TY;
