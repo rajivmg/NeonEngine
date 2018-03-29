@@ -18,11 +18,30 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	//-----------------------------------------------------------------------------
 	// Game Update
 	//-----------------------------------------------------------------------------
-	if(!Input->Mouse.Left.EndedDown && Input->Mouse.Left.HalfTransitionCount == 1)
+	static r32 MapDx = 0.0f, MapDy = 0.0f;
+
+	if(Input->Mouse.Left.EndedDown && Input->Mouse.Left.HalfTransitionCount == 1)
 	{
-		 //Platform->Log(INFO, "'Left' Mouse button pressed.");
+		 Platform.Log("'Left' Mouse button pressed.");
 	}
 
+	game_controller_input *Controller = &Input->Controllers[0];
+	if(Controller->Left.EndedDown && Controller->Left.HalfTransitionCount == 1)
+	{
+		--MapDx;
+	}
+	if(Controller->Right.EndedDown && Controller->Right.HalfTransitionCount == 1)
+	{
+		++MapDx;
+	}
+	if(Controller->Up.EndedDown && Controller->Up.HalfTransitionCount == 1)
+	{
+		++MapDy;
+	}
+	if(Controller->Down.EndedDown && Controller->Down.HalfTransitionCount == 1)
+	{
+		--MapDy;
+	}
 	//-----------------------------------------------------------------------------
 	// Game Render
 	//-----------------------------------------------------------------------------
@@ -30,15 +49,28 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	local_persist render_cmd_list *CmdList = new render_cmd_list(MEGABYTE(1));
 	local_persist render_cmd_list *SpriteCmdList = new render_cmd_list(MEGABYTE(1));
-	local_persist texture *DummyMapTexture = new texture;
+	local_persist render_cmd_list *HUDCmdList = new render_cmd_list(MEGABYTE(1));
+
 	local_persist render_resource SpriteVertexBuffer;
 	local_persist render_resource SpriteShader;
+	
 	local_persist font *DebugFont = new font;
 
+	local_persist texture *DefaultTileTexture = new texture;
 	local_persist texture *WhiteTexture = new texture;
+
 	local_persist render_resource SuzanneVertexBuffer;
 	local_persist render_resource SuzanneIndexBuffer;
 	local_persist render_resource SuzanneShader;
+
+	r32 MetersToPixels = Platform.Width / 20.0f;
+	r32 PixelsToMeters = 1.0f / MetersToPixels;
+
+	if(Input->Mouse.Left.EndedDown)
+	{
+		MapDx -= Input->Mouse.xrel * PixelsToMeters;
+		MapDy -= Input->Mouse.yrel * PixelsToMeters;
+	}
 
 	local_persist bool OnceUponAGame = false;
 	if(!OnceUponAGame)
@@ -48,12 +80,15 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		WhiteTexture->LoadFile("white_texture.tga", texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, false);
 		WhiteTexture->CreateRenderResource();
 
-		SpriteCmdList->ViewMatrix = LookAt(vec3(0, 0, 0), vec3i(0, 0, -1), vec3i(0, 1, 0));//Mat4Identity();
-		SpriteCmdList->ProjectionMatrix = Screenspace(Platform.Width, Platform.Height);
+		SpriteCmdList->ViewMatrix = LookAt(vec3(MapDx, 0, 0), vec3(MapDx, 0, -1), vec3i(0, 1, 0));
+		SpriteCmdList->ProjectionMatrix = Orthographic(0, 20.0f, PixelsToMeters * Platform.Height, 0, -1, 1);
 
-		DummyMapTexture->LoadFile("map.tga", texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, true);
-		DummyMapTexture->CreateRenderResource();
-		DummyMapTexture->FreeContentMemory();
+		HUDCmdList->ViewMatrix = LookAt(vec3(0, 0, 0), vec3i(0, 0, -1), vec3i(0, 1, 0));
+		HUDCmdList->ProjectionMatrix = Screenspace(Platform.Width, Platform.Height);
+
+		DefaultTileTexture->LoadFile("default_tile.tga", texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
+		DefaultTileTexture->CreateRenderResource();
+		DefaultTileTexture->FreeContentMemory();
 
 		SpriteShader = rndr::MakeShaderProgram("shaders/basic_vs.glsl", "shaders/basic_ps.glsl");
 
@@ -75,20 +110,19 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		int BreakPoint = 0000;
 	}
-
-	//r32 MetersToPixel = Platform.Width / 20.0f;
-	//r32 PixelsToMeter = 1.0f / MetersToPixel;
-
+	SpriteCmdList->ViewMatrix = LookAt(vec3(MapDx, MapDy, 0), vec3(MapDx, MapDy, -1), vec3i(0, 1, 0));
 	std::vector<vert_P1C1UV1> SpriteVertices;
-	PushSprite(&SpriteVertices, vec3i(0, 0, -1), vec2i(1280, 720), vec4i(1, 1, 1, 1), vec4i(0, 0, 1, 1));
+	for(int I = 0; I < PixelsToMeters * Platform.Height; ++I)
+	{
+		for(int J = 0; J < 20; ++J)
+		{
+			PushSprite(&SpriteVertices, vec3i(J, I, -1), vec2i(1, 1), vec4i(1, 1, 1, 1), vec4i(0, 0, 1, 1));
+		}
+	}
 	u32 DummyMapVertSize = (u32)SpriteVertices.size();
 	u32 DebugTextStartVert = (u32)SpriteVertices.size();
 	PushTextSprite(&SpriteVertices, DebugFont, vec3i(0, 720, 1), vec4i(1, 1, 0, 1), "%0.2f ms/frame", 1000.0f * Input->FrameTime);
-	//PushTextSprite(&SpriteVertices, DebugFont, vec3i(0, 16, 1), vec4i(1, 1, 1, 1), "%s @ %s", __DATE__,  __TIME__);
-	if(Input->Up.EndedDown)
-	{
-		PushTextSprite(&SpriteVertices, DebugFont, vec3i(150, 720, 1), vec4i(1, 1, 1, 1), "Input UP ended down, half transition count %d", Input->Up.HalfTransitionCount);
-	}
+	PushTextSprite(&SpriteVertices, DebugFont, vec3i(150, 720, 1), vec4i(1, 1, 1, 1), "Mouse xrel: %d, yrel: %d", Input->Mouse.xrel, Input->Mouse.yrel);
 	u32 DebugTextVertCount = (u32)SpriteVertices.size() - DummyMapVertSize;
 
 	rndr::VertexBufferData(SpriteVertexBuffer, 0, (u32)SpriteVertices.size() * sizeof(vert_P1C1UV1), &SpriteVertices.front());
@@ -98,10 +132,10 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	DummyMapCmd->VertexFormat = vert_format::P1C1UV1;
 	DummyMapCmd->StartVertex = 0;
 	DummyMapCmd->VertexCount = DummyMapVertSize;
-	DummyMapCmd->Textures[0] = DummyMapTexture->RenderResource;
+	DummyMapCmd->Textures[0] = DefaultTileTexture->RenderResource;
 	DummyMapCmd->ShaderProgram = SpriteShader;
 
-	cmd::draw *DebugTextCmd = SpriteCmdList->AddCommand<cmd::draw>(2, 0);
+	cmd::draw *DebugTextCmd = HUDCmdList->AddCommand<cmd::draw>(2, 0);
 	DebugTextCmd->VertexBuffer = SpriteVertexBuffer;
 	DebugTextCmd->VertexFormat = vert_format::P1C1UV1;
 	DebugTextCmd->StartVertex = DebugTextStartVert;
@@ -112,6 +146,10 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	SpriteCmdList->Sort();
 	SpriteCmdList->Submit();
 	SpriteCmdList->Flush();
+
+	HUDCmdList->Sort();
+	HUDCmdList->Submit();
+	HUDCmdList->Flush();
 
 	cmd::draw_indexed *SuzanneDraw = CmdList->AddCommand<cmd::draw_indexed>(1, 0);
 	SuzanneDraw->VertexBuffer = SuzanneVertexBuffer;

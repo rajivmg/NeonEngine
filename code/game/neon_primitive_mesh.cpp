@@ -21,22 +21,23 @@ void PushSprite(std::vector<vert_P1C1UV1> *Vertices, vec3 P, vec2 Size, vec4 Col
 	B.X   = Origin.X + Size.x
 	B.Y   = Origin.Y
 	B.Z   = 0
-	B.U   = UVCoords.z 
-	B.V   = UVCoords.y 
+	B.U   = UVCoords.z
+	B.V   = UVCoords.y
 
 	C.X   = Origin.X + Size.x
 	C.Y   = Origin.Y + Size.y
 	C.Z   = 0
 	C.UV  = UVCoords.zW
 
-	D.X   = Origin.X 
+	D.X   = Origin.X
 	D.Y   = Origin.Y + Size.y
 	D.Z   = 0
 	D.U   = UVCoords.x
 	D.V   = UVCoords.w
-	*/ 
-
-	Vertices->reserve(Vertices->size() + 6);
+	*/
+	
+	// NOTE: Enabling this in debug build increase the frametime 5 times
+	//Vertices->reserve(Vertices->size() + 6);
 
 	vert_P1C1UV1 Vertex;
 
@@ -76,8 +77,3 @@ void PushSprite(std::vector<vert_P1C1UV1> *Vertices, vec3 P, vec2 Size, vec4 Col
 	Vertex.Color = Color;
 	Vertices->push_back(Vertex);
 }
-
-//void PushSprite(std::vector<vert_P1C1UV1> *Vertices, vec3 P, r32 Height, vec4 Color, vec4 UV)
-//{
-//
-//}

@@ -56,6 +56,8 @@ struct game_mouse_state
 {
 	s32 x;
 	s32 y;
+	s32 xrel;
+	s32 yrel;
 
 	union
 	{
@@ -71,8 +73,6 @@ struct game_mouse_state
 
 struct game_controller_input
 {
-	r32 FrameTime;
-	game_mouse_state Mouse;
 	union
 	{
 		game_button_state Buttons[4];
@@ -84,6 +84,13 @@ struct game_controller_input
 			game_button_state Right;
 		};
 	};
+};
+
+struct game_input
+{
+	r32 FrameTime;
+	game_mouse_state Mouse;
+	game_controller_input Controllers[1];
 };
 
 struct file_content
@@ -126,7 +133,7 @@ extern platform_t Platform;
 #define GAME_SETUP(Name) void (Name)(platform_t _Platform, ImGuiContext *_ImGuiCtx)
 typedef GAME_SETUP(game_setup);
 
-#define GAME_UPDATE_AND_RENDER(Name) void (Name)(game_controller_input *Input)
+#define GAME_UPDATE_AND_RENDER(Name) void (Name)(game_input *Input)
 typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
 
 #define IMGUI_RENDER_DRAW_LISTS(Name) void (Name)(ImDrawData* draw_data)

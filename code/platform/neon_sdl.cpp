@@ -298,8 +298,19 @@ static void LoadGameCode(game_code *GameCode)
 	GameCode->ImGui_InvalidateDeviceObjects = (imgui_invalidate_device_objects *)LoadFuncFromDLL(GameCode->Handle, "ImGui_InvalidateDeviceObjects");
 }
 
-static void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller)
+static void SDLProcessButtonState(game_button_state *NewState, bool IsDown)
 {
+	if(NewState->EndedDown != IsDown)
+	{
+		NewState->EndedDown = IsDown;
+		++NewState->HalfTransitionCount;
+	}
+}
+
+static void SDLProcessEvents(SDL_Event *Event, game_input *Input)
+{
+	game_controller_input *Controller = &Input->Controllers[0];
+
 	switch(Event->type)
 	{
 		case SDL_KEYDOWN:
@@ -307,34 +318,31 @@ static void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller
 		{
 			if(!Event->key.repeat)
 			{
+				bool IsDown = (Event->key.state == SDL_PRESSED);
 				switch(Event->key.keysym.sym)
 				{
 					case SDLK_w:
 					case SDLK_UP:
 					{
-						Controller->Up.EndedDown = Event->key.state == SDL_PRESSED ? true : false;
-						++(Controller->Up.HalfTransitionCount);
+						SDLProcessButtonState(&Controller->Up, IsDown);
 					} break;
 
 					case SDLK_s:
 					case SDLK_DOWN:
 					{
-						Controller->Down.EndedDown = Event->key.state == SDL_PRESSED ? true : false;
-						++(Controller->Down.HalfTransitionCount);
+						SDLProcessButtonState(&Controller->Down, IsDown);
 					} break;
 
 					case SDLK_a:
 					case SDLK_LEFT:
 					{
-						Controller->Left.EndedDown = Event->key.state == SDL_PRESSED ? true : false;
-						++(Controller->Left.HalfTransitionCount);
+						SDLProcessButtonState(&Controller->Left, IsDown);
 					} break;
 
 					case SDLK_d:
 					case SDLK_RIGHT:
 					{
-						Controller->Right.EndedDown = Event->key.state == SDL_PRESSED ? true : false;
-						++(Controller->Right.HalfTransitionCount);
+						SDLProcessButtonState(&Controller->Right, IsDown);
 					} break;
 
 					case SDLK_ESCAPE:
@@ -349,31 +357,31 @@ static void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller
 
 		case SDL_MOUSEMOTION:
 		{
-			Controller->Mouse.x = Event->motion.x;
-			Controller->Mouse.y = Platform.Height - 1 - Event->motion.y;
+			Input->Mouse.x = Event->motion.x;
+			Input->Mouse.y = Platform.Height - 1 - Event->motion.y;
+			Input->Mouse.xrel = Event->motion.xrel;
+			Input->Mouse.yrel = -Event->motion.yrel;
 		} break;
 
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP:
 		{
+			bool IsDown = (Event->button.state == SDL_PRESSED);
 			switch(Event->button.button)
 			{
 				case SDL_BUTTON_LEFT:
 				{
-					Controller->Mouse.Left.EndedDown = (Event->button.state == SDL_PRESSED) ? true : false;
-					++(Controller->Mouse.Left.HalfTransitionCount);
+					SDLProcessButtonState(&Input->Mouse.Left, IsDown);
 				} break;
 
 				case SDL_BUTTON_MIDDLE:
 				{
-					Controller->Mouse.Middle.EndedDown = (Event->button.state == SDL_PRESSED) ? true : false;
-					++(Controller->Mouse.Middle.HalfTransitionCount);
+					SDLProcessButtonState(&Input->Mouse.Middle, IsDown);
 				} break;
 
 				case SDL_BUTTON_RIGHT:
 				{
-					Controller->Mouse.Right.EndedDown = (Event->button.state == SDL_PRESSED) ? true : false;
-					++(Controller->Mouse.Right.HalfTransitionCount);
+					SDLProcessButtonState(&Input->Mouse.Right, IsDown);
 				} break;
 			}
 		} break;
@@ -396,7 +404,6 @@ static void SDLProcessEvents(SDL_Event *Event, game_controller_input *Controller
 
 int main(int argc, char **argv)
 {
-	//Platform = (platform_t *)malloc(sizeof(platform_t));
 	Platform.Log = &Log;
 	Platform.LogError = &LogError;
 	Platform.Width = 1280;
@@ -440,7 +447,7 @@ int main(int argc, char **argv)
 
 			if(GLContext)
 			{
-				SDL_GL_SetSwapInterval(1);
+				//SDL_GL_SetSwapInterval(1);
 
 				LoadGameCode(&GameCode);
 				GameCode.GameSetup(Platform, ImGui::GetCurrentContext());
@@ -458,25 +465,41 @@ int main(int argc, char **argv)
 
 				PrevCounter = SDL_GetPerformanceCounter();
 
-				game_controller_input OldInput = {};
-				game_controller_input NewInput = {};
+				game_input Input[2] = {};
+				game_input *OldInput = &Input[0];
+				game_input *NewInput = &Input[1];
 
 				while(!ShouldQuit)
 				{
-					NewInput = {};
+					*NewInput = {};
 
-					for(int ButtonIndex = 0; ButtonIndex < ARRAY_COUNT(NewInput.Buttons); ++ButtonIndex)
+					// Copy old keyboard input state
+					game_controller_input *OldKeyboardController = &OldInput->Controllers[0];
+					game_controller_input *NewKeyboardController = &NewInput->Controllers[0];
+					for(int ButtonIndex = 0;
+						ButtonIndex < ARRAY_COUNT(NewKeyboardController->Buttons);
+						++ButtonIndex)
 					{
-						NewInput.Buttons[ButtonIndex].EndedDown = OldInput.Buttons[ButtonIndex].EndedDown;
+						NewKeyboardController->Buttons[ButtonIndex].EndedDown =
+							OldKeyboardController->Buttons[ButtonIndex].EndedDown;
 					}
 
-					NewInput.Mouse.x = OldInput.Mouse.x;
-					NewInput.Mouse.y = OldInput.Mouse.y;
-
-					for(int ButtonIndex = 0; ButtonIndex < ARRAY_COUNT(NewInput.Mouse.Buttons); ++ButtonIndex)
+					// Copy old mouse input state
+					NewInput->Mouse.x = OldInput->Mouse.x;
+					NewInput->Mouse.y = OldInput->Mouse.y;
+					for(int ButtonIndex = 0;
+						ButtonIndex < ARRAY_COUNT(NewInput->Mouse.Buttons);
+						++ButtonIndex)
 					{
-						NewInput.Mouse.Buttons[ButtonIndex].EndedDown = OldInput.Mouse.Buttons[ButtonIndex].EndedDown;
+						NewInput->Mouse.Buttons[ButtonIndex].EndedDown =
+							OldInput->Mouse.Buttons[ButtonIndex].EndedDown;
 					}
+
+					/*for(int ControllerIndex = 0; ControllerIndex < ARRAY_COUNT(NewInput->Controllers);
+					++ControllerIndex)
+					{
+
+					}*/
 
 					while(SDL_PollEvent(&Event))
 					{
@@ -487,19 +510,19 @@ int main(int argc, char **argv)
 						else
 						{
 							ImGui_ProcessEvent(&Event); // Imgui process events
-							SDLProcessEvents(&Event, &NewInput);
+							SDLProcessEvents(&Event, NewInput);
 						}
 					}
 
 					// All ImGui rendering after this line
 					ImGui_NewFrame(Window);
 
-					ImGui::ShowTestWindow();
+					//ImGui::ShowTestWindow();
 
-					NewInput.FrameTime = FrameTime;
+					NewInput->FrameTime = FrameTime;
 
 					// Simulate and render the game
-					GameCode.GameUpdateAndRender(&NewInput);
+					GameCode.GameUpdateAndRender(NewInput);
 					
 					// Render ImGui
 					ImGui::Render();
@@ -507,7 +530,7 @@ int main(int argc, char **argv)
 					// Swap backbuffer
 					SDL_GL_SwapWindow(Window);
 
-					OldInput = NewInput;
+					*OldInput = *NewInput;
 
 					CurrentCounter = SDL_GetPerformanceCounter();
 					FrameTime = (r32)((CurrentCounter - PrevCounter)) / CounterFrequency;
