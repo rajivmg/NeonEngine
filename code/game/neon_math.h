@@ -361,18 +361,9 @@ FORCE_INLINE mat4 LookAt(vec3 Eye, vec3 Direction, vec3 Up)
 	Up = Cross(Forward, Left);
 
 	r32 TX, TY, TZ;
-	TX = -Left.x*Eye.x 		- 	Left.y*Eye.y 	- 		Left.z*Eye.z;
-	TY = -Up.x*Eye.x 		-	Up.y*Eye.y 		- 		Up.z*Eye.z;
-	TZ = -Forward.x*Eye.x 	- 	Forward.y*Eye.y -	 	Forward.z*Eye.z;
-
-	r32 TXa, TYa, TZa;
-	TXa = Dot(Left, -Eye);
-	TYa = Dot(Up, -Eye);
-	TZa = Dot(Forward, -Eye);
-
-	assert(TX == TXa);
-	assert(TY == TYa);
-	assert(TZ == TZa);
+	TX = Dot(Left, -Eye);
+	TY = Dot(Up, -Eye);
+	TZ = Dot(Forward, -Eye);
 
 	Matrix.m00 = Left.x;  	 Matrix.m01 = Left.y;  	 Matrix.m02 = Left.z;  	 Matrix.m03 = TX;
 	Matrix.m10 = Up.x;  	 Matrix.m11 = Up.y;  	 Matrix.m12 = Up.z;  	 Matrix.m13 = TY;
