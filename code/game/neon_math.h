@@ -122,9 +122,34 @@ struct vec4
 	{
 		struct
 		{
-			r32 x, y, z, w;
+			union
+			{
+				vec3 xyz;
+				struct
+				{
+					r32 x, y, z;
+				};
+			};
+			r32 w;
 		};
-
+		struct
+		{
+			vec2 xy;
+			r32 _Ignored0;
+			r32 _Ignored1;
+		};
+		struct
+		{
+			r32 _Ignored2;
+			vec2 yz;
+			r32 _Ignored3;
+		};
+		struct
+		{
+			r32 _Ignored4;
+			r32 _Ignored5;
+			vec2 zw;
+		};
 		r32 Elements[4];
 	};
 
@@ -219,6 +244,16 @@ FORCE_INLINE mat4& operator*=(mat4 &A, mat4 const &B)
 	A = A * B; return A;
 }
 
+FORCE_INLINE vec4 operator*(mat4 const &A, vec4 const &B)
+{
+	return vec4(
+		A.m00 * B.x + A.m01 * B.y + A.m02 * B.z + A.m03 * B.w,
+		A.m10 * B.x + A.m11 * B.y + A.m12 * B.z + A.m13 * B.w,
+		A.m20 * B.x + A.m21 * B.y + A.m22 * B.z + A.m23 * B.w,
+		A.m30 * B.x + A.m31 * B.y + A.m32 * B.z + A.m33 * B.w
+	);
+}
+
 FORCE_INLINE mat4 Mat4Identity()
 {
 	mat4 A;
@@ -259,6 +294,23 @@ FORCE_INLINE mat4 Scale(r32 _x, r32 _y, r32 _z)
 	A.m00 = _x;
 	A.m11 = _y;
 	A.m22 = _z;
+	return A;
+}
+
+FORCE_INLINE mat4 Rotation(vec3 Axis, r32 Angle)
+{
+	Axis = Normalize(Axis);
+	r32 S = sinf(Angle);
+	r32 C = cosf(Angle);
+	r32 OC = 1 - C;
+
+	mat4 A;
+
+	A.m00 = C+Axis.x*Axis.x*OC;			A.m01 = Axis.x*Axis.y* OC-Axis.z*S; A.m02 = Axis.x*Axis.z*OC+Axis.y*S;	A.m03 = 0.0f;
+	A.m10 = Axis.y*Axis.x*OC+Axis.z*S;	A.m11 = C+Axis.y*Axis.y*OC;			A.m12 = Axis.y*Axis.z*OC-Axis.x*S;	A.m13 = 0.0f;
+	A.m20 = Axis.z*Axis.x*OC-Axis.y*S;	A.m21 = Axis.z*Axis.y*OC+Axis.x*S;	A.m22 = C+Axis.z*Axis.z*OC;			A.m23 = 0.0f;
+	A.m30 = 0.0f;						A.m31 = 0.0f;						A.m32 = 0.0f;						A.m33 = 1.0f;
+
 	return A;
 }
 

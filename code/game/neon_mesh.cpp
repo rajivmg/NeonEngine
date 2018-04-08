@@ -3,10 +3,12 @@
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/version.h>
 #include "neon_renderer.h"
 
 void PushMesh(std::vector<vert_P1C1UV1> *Vertices, std::vector<vert_index> *Indices, char const *File, int MeshIndex)
 {
+	Platform.Log("Assimp Version: %d.%d.%d", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionRevision());
 	const aiScene *Scene = aiImportFile(File, aiProcess_Triangulate);
 
 	if(!Scene)
@@ -17,7 +19,7 @@ void PushMesh(std::vector<vert_P1C1UV1> *Vertices, std::vector<vert_index> *Indi
 
 	// Process
 	aiMesh const *Mesh = Scene->mMeshes[MeshIndex];
-	for(u32 I = 0; I < Mesh->mNumVertices; ++I)
+	for(s64 I = 0; I < Mesh->mNumVertices; ++I)
 	{
 		vert_P1C1UV1 Vertex;
 		Vertex.Position = vec3(Mesh->mVertices[I].x, Mesh->mVertices[I].y, Mesh->mVertices[I].z);
@@ -26,7 +28,7 @@ void PushMesh(std::vector<vert_P1C1UV1> *Vertices, std::vector<vert_index> *Indi
 		Vertices->push_back(Vertex);
 	}
 
-	for(u32 J = 0; J < Mesh->mNumFaces; ++J)
+	for(s64 J = 0; J < Mesh->mNumFaces; ++J)
 	{
 		aiFace *Face = &Mesh->mFaces[J];
 		assert(Face->mNumIndices == 3);

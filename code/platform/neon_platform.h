@@ -40,6 +40,8 @@ typedef double		r64;
 #define SAFE_DELETEA(x) { delete[] (x);	(x) = nullptr; }
 #define INVALID_CODE_PATH assert(!"Invalid code path!")
 #define INVALID_DEFAULT_CASE default: {assert(!"Invalid default case!");} break
+#define MIN(A, B) ((A < B) ? (A) : (B))
+#define MAX(A, B) ((A > B) ? (A) : (B))
 
 static u32 neon__COUNTER__ = 0; 
 #define GEN_ID ++neon__COUNTER__
