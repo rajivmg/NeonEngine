@@ -24,7 +24,7 @@ void PushMesh(std::vector<vert_P1C1UV1> *Vertices, std::vector<vert_index> *Indi
 		vert_P1C1UV1 Vertex;
 		Vertex.Position = vec3(Mesh->mVertices[I].x, Mesh->mVertices[I].y, Mesh->mVertices[I].z);
 		Vertex.UV = Mesh->HasTextureCoords(0) ? vec2(Mesh->mTextureCoords[0][I].x, Mesh->mTextureCoords[0][I].y) : vec2i(0, 0);
-		Vertex.Color = Mesh->HasVertexColors(0) ? vec4(Mesh->mColors[0][I].r, Mesh->mColors[0][I].g, Mesh->mColors[0][I].b, Mesh->mColors[0][I].a) : vec4(0.7f, 0.7f, 0.7f, 1.0f);
+		Vertex.Color = Mesh->HasVertexColors(0) ? vec4(Mesh->mColors[0][I].r, Mesh->mColors[0][I].g, Mesh->mColors[0][I].b, Mesh->mColors[0][I].a) : vec4i(1, 1, 1, 1);// vec4(0.7f, 0.7f, 0.7f, 1.0f);
 		Vertices->push_back(Vertex);
 	}
 

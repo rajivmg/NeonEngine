@@ -37,7 +37,7 @@ void ogl::InitState()
 	glFrontFace(GL_CCW);
 
 	// Enable back-face culling
-	//glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
 	// Enable the alpha blending
@@ -114,6 +114,8 @@ void ogl::DeleteTexture(render_resource Texture)
 
 render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 {
+	assert(Size > 0);
+
 	render_resource RenderResource;
 
 	RenderResource.Type = render_resource::VERTEX_BUFFER;
@@ -135,6 +137,7 @@ render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 void ogl::VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, void const *Data)
 {
 	assert(VertexBuffer.Type == render_resource::VERTEX_BUFFER);
+	assert(Size > 0);
 
 	GLuint *Buffer = &RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Buffer;
 
@@ -154,6 +157,8 @@ void ogl::DeleteVertexBuffer(render_resource VertexBuffer)
 
 render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
 {
+	assert(Size > 0);
+
 	render_resource RenderResource;
 	
 	RenderResource.Type = render_resource::INDEX_BUFFER;
@@ -174,6 +179,7 @@ render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
 void ogl::IndexBufferData(render_resource IndexBuffer, u32 Offset, u32 Size, void const *Data)
 {
 	assert(IndexBuffer.Type == render_resource::INDEX_BUFFER);
+	assert(Size > 0);
 
 	GLuint *Buffer = &RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Buffer;
 

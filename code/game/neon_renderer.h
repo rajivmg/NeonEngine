@@ -118,7 +118,7 @@ struct render_cmd_list
 	u32		BufferSize;		// Size of memory buffer in bytes
 	u32		BaseOffset;		// Number of bytes used in the memory buffer
 	
-	// TODO: Add camera info and render target info
+	// TODO: One shader program per render_cmd_list
 	mat4	ViewMatrix;
 	mat4	ProjectionMatrix;
 

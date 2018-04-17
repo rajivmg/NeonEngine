@@ -12,6 +12,36 @@
 
 #include "../platform/neon_platform.h"
 
+inline
+r32 Clamp(r32 Min, r32 Value, r32 Max)
+{
+	r32 Result = Value;
+	if(Value < Min)
+	{
+		Result = Min;
+	}
+	else if(Value > Max)
+	{
+		Result = Max;
+	}
+	return Result;
+}
+
+inline
+s32 Clamp(s32 Min, s32 Value, s32 Max)
+{
+	s32 Result = Value;
+	if(Value < Min)
+	{
+		Result = Min;
+	}
+	else if(Value > Max)
+	{
+		Result = Max;
+	}
+	return Result;
+}
+
 //-----------------------------------------------------------------------------
 // Vector
 //-----------------------------------------------------------------------------
