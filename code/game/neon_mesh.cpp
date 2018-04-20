@@ -43,7 +43,7 @@ void PushMesh(std::vector<vert_P1C1UV1> *Vertices, std::vector<vert_index> *Indi
 
 void PushMesh(std::vector<vert_P1N1UV1> *Vertices, std::vector<vert_index> *Indices, char const *File, int MeshIndex)
 {
-	aiScene const *Scene = aiImportFile(File, aiProcess_Triangulate);
+	aiScene const *Scene = aiImportFile(File, aiProcess_Triangulate | aiProcess_GenNormals);
 
 	if(!Scene)
 	{

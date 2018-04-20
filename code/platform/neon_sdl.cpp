@@ -517,7 +517,7 @@ int main(int argc, char **argv)
 					// All ImGui rendering after this line
 					ImGui_NewFrame(Window);
 
-					//ImGui::ShowTestWindow();
+					ImGui::ShowTestWindow();
 
 					NewInput->FrameTime = FrameTime;
 

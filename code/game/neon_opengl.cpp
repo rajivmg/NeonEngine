@@ -348,6 +348,34 @@ void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
 		glDisableVertexAttribArray(1);
 		glDisableVertexAttribArray(2);
 	}
+	else if(Cmd->VertexFormat == vert_format::P1N1UV1)
+	{
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1N1UV1), (void *)OFFSET_OF(vert_P1C1UV1, Position));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1N1UV1), (void *)OFFSET_OF(vert_P1N1UV1, Normal));
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vert_P1N1UV1), (void *)OFFSET_OF(vert_P1N1UV1, UV));
+
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
+
+		for(int I = 0; I < RenderState.ShaderProgram->Sampler2DCount; ++I)
+		{
+			if(Cmd->Textures[I].Type != render_resource::NOT_INITIALIZED)
+			{
+				glActiveTexture(GL_TEXTURE0 + I);
+				glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Textures[I].ResourceHandle]);
+			}
+		}
+
+		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.ProjectionMatrix.Elements);
+		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ViewMatrixLoc, 1, GL_FALSE, RenderState.ViewMatrix.Elements);
+
+		glDrawElements(GL_TRIANGLES, Cmd->IndexCount, GL_UNSIGNED_SHORT, 0);
+
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+	}
 }
 
 //-----------------------------------------------------------------------------
