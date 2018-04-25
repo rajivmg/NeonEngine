@@ -85,6 +85,7 @@ namespace rndr
 
 	render_resource MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc);
 	void			DeleteShaderProgram(render_resource ShaderProgram);
+	void			UseShaderProgram(render_resource ShaderProgram);
 
 	void			Draw(void const *Data);
 	void			DrawIndexed(void const *Data);
@@ -102,9 +103,15 @@ struct cmd_packet
 	void			*AuxMemory;
 };
 
-// TODO: We don't need a template here but for now let it be.
-template <typename T>
-inline cmd_packet* GetCmdPacket(T *Cmd)
+// NOTE: As actual cmd is stored right after the end of the struct cmd_packet.
+// We subtract the sizeof(cmd_packet) from the address of the actual cmd to get
+// address of the parent cmd_packet.
+//
+//+----------sizeof(cmd_packet)----------+
+//+------------------------------------------------+
+//|NextCmdPacket|DispatchFn|Cmd|AuxMemory|ActualCmd|
+//+------------------------------------------------+
+inline cmd_packet* GetCmdPacket(void *Cmd)
 {
 	return (cmd_packet *)((u8 *)Cmd - sizeof(cmd_packet));
 }
@@ -118,11 +125,12 @@ struct render_cmd_list
 	u32		BufferSize;		// Size of memory buffer in bytes
 	u32		BaseOffset;		// Number of bytes used in the memory buffer
 	
-	// TODO: One shader program per render_cmd_list
+	render_resource ShaderProgram;
+
 	mat4	ViewMatrix;
 	mat4	ProjectionMatrix;
 
-	render_cmd_list(u32 _BufferSize);
+	render_cmd_list(u32 _BufferSize, render_resource ShaderProgram);
 	~render_cmd_list();
 
 	template <typename U>
@@ -133,10 +141,10 @@ struct render_cmd_list
 	cmd_packet* CreateCmdPacket(u32 AuxMemorySize);
 
 	template <typename U> 
-	U* AddCommand(u32 Key, u32 AuxMemorySize);
+	U* AddCommand(u32 Key, u32 AuxMemorySize = 0);
 	
 	template <typename U, typename V> 
-	U* AppendCommand(V *Cmd, u32 AuxMemorySize);
+	U* AppendCommand(V *Cmd, u32 AuxMemorySize = 0);
 	
 	void* AllocateMemory(u32 MemorySize);
 	void Sort();
@@ -182,7 +190,7 @@ inline U* render_cmd_list::AppendCommand(V *Cmd, u32 AuxMemorySize)
 {
 	cmd_packet *Packet = CreateCmdPacket<U>(AuxMemorySize);
 	
-	GetCmdPacket<V>(Cmd)->NextCmdPacket = Packet;
+	GetCmdPacket(Cmd)->NextCmdPacket = Packet;
 	Packet->NextCmdPacket = nullptr;
 	Packet->DispatchFn = U::DISPATCH_FUNCTION;
 
@@ -218,7 +226,7 @@ namespace cmd
 		u32					StartVertex;
 		u32					VertexCount;
 		render_resource		Textures[10];
-		render_resource		ShaderProgram;
+		//render_resource		ShaderProgram;
 
 		static const dispatch_fn DISPATCH_FUNCTION;
 	};
@@ -231,7 +239,7 @@ namespace cmd
 		render_resource		IndexBuffer;
 		u32					IndexCount;
 		render_resource		Textures[10];
-		render_resource		ShaderProgram;
+		//render_resource		ShaderProgram;
 
 		static const dispatch_fn DISPATCH_FUNCTION;
 	};

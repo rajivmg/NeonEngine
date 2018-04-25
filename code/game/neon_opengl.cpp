@@ -21,7 +21,7 @@ void ogl::InitState()
 	RenderState.IndexBufferCurrent = 0;
 	RenderState.ShaderProgramCurrent = 0;
 
-	RenderState.ProjectionMatrix = Orthographic(0.0f, (r32)Platform.Width, (r32)Platform.Height, 0.0f, -1.0f, -10.0f);
+	//RenderState.ProjectionMatrix = Orthographic(0.0f, (r32)Platform.Width, (r32)Platform.Height, 0.0f, -1.0f, -10.0f);
 
 	// Set clear color
 	glClearColor(0.006f, 0.098f, 0.223f, 1.0f);
@@ -61,12 +61,12 @@ void ogl::Clear()
 
 void ogl::SetViewMatrix(mat4 Matrix)
 {
-	RenderState.ViewMatrix = Matrix;
+	glUniformMatrix4fv(RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].ViewMatrixLoc, 1, GL_FALSE, Matrix.Elements);
 }
 
 void ogl::SetProjectionMatrix(mat4 Matrix)
 {
-	RenderState.ProjectionMatrix = Matrix;
+	glUniformMatrix4fv(RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].ProjMatrixLoc, 1, GL_FALSE, Matrix.Elements);
 }
 
 render_resource ogl::MakeTexture(texture *Texture)
@@ -76,17 +76,17 @@ render_resource ogl::MakeTexture(texture *Texture)
 		assert(!"Texture is invalid.");
 	}
 
-	assert(RenderState.TextureCurrent < ARRAY_COUNT(RenderState.Texture));
+	assert(RenderState.TextureCurrent < ARRAY_COUNT(RenderState.Textures));
 
 	render_resource RenderResource;
 	RenderResource.Type = render_resource::TEXTURE;
 	RenderResource.ResourceHandle = RenderState.TextureCurrent++;
 
 	// Generate and bind Texture
-	glGenTextures(1, &RenderState.Texture[RenderResource.ResourceHandle]);
+	glGenTextures(1, &RenderState.Textures[RenderResource.ResourceHandle]);
 	// TODO: Add more texture type in future.
 	assert(Texture->Type == texture_type::TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, RenderState.Texture[RenderResource.ResourceHandle]);
+	glBindTexture(GL_TEXTURE_2D, RenderState.Textures[RenderResource.ResourceHandle]);
 
 	// Orient the texture
 	if(!Texture->FlippedAroundY)
@@ -109,7 +109,7 @@ render_resource ogl::MakeTexture(texture *Texture)
 
 void ogl::DeleteTexture(render_resource Texture)
 {
-	glDeleteTextures(1, &RenderState.Texture[Texture.ResourceHandle]);
+	glDeleteTextures(1, &RenderState.Textures[Texture.ResourceHandle]);
 }
 
 render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
@@ -121,10 +121,10 @@ render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 	RenderResource.Type = render_resource::VERTEX_BUFFER;
 	RenderResource.ResourceHandle = RenderState.VertexBufferCurrent++;
 
-	RenderState.VertexBuffer[RenderResource.ResourceHandle].Capacity = Size;
-	RenderState.VertexBuffer[RenderResource.ResourceHandle].IsDynamic = Dynamic;
+	RenderState.VertexBuffers[RenderResource.ResourceHandle].Capacity = Size;
+	RenderState.VertexBuffers[RenderResource.ResourceHandle].IsDynamic = Dynamic;
 
-	GLuint *VertexBuffer = &RenderState.VertexBuffer[RenderResource.ResourceHandle].Buffer;
+	GLuint *VertexBuffer = &RenderState.VertexBuffers[RenderResource.ResourceHandle].Buffer;
 
 	glGenBuffers(1, VertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, *VertexBuffer);
@@ -137,9 +137,9 @@ render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
 void ogl::VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, void const *Data)
 {
 	assert(VertexBuffer.Type == render_resource::VERTEX_BUFFER);
-	assert(Size > 0);
+	assert(Size > 0 && Size <= RenderState.VertexBuffers[VertexBuffer.ResourceHandle].Capacity);
 
-	GLuint *Buffer = &RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Buffer;
+	GLuint *Buffer = &RenderState.VertexBuffers[VertexBuffer.ResourceHandle].Buffer;
 
 	glBindBuffer(GL_ARRAY_BUFFER, *Buffer);
 	glBufferSubData(GL_ARRAY_BUFFER, Offset, Size, Data);
@@ -150,9 +150,9 @@ void ogl::DeleteVertexBuffer(render_resource VertexBuffer)
 {
 	assert(VertexBuffer.Type == render_resource::VERTEX_BUFFER);
 
-	glDeleteBuffers(1, &RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Buffer);
-	RenderState.VertexBuffer[VertexBuffer.ResourceHandle].Capacity = 0;
-	RenderState.VertexBuffer[VertexBuffer.ResourceHandle].IsDynamic = false;
+	glDeleteBuffers(1, &RenderState.VertexBuffers[VertexBuffer.ResourceHandle].Buffer);
+	RenderState.VertexBuffers[VertexBuffer.ResourceHandle].Capacity = 0;
+	RenderState.VertexBuffers[VertexBuffer.ResourceHandle].IsDynamic = false;
 }
 
 render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
@@ -164,10 +164,10 @@ render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
 	RenderResource.Type = render_resource::INDEX_BUFFER;
 	RenderResource.ResourceHandle = RenderState.IndexBufferCurrent++;
 
-	RenderState.IndexBuffer[RenderResource.ResourceHandle].Capacity = Size;
-	RenderState.IndexBuffer[RenderResource.ResourceHandle].IsDynamic = Dynamic;
+	RenderState.IndexBuffers[RenderResource.ResourceHandle].Capacity = Size;
+	RenderState.IndexBuffers[RenderResource.ResourceHandle].IsDynamic = Dynamic;
 	
-	GLuint *IndexBuffer = &RenderState.IndexBuffer[RenderResource.ResourceHandle].Buffer;
+	GLuint *IndexBuffer = &RenderState.IndexBuffers[RenderResource.ResourceHandle].Buffer;
 
 	glGenBuffers(1, IndexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *IndexBuffer);
@@ -179,9 +179,9 @@ render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
 void ogl::IndexBufferData(render_resource IndexBuffer, u32 Offset, u32 Size, void const *Data)
 {
 	assert(IndexBuffer.Type == render_resource::INDEX_BUFFER);
-	assert(Size > 0);
+	assert(Size > 0 && Size <= RenderState.IndexBuffers[IndexBuffer.ResourceHandle].Capacity);
 
-	GLuint *Buffer = &RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Buffer;
+	GLuint *Buffer = &RenderState.IndexBuffers[IndexBuffer.ResourceHandle].Buffer;
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *Buffer);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, Offset, Size, Data);
@@ -192,9 +192,9 @@ void ogl::DeleteIndexBuffer(render_resource IndexBuffer)
 {
 	assert(IndexBuffer.Type == render_resource::INDEX_BUFFER);
 
-	glDeleteBuffers(1, &RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Buffer);
-	RenderState.IndexBuffer[IndexBuffer.ResourceHandle].Capacity = 0;
-	RenderState.IndexBuffer[IndexBuffer.ResourceHandle].IsDynamic = false;
+	glDeleteBuffers(1, &RenderState.IndexBuffers[IndexBuffer.ResourceHandle].Buffer);
+	RenderState.IndexBuffers[IndexBuffer.ResourceHandle].Capacity = 0;
+	RenderState.IndexBuffers[IndexBuffer.ResourceHandle].IsDynamic = false;
 }
 
 render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc)
@@ -220,7 +220,7 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 	glCompileShader(Vs);
 	glCompileShader(Fs);
 
-	shader_program *ShaderProgram = &RenderState.ShaderProgram[RenderResource.ResourceHandle];
+	shader_program *ShaderProgram = &RenderState.ShaderPrograms[RenderResource.ResourceHandle];
 
 	ShaderProgram->Program = glCreateProgram();
 	glAttachShader(ShaderProgram->Program, Vs);
@@ -273,15 +273,19 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 void ogl::DeleteShaderProgram(render_resource ShaderProgram)
 {
 	assert(ShaderProgram.Type == render_resource::SHADER_PROGRAM);
-	glDeleteProgram(RenderState.ShaderProgram[ShaderProgram.ResourceHandle].Program);
-	RenderState.ShaderProgram[ShaderProgram.ResourceHandle].Sampler2DCount = 0;
+	glDeleteProgram(RenderState.ShaderPrograms[ShaderProgram.ResourceHandle].Program);
+	RenderState.ShaderPrograms[ShaderProgram.ResourceHandle].Sampler2DCount = 0;
+}
+
+void ogl::UseShaderProgram(render_resource ShaderProgram)
+{
+	glUseProgram(RenderState.ShaderPrograms[ShaderProgram.ResourceHandle].Program);
+	RenderState.ActiveShaderProgram = ShaderProgram.ResourceHandle;
 }
 
 void ogl::Draw(cmd::draw *Cmd)
 {
-	glUseProgram(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].Program);
-
-	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertexBuffer[Cmd->VertexBuffer.ResourceHandle].Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertexBuffers[Cmd->VertexBuffer.ResourceHandle].Buffer);
 
 	if(Cmd->VertexFormat == vert_format::P1C1UV1)
 	{
@@ -293,17 +297,14 @@ void ogl::Draw(cmd::draw *Cmd)
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
 
-		for(int I = 0; I < RenderState.ShaderProgram->Sampler2DCount; ++I)
+		for(u32 I = 0; I < RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].Sampler2DCount; ++I)
 		{
 			if(Cmd->Textures[I].Type != render_resource::NOT_INITIALIZED)
 			{
 				glActiveTexture(GL_TEXTURE0 + I);
-				glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Textures[I].ResourceHandle]);
+				glBindTexture(GL_TEXTURE_2D, RenderState.Textures[Cmd->Textures[I].ResourceHandle]);
 			}
 		}
-
-		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.ProjectionMatrix.Elements);
-		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ViewMatrixLoc, 1, GL_FALSE, RenderState.ViewMatrix.Elements);
 
 		glDrawArrays(GL_TRIANGLES, Cmd->StartVertex, Cmd->VertexCount);
 
@@ -315,10 +316,8 @@ void ogl::Draw(cmd::draw *Cmd)
 
 void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
 {
-	glUseProgram(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].Program);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RenderState.IndexBuffer[Cmd->IndexBuffer.ResourceHandle].Buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertexBuffer[Cmd->VertexBuffer.ResourceHandle].Buffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RenderState.IndexBuffers[Cmd->IndexBuffer.ResourceHandle].Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertexBuffers[Cmd->VertexBuffer.ResourceHandle].Buffer);
 
 	if(Cmd->VertexFormat == vert_format::P1C1UV1)
 	{
@@ -330,17 +329,14 @@ void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
 
-		for(int I = 0; I < RenderState.ShaderProgram->Sampler2DCount; ++I)
+		for(u32 I = 0; I < RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].Sampler2DCount; ++I)
 		{
 			if(Cmd->Textures[I].Type != render_resource::NOT_INITIALIZED)
 			{
 				glActiveTexture(GL_TEXTURE0 + I);
-				glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Textures[I].ResourceHandle]);
+				glBindTexture(GL_TEXTURE_2D, RenderState.Textures[Cmd->Textures[I].ResourceHandle]);
 			}
 		}
-
-		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.ProjectionMatrix.Elements);
-		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ViewMatrixLoc, 1, GL_FALSE, RenderState.ViewMatrix.Elements);
 
 		glDrawElements(GL_TRIANGLES, Cmd->IndexCount, GL_UNSIGNED_SHORT, 0);
 
@@ -358,17 +354,14 @@ void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
 
-		for(int I = 0; I < RenderState.ShaderProgram->Sampler2DCount; ++I)
+		for(u32 I = 0; I < RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].Sampler2DCount; ++I)
 		{
 			if(Cmd->Textures[I].Type != render_resource::NOT_INITIALIZED)
 			{
 				glActiveTexture(GL_TEXTURE0 + I);
-				glBindTexture(GL_TEXTURE_2D, RenderState.Texture[Cmd->Textures[I].ResourceHandle]);
+				glBindTexture(GL_TEXTURE_2D, RenderState.Textures[Cmd->Textures[I].ResourceHandle]);
 			}
 		}
-
-		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ProjMatrixLoc, 1, GL_FALSE, RenderState.ProjectionMatrix.Elements);
-		glUniformMatrix4fv(RenderState.ShaderProgram[Cmd->ShaderProgram.ResourceHandle].ViewMatrixLoc, 1, GL_FALSE, RenderState.ViewMatrix.Elements);
 
 		glDrawElements(GL_TRIANGLES, Cmd->IndexCount, GL_UNSIGNED_SHORT, 0);
 

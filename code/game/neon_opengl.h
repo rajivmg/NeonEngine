@@ -22,32 +22,32 @@ enum class texture_wrap;
 struct buffer_object
 {
 	GLuint	Buffer;
-	s32		Capacity;
+	u32		Capacity;
 	bool	IsDynamic;
 };
 
 struct shader_program
 {
 	GLuint	Program;
-	s32		Sampler2DCount;
+	u32		Sampler2DCount;
 	GLint	Sampler2DLoc[10];
 	GLint	ProjMatrixLoc;
 	GLint	ViewMatrixLoc;
 };
 
+// TODO: Reuse same slots after the buffer or texture is deleted.
 struct render_state
 {
-	GLuint			Texture[1024];
-	s32				TextureCurrent;
-	buffer_object	VertexBuffer[2048];
-	s32				VertexBufferCurrent;
-	buffer_object	IndexBuffer[2048];
-	s32				IndexBufferCurrent;
-	shader_program	ShaderProgram[1024];
-	s32				ShaderProgramCurrent;
+	GLuint			Textures[1024];
+	u32				TextureCurrent;
+	buffer_object	VertexBuffers[2048];
+	u32				VertexBufferCurrent;
+	buffer_object	IndexBuffers[2048];
+	u32				IndexBufferCurrent;
+	shader_program	ShaderPrograms[1024];
+	u32				ShaderProgramCurrent;
 
-	mat4			ViewMatrix;
-	mat4			ProjectionMatrix;
+	u32				ActiveShaderProgram;
 };
 
 namespace ogl
@@ -66,6 +66,7 @@ namespace ogl
 	void			DeleteIndexBuffer(render_resource IndexBuffer);
 	render_resource MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc);
 	void			DeleteShaderProgram(render_resource ShaderProgram);
+	void			UseShaderProgram(render_resource ShaderProgram);
 	void			Draw(cmd::draw *Cmd);
 	void			DrawIndexed(cmd::draw_indexed *Cmd);
 }

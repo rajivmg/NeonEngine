@@ -85,6 +85,11 @@ void rndr::DeleteShaderProgram(render_resource ShaderProgram)
 	ogl::DeleteShaderProgram(ShaderProgram);
 }
 
+void rndr::UseShaderProgram(render_resource ShaderProgram)
+{
+	ogl::UseShaderProgram(ShaderProgram);
+}
+
 void rndr::Draw(void const *Data)
 {
 	cmd::draw *Cmd = (cmd::draw *)Data;
@@ -101,7 +106,9 @@ void rndr::DrawIndexed(void const *Data)
 // Render Commands
 //-----------------------------------------------------------------------------
 
-render_cmd_list::render_cmd_list(u32 _BufferSize) : BufferSize(_BufferSize),
+render_cmd_list::render_cmd_list(u32 _BufferSize, render_resource _ShaderProgram) : 
+													BufferSize(_BufferSize),
+													ShaderProgram(_ShaderProgram),
 													BaseOffset(0),
 													Current(0)
 {
@@ -147,6 +154,7 @@ void render_cmd_list::Sort()
 
 void render_cmd_list::Submit()
 {
+	rndr::UseShaderProgram(ShaderProgram);
 	rndr::SetViewMatrix(ViewMatrix);
 	rndr::SetProjectionMatrix(ProjectionMatrix);
 	for(u32 I = 0; I < Current; ++I)

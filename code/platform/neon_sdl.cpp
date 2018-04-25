@@ -447,7 +447,7 @@ int main(int argc, char **argv)
 
 			if(GLContext)
 			{
-				SDL_GL_SetSwapInterval(1);
+				//SDL_GL_SetSwapInterval(1);
 
 				LoadGameCode(&GameCode);
 				GameCode.GameSetup(Platform, ImGui::GetCurrentContext());
