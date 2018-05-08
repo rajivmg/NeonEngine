@@ -6,6 +6,7 @@
 
 #include <vector>
 
+struct bitmap;
 class texture;
 class font;
 enum class texture_type;
@@ -74,6 +75,7 @@ namespace rndr
 	void			SetProjectionMatrix(mat4 Matrix);
 
 	render_resource MakeTexture(texture *Texture);
+	render_resource MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection);
 	void			DeleteTexture(render_resource Texture);
 	
 	render_resource MakeBuffer(resource_type Type, u32 Size, bool Dynamic = false);
@@ -232,7 +234,6 @@ namespace cmd
 		u32					StartVertex;
 		u32					VertexCount;
 		render_resource		Textures[8];
-		//render_resource		ShaderProgram;
 
 		static const dispatch_fn DISPATCH_FUNCTION;
 	};
@@ -245,7 +246,6 @@ namespace cmd
 		render_resource		IndexBuffer;
 		u32					IndexCount;
 		render_resource		Textures[8];
-		//render_resource		ShaderProgram;
 
 		static const dispatch_fn DISPATCH_FUNCTION;
 	};

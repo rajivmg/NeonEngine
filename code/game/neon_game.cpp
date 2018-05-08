@@ -106,6 +106,8 @@ void CreateTilemap(tilemap *Tilemap, char const *_Filename, vec2 _MapSize, u32 _
 	Tilemap->TileSize = _TileSize;
 }
 
+static font *DebugFont = new font();
+
 DLLEXPORT
 GAME_SETUP(GameSetup)
 {
@@ -120,9 +122,14 @@ GAME_SETUP(GameSetup)
 	GameState.MetersToPixels = Platform.Width / 16.0f;
 	GameState.PixelsToMeters = 1.0f / GameState.MetersToPixels;
 
-	texture WhiteTexture;
-	WhiteTexture.LoadFile("wonder.tga", texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, true);
-	GameState.WhiteTexture = rndr::MakeTexture(&WhiteTexture);
+	//texture WhiteTexture;
+	//WhiteTexture.LoadFile("wonder.tga", texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, true);
+	//GameState.WhiteTexture = rndr::MakeTexture(&WhiteTexture);
+
+	bitmap WhiteBitmap;
+	LoadBitmap(&WhiteBitmap, "wonder.tga");
+	GameState.WhiteTexture = rndr::MakeTexture(&WhiteBitmap, texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, true);
+
 	texture WaterDisplacementTexture;
 	WaterDisplacementTexture.LoadFile("displacement.tga", texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::REPEAT, false);
 	GameState.WaterDisplacementTexture = rndr::MakeTexture(&WaterDisplacementTexture);
@@ -134,6 +141,15 @@ GAME_SETUP(GameSetup)
 	GameState.CommonConstBuffer = rndr::MakeBuffer(resource_type::CONSTANT_BUFFER, (u32)sizeof(cg_common), true);
 	rndr::BufferData(GameState.CommonConstBuffer, 0, sizeof(cg_common), &CgCommon);
 	rndr::BindBuffer(GameState.CommonConstBuffer, 0);
+
+
+	DebugFont->Load("fonts/Neuton/Neuton-Regular.ttf", 48);
+
+	GameState.TextShader = rndr::MakeShaderProgram("shaders/basic_vs.glsl", "shaders/basic_ps.glsl");
+	GameState.DebugTextVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
+	GameState.DebugTextCmdList = new render_cmd_list(MEGABYTE(1), GameState.TextShader);
+	GameState.DebugTextCmdList->ViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
+	GameState.DebugTextCmdList->ProjMatrix = Orthographic(0.0f, (r32)Platform.Width, (r32)Platform.Height, 0.0f, -1.0f, 1.0f);
 }
 
 DLLEXPORT
@@ -161,6 +177,10 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	PushSprite(&SpritesVertices, vec3i(0, 0, 0), vec2i(9, 9), vec4(1, 1, 1, 1), vec4(0, 0, 1.0, 1.0));
 	rndr::BufferData(GameState.WaterVertexBuffer, 0, sizeof(vert_P1C1UV1) * (u32)SpritesVertices.size(), &SpritesVertices.front());
 
+	std::vector<vert_P1C1UV1> DebugTextVertices;
+	PushTextSprite(&DebugTextVertices, DebugFont, vec3i(750, 400, 0), vec4(1.0f), "Hello World");
+	rndr::BufferData(GameState.DebugTextVertexBuffer, 0, DebugTextVertices.size() * sizeof(vert_P1C1UV1), &DebugTextVertices.front());
+
 	cmd::copy_const_buffer *CopyConstBuffer = GameState.Water->AddCommand<cmd::copy_const_buffer>(0, sizeof(cg_common));
 	CopyConstBuffer->ConstantBuffer = GameState.CommonConstBuffer;
 	CopyConstBuffer->Data = GetCmdPacket(CopyConstBuffer)->AuxMemory;
@@ -168,7 +188,6 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	CopyConstBuffer->Size = sizeof(cg_common);
 
 	cmd::draw *WaterSurface = GameState.Water->AppendCommand<cmd::draw>(CopyConstBuffer);
-	WaterSurface->StartVertex = 0;
 	WaterSurface->VertexBuffer = GameState.WaterVertexBuffer;
 	WaterSurface->VertexFormat = vert_format::P1C1UV1;
 	WaterSurface->StartVertex = 0;
@@ -179,4 +198,15 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	GameState.Water->Sort();
 	GameState.Water->Submit();
 	GameState.Water->Flush();
+
+	cmd::draw *DebugTextCmd = GameState.DebugTextCmdList->AddCommand<cmd::draw>(0);
+	DebugTextCmd->VertexBuffer = GameState.DebugTextVertexBuffer;
+	DebugTextCmd->VertexFormat = vert_format::P1C1UV1;
+	DebugTextCmd->StartVertex = 0;
+	DebugTextCmd->VertexCount = (u32)DebugTextVertices.size();
+	DebugTextCmd->Textures[0] = DebugFont->TextureAtlas.Texture.RenderResource;
+	
+	GameState.DebugTextCmdList->Sort();
+	GameState.DebugTextCmdList->Submit();
+	GameState.DebugTextCmdList->Flush();
 }

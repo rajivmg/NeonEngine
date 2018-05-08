@@ -2,6 +2,144 @@
 
 #include "neon_renderer.h"
 
+void LoadBitmap(bitmap *Bitmap, char const *Filename)
+{
+	file_content File = Platform.ReadFile(Filename);
+	assert(File.NoError);
+
+	tga_header *TGAHeader = (tga_header *)File.Content;
+	
+	// Check if the tga file type is what we want.
+	// 2 == Uncompressed, True-color Image
+	assert(TGAHeader->ImageType == 2);
+
+	// Assign members with width and height values from file
+	Bitmap->Width = (u32)TGAHeader->Width;
+	Bitmap->Height = (u32)TGAHeader->Height;
+
+	// Check image origin, 5th bit - 0 = lower left, 1 = upper left
+	// http://www.paulbourke.net/dataformats/tga/
+	if((TGAHeader->ImageDescriptor & (1 << 5)) == (1 << 5))
+	{
+		Bitmap->FlippedAroundY = false;
+	}
+	else
+	{
+		Bitmap->FlippedAroundY = true;
+	}
+
+	// Read bit/pixel of file
+	u8 BitsPerPixel = TGAHeader->PixelDepth;
+
+	// 4 bytes per pixel (RGBA)
+	assert(BitsPerPixel == 32);
+
+	Bitmap->BytesPerPixel = BitsPerPixel / 8;
+
+	// Set content size
+	Bitmap->DataSize = Bitmap->Width * Bitmap->Height * (BitsPerPixel / 8);
+
+	// Allocate memory for pixel data
+	Bitmap->Data = malloc(Bitmap->DataSize);
+
+	// Copy pixel data from file to our memory
+	memcpy(Bitmap->Data, (u8 *)File.Content + sizeof(tga_header), Bitmap->DataSize);
+
+	// GL			: RRGGBBAA == 0xAABBGGRR
+	// TGA ORDER	: AARRGGBB == 0xBBGGRRAA
+	u32 *PixelPointer = (u32 *)Bitmap->Data;
+	for(u32 PixelOffset = 0; PixelOffset < (Bitmap->DataSize / 4); ++PixelOffset)
+	{
+		u32 *Pixel = (PixelPointer + PixelOffset);
+		u32 B = (*Pixel & 0x000000FF) << 16;
+		u32 G = (*Pixel & 0x0000FF00);
+		u32 R = (*Pixel & 0x00FF0000) >> 16;
+		u32 A = (*Pixel & 0xFF000000);
+		*Pixel = R | G | B | A;
+	}
+
+	Platform.FreeFileContent(&File);
+
+	// Other way
+	/*
+	file_content File = Platform.ReadFile(Filename);
+	assert(File.NoError);
+	
+	u8 *InBytes = (u8 *)File.Content;
+	
+	u8 TGAType = *(u8 *)(InBytes + 2);
+
+	// Check if the tga file type is what we want.
+	// 2 == Uncompressed, True-color Image
+	assert(TGAType == 2);
+
+	// Assign members with width and height values from file
+	Bitmap->Width = *(u16 *)(InBytes + 12);
+	Bitmap->Height = *(u16 *)(InBytes + 14);
+
+	// Read bit/pixel of file
+	u8 BitsPerPixel = *(u8 *)(InBytes + 16);
+
+	// 4 bytes per pixel (RGBA)
+	assert(BitsPerPixel == 32);
+
+	Bitmap->BytesPerPixel = BitsPerPixel / 8;
+
+	// Set content size
+	Bitmap->DataSize = Bitmap->Width * Bitmap->Height * (BitsPerPixel / 8);
+
+	// Allocate memory for pixel data
+	Bitmap->Data = malloc(Bitmap->DataSize);
+
+	// Copy pixel data from file to our memory
+	memcpy(Bitmap->Data, InBytes + sizeof(tga_header), Bitmap->DataSize);
+
+	// GL			: RRGGBBAA == 0xAABBGGRR
+	// TGA ORDER	: AARRGGBB == 0xBBGGRRAA
+	u32 *PixelPointer = (u32 *)Bitmap->Data;
+	for(u32 PixelOffset = 0; PixelOffset < (Bitmap->DataSize / 4); ++PixelOffset)
+	{
+		u32 *Pixel = (PixelPointer + PixelOffset);
+		u32 B = (*Pixel & 0x000000FF) << 16;
+		u32 G = (*Pixel & 0x0000FF00);
+		u32 R = (*Pixel & 0x00FF0000) >> 16;
+		u32 A = (*Pixel & 0xFF000000);
+		*Pixel = R | G | B | A;
+	}
+
+	Platform.FreeFileContent(&File);
+
+	Bitmap->FlippedAroundY = false;
+	*/
+}
+
+void FreeBitmap(bitmap *Bitmap)
+{
+	SAFE_FREE(Bitmap->Data);
+	Bitmap->DataSize = 0;
+}
+
+void BitmapFlipAroundY(bitmap *Bitmap)
+{
+	/*assert(Bitmap->DataSize);*/
+
+	Bitmap->FlippedAroundY = !Bitmap->FlippedAroundY;
+
+	u32 *Data = (u32 *)malloc(Bitmap->DataSize);
+
+	memcpy(Data, Bitmap->Data, Bitmap->DataSize);
+	for(u32 Row = 0; Row < Bitmap->Height; ++Row)
+	{
+		for(u32 Col = 0; Col < Bitmap->Width; ++Col)
+		{
+			*((u32 *)(Bitmap->Data)+((Bitmap->Width) * (Bitmap->Height - 1 - Row)) + Col)
+				= *(Data + (Bitmap->Width)* Row + Col);
+		}
+	}
+
+	SAFE_FREE(Data);
+}
+
 //-----------------------------------------------------------------------------
 // Texture
 //-----------------------------------------------------------------------------

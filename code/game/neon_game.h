@@ -41,6 +41,10 @@ struct game_state
 	render_resource WaterVertexBuffer;
 	render_cmd_list *Water;
 
+	render_resource TextShader;
+	render_resource DebugTextVertexBuffer;
+	render_cmd_list *DebugTextCmdList;
+
 	render_resource CommonConstBuffer;
 
 	r32 MetersToPixels;

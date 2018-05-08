@@ -41,6 +41,11 @@ render_resource rndr::MakeTexture(texture *Texture)
 	return ogl::MakeTexture(Texture);
 }
 
+render_resource rndr::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection)
+{
+	return ogl::MakeTexture(Bitmap, Type, Filter, Wrap, HwGammaCorrection);
+}
+
 void rndr::DeleteTexture(render_resource Texture)
 {
 	ogl::DeleteTexture(Texture);

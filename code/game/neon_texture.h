@@ -51,6 +51,20 @@ enum class texture_wrap
 	REPEAT
 };
 
+struct bitmap
+{
+	u32		Width;
+	u32		Height;
+	void	*Data;
+	u32		DataSize;
+	u32		BytesPerPixel;
+	bool	FlippedAroundY;
+};
+
+void LoadBitmap(bitmap *Bitmap, char const *Filename);
+void FreeBitmap(bitmap *Bitmap);
+void BitmapFlipAroundY(bitmap *Bitmap);
+
 class texture
 {
 public:

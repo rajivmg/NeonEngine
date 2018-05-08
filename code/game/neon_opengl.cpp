@@ -103,6 +103,40 @@ render_resource ogl::MakeTexture(texture *Texture)
 	return RenderResource;
 }
 
+render_resource ogl::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection)
+{
+
+	assert(RenderState.TextureCurrent < ARRAY_COUNT(RenderState.Textures));
+
+	render_resource RenderResource;
+	RenderResource.Type = resource_type::TEXTURE;
+	RenderResource.ResourceHandle = RenderState.TextureCurrent++;
+
+	// Generate and bind Texture
+	glGenTextures(1, &RenderState.Textures[RenderResource.ResourceHandle]);
+	// TODO: Add more texture type in future.
+	assert(Type == texture_type::TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, RenderState.Textures[RenderResource.ResourceHandle]);
+
+	// Orient the texture
+	if(!Bitmap->FlippedAroundY)
+		BitmapFlipAroundY(Bitmap);
+
+	// Upload the texture to the GPU
+	glTexImage2D(GL_TEXTURE_2D, 0, HwGammaCorrection ? GL_SRGB_ALPHA : GL_RGBA, Bitmap->Width, Bitmap->Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, Bitmap->Data);
+
+	// Set texture parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, Wrap == texture_wrap::REPEAT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, Wrap == texture_wrap::REPEAT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, Filter == texture_filter::NEAREST ? GL_NEAREST : GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Filter == texture_filter::NEAREST ? GL_NEAREST : GL_LINEAR);
+
+	// Unbind texture
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return RenderResource;
+}
+
 void ogl::DeleteTexture(render_resource Texture)
 {
 	glDeleteTextures(1, &RenderState.Textures[Texture.ResourceHandle]);
