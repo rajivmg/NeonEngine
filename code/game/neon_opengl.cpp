@@ -17,11 +17,7 @@ static render_state RenderState = {};
 void ogl::InitState()
 {
 	RenderState.TextureCurrent = 0;
-	RenderState.VertexBufferCurrent = 0;
-	RenderState.IndexBufferCurrent = 0;
 	RenderState.ShaderProgramCurrent = 0;
-
-	//RenderState.ProjectionMatrix = Orthographic(0.0f, (r32)Platform.Width, (r32)Platform.Height, 0.0f, -1.0f, -10.0f);
 
 	// Set clear color
 	glClearColor(0.006f, 0.098f, 0.223f, 1.0f);
@@ -61,12 +57,12 @@ void ogl::Clear()
 
 void ogl::SetViewMatrix(mat4 Matrix)
 {
-	glUniformMatrix4fv(RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].ViewMatrixLoc, 1, GL_FALSE, Matrix.Elements);
+	glUniformMatrix4fv(RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].ViewMatrix, 1, GL_FALSE, Matrix.Elements);
 }
 
 void ogl::SetProjectionMatrix(mat4 Matrix)
 {
-	glUniformMatrix4fv(RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].ProjMatrixLoc, 1, GL_FALSE, Matrix.Elements);
+	glUniformMatrix4fv(RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].ProjMatrix, 1, GL_FALSE, Matrix.Elements);
 }
 
 render_resource ogl::MakeTexture(texture *Texture)
@@ -79,7 +75,7 @@ render_resource ogl::MakeTexture(texture *Texture)
 	assert(RenderState.TextureCurrent < ARRAY_COUNT(RenderState.Textures));
 
 	render_resource RenderResource;
-	RenderResource.Type = render_resource::TEXTURE;
+	RenderResource.Type = resource_type::TEXTURE;
 	RenderResource.ResourceHandle = RenderState.TextureCurrent++;
 
 	// Generate and bind Texture
@@ -112,95 +108,92 @@ void ogl::DeleteTexture(render_resource Texture)
 	glDeleteTextures(1, &RenderState.Textures[Texture.ResourceHandle]);
 }
 
-render_resource ogl::MakeVertexBuffer(u32 Size, bool Dynamic)
+render_resource ogl::MakeBuffer(resource_type Type, u32 Size, bool Dynamic)
 {
+	GLenum BufferEnum;
+	switch(Type)
+	{
+		case resource_type::VERTEX_BUFFER:
+		{
+			BufferEnum = GL_ARRAY_BUFFER;
+		} break;
+
+		case resource_type::INDEX_BUFFER:
+		{
+			BufferEnum = GL_ELEMENT_ARRAY_BUFFER;
+		} break;
+
+		case resource_type::CONSTANT_BUFFER:
+		{
+			BufferEnum = GL_UNIFORM_BUFFER;
+		} break;
+
+		INVALID_DEFAULT_CASE;
+	}
+
 	assert(Size > 0);
 
 	render_resource RenderResource;
+	RenderResource.Type = Type;
+	RenderResource.ResourceHandle = RenderState.BufferObjectCount++;
+	RenderState.BufferObjects[RenderResource.ResourceHandle].Capacity = Size;
+	RenderState.BufferObjects[RenderResource.ResourceHandle].IsDynamic = Dynamic;
 
-	RenderResource.Type = render_resource::VERTEX_BUFFER;
-	RenderResource.ResourceHandle = RenderState.VertexBufferCurrent++;
+	glGenBuffers(1, &RenderState.BufferObjects[RenderResource.ResourceHandle].Buffer);
+	glBindBuffer(BufferEnum, RenderState.BufferObjects[RenderResource.ResourceHandle].Buffer);
+	glBufferData(BufferEnum, Size, nullptr, Dynamic ? GL_STREAM_DRAW : GL_STATIC_DRAW);
+	glBindBuffer(BufferEnum, 0);
 
-	RenderState.VertexBuffers[RenderResource.ResourceHandle].Capacity = Size;
-	RenderState.VertexBuffers[RenderResource.ResourceHandle].IsDynamic = Dynamic;
-
-	GLuint *VertexBuffer = &RenderState.VertexBuffers[RenderResource.ResourceHandle].Buffer;
-
-	glGenBuffers(1, VertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, *VertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, Size, nullptr, Dynamic ? GL_STREAM_DRAW : GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
 	return RenderResource;
 }
 
-void ogl::VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, void const *Data)
+void ogl::BufferData(render_resource Buffer, u32 Offset, u32 Size, void const *Data)
 {
-	assert(VertexBuffer.Type == render_resource::VERTEX_BUFFER);
-	assert(Size > 0 && Size <= RenderState.VertexBuffers[VertexBuffer.ResourceHandle].Capacity);
+	GLenum BufferEnum;
+	switch(Buffer.Type)
+	{
+		case resource_type::VERTEX_BUFFER:
+		{
+			BufferEnum = GL_ARRAY_BUFFER;
+		} break;
 
-	GLuint *Buffer = &RenderState.VertexBuffers[VertexBuffer.ResourceHandle].Buffer;
+		case resource_type::INDEX_BUFFER:
+		{
+			BufferEnum = GL_ELEMENT_ARRAY_BUFFER;
+		} break;
 
-	glBindBuffer(GL_ARRAY_BUFFER, *Buffer);
-	glBufferSubData(GL_ARRAY_BUFFER, Offset, Size, Data);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
+		case resource_type::CONSTANT_BUFFER:
+		{
+			BufferEnum = GL_UNIFORM_BUFFER;
+		} break;
 
-void ogl::DeleteVertexBuffer(render_resource VertexBuffer)
-{
-	assert(VertexBuffer.Type == render_resource::VERTEX_BUFFER);
-
-	glDeleteBuffers(1, &RenderState.VertexBuffers[VertexBuffer.ResourceHandle].Buffer);
-	RenderState.VertexBuffers[VertexBuffer.ResourceHandle].Capacity = 0;
-	RenderState.VertexBuffers[VertexBuffer.ResourceHandle].IsDynamic = false;
-}
-
-render_resource ogl::MakeIndexBuffer(u32 Size, bool Dynamic)
-{
-	assert(Size > 0);
-
-	render_resource RenderResource;
+		INVALID_DEFAULT_CASE;
+	}
 	
-	RenderResource.Type = render_resource::INDEX_BUFFER;
-	RenderResource.ResourceHandle = RenderState.IndexBufferCurrent++;
+	assert(Size > 0 && Size <= RenderState.BufferObjects[Buffer.ResourceHandle].Capacity);
 
-	RenderState.IndexBuffers[RenderResource.ResourceHandle].Capacity = Size;
-	RenderState.IndexBuffers[RenderResource.ResourceHandle].IsDynamic = Dynamic;
-	
-	GLuint *IndexBuffer = &RenderState.IndexBuffers[RenderResource.ResourceHandle].Buffer;
-
-	glGenBuffers(1, IndexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *IndexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Size, nullptr, Dynamic ? GL_STREAM_DRAW : GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	return RenderResource;
+	glBindBuffer(BufferEnum, RenderState.BufferObjects[Buffer.ResourceHandle].Buffer);
+	glBufferSubData(BufferEnum, Offset, Size, Data);
+	glBindBuffer(BufferEnum, 0);
 }
 
-void ogl::IndexBufferData(render_resource IndexBuffer, u32 Offset, u32 Size, void const *Data)
+void ogl::DeleteBuffer(render_resource Buffer)
 {
-	assert(IndexBuffer.Type == render_resource::INDEX_BUFFER);
-	assert(Size > 0 && Size <= RenderState.IndexBuffers[IndexBuffer.ResourceHandle].Capacity);
-
-	GLuint *Buffer = &RenderState.IndexBuffers[IndexBuffer.ResourceHandle].Buffer;
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *Buffer);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, Offset, Size, Data);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glDeleteBuffers(1, &RenderState.BufferObjects[Buffer.ResourceHandle].Buffer);
+	RenderState.BufferObjects[Buffer.ResourceHandle].Capacity = 0;
+	RenderState.BufferObjects[Buffer.ResourceHandle].IsDynamic = false;
 }
 
-void ogl::DeleteIndexBuffer(render_resource IndexBuffer)
+void ogl::BindBuffer(render_resource Buffer, u32 Index)
 {
-	assert(IndexBuffer.Type == render_resource::INDEX_BUFFER);
-
-	glDeleteBuffers(1, &RenderState.IndexBuffers[IndexBuffer.ResourceHandle].Buffer);
-	RenderState.IndexBuffers[IndexBuffer.ResourceHandle].Capacity = 0;
-	RenderState.IndexBuffers[IndexBuffer.ResourceHandle].IsDynamic = false;
+	GLenum BufferEnum = GL_UNIFORM_BUFFER;
+	glBindBufferBase(BufferEnum, Index, RenderState.BufferObjects[Buffer.ResourceHandle].Buffer);
 }
 
 render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc)
 {
 	render_resource RenderResource;
-	RenderResource.Type = render_resource::SHADER_PROGRAM;
+	RenderResource.Type = resource_type::SHADER_PROGRAM;
 	RenderResource.ResourceHandle = RenderState.ShaderProgramCurrent++;
 
 	file_content VsFile = Platform.ReadFile(VertShaderSrc);
@@ -251,30 +244,40 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 	// Store sampler2D information
 	glUseProgram(ShaderProgram->Program); // Bind shader program to use glUniform
 
-	char Sampler2DName[16] = "SamplerX";
-	for(int I = 0; I < ARRAY_COUNT(ShaderProgram->Sampler2DLoc); ++I)
+	char *SamplerNames[] = 
 	{
-		Sampler2DName[7] = '0' + I;
-		ShaderProgram->Sampler2DLoc[I] = glGetUniformLocation(ShaderProgram->Program, Sampler2DName);
-		if(ShaderProgram->Sampler2DLoc[I] != -1)
+		"Sampler0",
+		"Sampler1",
+		"Sampler2",
+		"Sampler3",
+		"Sampler4",
+		"Sampler5",
+		"Sampler6",
+		"Sampler7"
+	};
+	for(int I = 0; I < ARRAY_COUNT(SamplerNames); ++I)
+	{
+		char *SamplerName = SamplerNames[I];
+		ShaderProgram->Sampler[I] = glGetUniformLocation(ShaderProgram->Program, SamplerName);
+		if(ShaderProgram->Sampler[I] != -1)
 		{
-			glUniform1i(ShaderProgram->Sampler2DLoc[I], I);
-			++ShaderProgram->Sampler2DCount;
+			glUniform1i(ShaderProgram->Sampler[I], I);
+			++ShaderProgram->SamplerCount;
 		}
 	}
 
 	// Store projection matrix location
-	ShaderProgram->ProjMatrixLoc = glGetUniformLocation(ShaderProgram->Program, "Projection");
-	ShaderProgram->ViewMatrixLoc = glGetUniformLocation(ShaderProgram->Program, "View");
+	ShaderProgram->ProjMatrix = glGetUniformLocation(ShaderProgram->Program, "Projection");
+	ShaderProgram->ViewMatrix = glGetUniformLocation(ShaderProgram->Program, "View");
 
 	return RenderResource;
 }
 
 void ogl::DeleteShaderProgram(render_resource ShaderProgram)
 {
-	assert(ShaderProgram.Type == render_resource::SHADER_PROGRAM);
+	assert(ShaderProgram.Type == resource_type::SHADER_PROGRAM);
 	glDeleteProgram(RenderState.ShaderPrograms[ShaderProgram.ResourceHandle].Program);
-	RenderState.ShaderPrograms[ShaderProgram.ResourceHandle].Sampler2DCount = 0;
+	RenderState.ShaderPrograms[ShaderProgram.ResourceHandle].SamplerCount = 0;
 }
 
 void ogl::UseShaderProgram(render_resource ShaderProgram)
@@ -283,9 +286,15 @@ void ogl::UseShaderProgram(render_resource ShaderProgram)
 	RenderState.ActiveShaderProgram = ShaderProgram.ResourceHandle;
 }
 
+void ogl::UpdateUniform(char const *UniformName, r32 Value)
+{
+	GLint Loc = glGetUniformLocation(RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].Program, UniformName);
+	glUniform1f(Loc, Value);
+}
+
 void ogl::Draw(cmd::draw *Cmd)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertexBuffers[Cmd->VertexBuffer.ResourceHandle].Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, RenderState.BufferObjects[Cmd->VertexBuffer.ResourceHandle].Buffer);
 
 	if(Cmd->VertexFormat == vert_format::P1C1UV1)
 	{
@@ -297,13 +306,15 @@ void ogl::Draw(cmd::draw *Cmd)
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
 
-		for(u32 I = 0; I < RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].Sampler2DCount; ++I)
+		u32 TextureSlot = 0;
+		while(TextureSlot < ARRAY_COUNT(shader_program::Sampler))
 		{
-			if(Cmd->Textures[I].Type != render_resource::NOT_INITIALIZED)
+			if(Cmd->Textures[TextureSlot].Type != resource_type::NOT_INITIALIZED)
 			{
-				glActiveTexture(GL_TEXTURE0 + I);
-				glBindTexture(GL_TEXTURE_2D, RenderState.Textures[Cmd->Textures[I].ResourceHandle]);
+				glActiveTexture(GL_TEXTURE0 + TextureSlot);
+				glBindTexture(GL_TEXTURE_2D, RenderState.Textures[Cmd->Textures[TextureSlot].ResourceHandle]);
 			}
+			++TextureSlot;
 		}
 
 		glDrawArrays(GL_TRIANGLES, Cmd->StartVertex, Cmd->VertexCount);
@@ -316,8 +327,8 @@ void ogl::Draw(cmd::draw *Cmd)
 
 void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
 {
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RenderState.IndexBuffers[Cmd->IndexBuffer.ResourceHandle].Buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, RenderState.VertexBuffers[Cmd->VertexBuffer.ResourceHandle].Buffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RenderState.BufferObjects[Cmd->IndexBuffer.ResourceHandle].Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, RenderState.BufferObjects[Cmd->VertexBuffer.ResourceHandle].Buffer);
 
 	if(Cmd->VertexFormat == vert_format::P1C1UV1)
 	{
@@ -329,13 +340,15 @@ void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
 
-		for(u32 I = 0; I < RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].Sampler2DCount; ++I)
+		u32 TextureSlot = 0;
+		while(TextureSlot < ARRAY_COUNT(shader_program::Sampler))
 		{
-			if(Cmd->Textures[I].Type != render_resource::NOT_INITIALIZED)
+			if(Cmd->Textures[TextureSlot].Type != resource_type::NOT_INITIALIZED)
 			{
-				glActiveTexture(GL_TEXTURE0 + I);
-				glBindTexture(GL_TEXTURE_2D, RenderState.Textures[Cmd->Textures[I].ResourceHandle]);
+				glActiveTexture(GL_TEXTURE0 + TextureSlot);
+				glBindTexture(GL_TEXTURE_2D, RenderState.Textures[Cmd->Textures[TextureSlot].ResourceHandle]);
 			}
+			++TextureSlot;
 		}
 
 		glDrawElements(GL_TRIANGLES, Cmd->IndexCount, GL_UNSIGNED_SHORT, 0);
@@ -354,13 +367,15 @@ void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
 
-		for(u32 I = 0; I < RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].Sampler2DCount; ++I)
+		u32 TextureSlot = 0;
+		while(TextureSlot < ARRAY_COUNT(shader_program::Sampler))
 		{
-			if(Cmd->Textures[I].Type != render_resource::NOT_INITIALIZED)
+			if(Cmd->Textures[TextureSlot].Type != resource_type::NOT_INITIALIZED)
 			{
-				glActiveTexture(GL_TEXTURE0 + I);
-				glBindTexture(GL_TEXTURE_2D, RenderState.Textures[Cmd->Textures[I].ResourceHandle]);
+				glActiveTexture(GL_TEXTURE0 + TextureSlot);
+				glBindTexture(GL_TEXTURE_2D, RenderState.Textures[Cmd->Textures[TextureSlot].ResourceHandle]);
 			}
+			++TextureSlot;
 		}
 
 		glDrawElements(GL_TRIANGLES, Cmd->IndexCount, GL_UNSIGNED_SHORT, 0);

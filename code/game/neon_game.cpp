@@ -4,21 +4,12 @@
 #include "neon_primitive_mesh.h"
 #include "neon_mesh.h"
 
-struct camera
-{
-	// TODO: Merge projection and view matrix in one??
-	vec3	P;			// Position of the camera
-	vec3	Target;		// Target of the camera
-	r32		Distance;	// Distance of the camera from target
-	r32		Pitch;		// Pitch of the camera
-	r32		Yaw;		// Yaw of the camera
-	mat4	Matrix;		// Camera matrix
-};
+static game_state GameState = {};
+static cg_common CgCommon = {};
 
-static
-void UpdateCamera3D(game_input *Input, camera *Camera, 
-					bool SetCamera = false, vec3 _Target = vec3i(0,0,0), 
-					r32 _Distance = 25.0f, r32 _Pitch = 0.0f, r32 _Yaw = 0.0f)
+void UpdateCamera(game_input *Input, camera *Camera, 
+				  bool SetCamera = false, vec3 _Target = vec3i(0,0,0), 
+				  r32 _Distance = 25.0f, r32 _Pitch = 0.0f, r32 _Yaw = 0.0f)
 {
 	auto Remap = [](vec2 MouseRel)
 	{
@@ -35,16 +26,25 @@ void UpdateCamera3D(game_input *Input, camera *Camera,
 		Camera->Yaw = _Yaw;
 	}
 	
-	static bool LockPitch = true, LockYaw = false;
+	static bool LockPitch = false, LockYaw = false;
 
 	ImGui::Begin("Camera");
+	ImGui::SliderFloat("Distance", &Camera->Distance, 0.0f, 500.0f);
+	ImGui::SliderFloat("Target X", &Camera->Target.x, -300.0f, 300.0f);
+	ImGui::SliderFloat("Target Y", &Camera->Target.y, -300.0f, 300.0f);
+	ImGui::SliderFloat("Target Z", &Camera->Target.z, -300.0f, 300.0f);
 	ImGui::Checkbox("Lock Pitch", &LockPitch);
 	ImGui::SameLine();
 	ImGui::Checkbox("Lock Yaw", &LockYaw);
-	if(ImGui::Button("Reset Camera"))
+	if(ImGui::Button("Reset Yaw/Pitch"))
 	{
 		Camera->Yaw = 0.0f;
 		Camera->Pitch = 0.0f;
+	}
+	ImGui::SameLine();
+	if(ImGui::Button("Reset Target"))
+	{
+		Camera->Target = vec3i(0, 150, 0);
 	}
 	ImGui::End();
 
@@ -93,7 +93,17 @@ void UpdateCamera3D(game_input *Input, camera *Camera,
 	ImGui::TextColored(ImVec4(0, 1, 0, 1),"%.2f", Camera->P.y);
 	ImGui::SameLine();
 	ImGui::TextColored(ImVec4(0, 0, 1, 1),"%.2f", Camera->P.z);
+	ImGui::Text("Yaw: %f Pitch: %f", Camera->Yaw, Camera->Pitch);
 	ImGui::End();
+}
+
+void CreateTilemap(tilemap *Tilemap, char const *_Filename, vec2 _MapSize, u32 _TileSize)
+{
+	strncpy(Tilemap->Filename, _Filename, sizeof(Tilemap->Filename));
+	Tilemap->MapSize = _MapSize;
+	Tilemap->Tileset.LoadFile(_Filename, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
+	Tilemap->Tileset.CreateRenderResource();
+	Tilemap->TileSize = _TileSize;
 }
 
 DLLEXPORT
@@ -102,177 +112,71 @@ GAME_SETUP(GameSetup)
 	Platform = _Platform;
 	ImGui::SetCurrentContext(_ImGuiCtx);
 	rndr::Init();
+
+	// CgCommon
+	CgCommon.Time = 0.00f;
+
+	// GameState
+	GameState.MetersToPixels = Platform.Width / 16.0f;
+	GameState.PixelsToMeters = 1.0f / GameState.MetersToPixels;
+
+	texture WhiteTexture;
+	WhiteTexture.LoadFile("wonder.tga", texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, true);
+	GameState.WhiteTexture = rndr::MakeTexture(&WhiteTexture);
+	texture WaterDisplacementTexture;
+	WaterDisplacementTexture.LoadFile("displacement.tga", texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::REPEAT, false);
+	GameState.WaterDisplacementTexture = rndr::MakeTexture(&WaterDisplacementTexture);
+	GameState.WaterShader = rndr::MakeShaderProgram("shaders/water_vs.glsl", "shaders/water_ps.glsl");
+	GameState.WaterVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
+	GameState.Water = new render_cmd_list(MEGABYTE(2), GameState.WaterShader);
+	GameState.Water->ViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
+	GameState.Water->ProjMatrix = Orthographic(0.0f, 16.0f, GameState.PixelsToMeters * Platform.Height, 0.0f, -10.0f, 10.0f);
+	GameState.CommonConstBuffer = rndr::MakeBuffer(resource_type::CONSTANT_BUFFER, (u32)sizeof(cg_common), true);
+	rndr::BufferData(GameState.CommonConstBuffer, 0, sizeof(cg_common), &CgCommon);
+	rndr::BindBuffer(GameState.CommonConstBuffer, 0);
 }
 
 DLLEXPORT
 GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
-	//-----------------------------------------------------------------------------
-	// Game Update
-	//-----------------------------------------------------------------------------
-	static r32 MapDx = 0.0f, MapDy = 0.0f;
+//-----------------------------------------------------------------------------
+// Game Update
+//-----------------------------------------------------------------------------
+	CgCommon.Time = Input->Time / 20000;
+	ImGui::Begin("Debug");
+	ImGui::Text("CgCommon.Time = %f", CgCommon.Time);
+	ImGui::End();
 
-	game_controller_input *Controller = &Input->Controllers[0];
-	if(Controller->Left.EndedDown && Controller->Left.HalfTransitionCount == 1)
-	{
-		--MapDx;
-	}
-	if(Controller->Right.EndedDown && Controller->Right.HalfTransitionCount == 1)
-	{
-		++MapDx;
-	}
-	if(Controller->Up.EndedDown && Controller->Up.HalfTransitionCount == 1)
-	{
-		++MapDy;
-	}
-	if(Controller->Down.EndedDown && Controller->Down.HalfTransitionCount == 1)
-	{
-		--MapDy;
-	}
-	//-----------------------------------------------------------------------------
-	// Game Render
-	//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Game Render
+//-----------------------------------------------------------------------------
 	rndr::Clear();
 
-	local_persist render_cmd_list *CmdList;
-	local_persist render_cmd_list *SpriteCmdList;
-	local_persist render_cmd_list *HUDCmdList;
+	ImGui::Begin("Debug");
+	ImGui::Text("%0.2f ms/frame", 1000.0f * Input->FrameTime);
+	ImGui::End();
 
-	local_persist render_resource SpriteVertexBuffer;
-	local_persist render_resource SpriteShader;
-	
-	local_persist font *DebugFont = new font;
+	std::vector<vert_P1C1UV1> SpritesVertices;
 
-	local_persist texture *DefaultTileTexture = new texture;
-	local_persist texture *WhiteTexture = new texture;
-	local_persist texture *LucyDiffuseTexture= new texture;
+	PushSprite(&SpritesVertices, vec3i(0, 0, 0), vec2i(9, 9), vec4(1, 1, 1, 1), vec4(0, 0, 1.0, 1.0));
+	rndr::BufferData(GameState.WaterVertexBuffer, 0, sizeof(vert_P1C1UV1) * (u32)SpritesVertices.size(), &SpritesVertices.front());
 
-	local_persist render_resource VertexBuffer;
-	local_persist render_resource IndexBuffer;
-	local_persist render_resource Shader;
-	local_persist u32 IndicesCount;
+	cmd::copy_const_buffer *CopyConstBuffer = GameState.Water->AddCommand<cmd::copy_const_buffer>(0, sizeof(cg_common));
+	CopyConstBuffer->ConstantBuffer = GameState.CommonConstBuffer;
+	CopyConstBuffer->Data = GetCmdPacket(CopyConstBuffer)->AuxMemory;
+	memcpy(CopyConstBuffer->Data, &CgCommon, sizeof(cg_common));
+	CopyConstBuffer->Size = sizeof(cg_common);
 
-	local_persist render_resource DebugVertexBuffer;
+	cmd::draw *WaterSurface = GameState.Water->AppendCommand<cmd::draw>(CopyConstBuffer);
+	WaterSurface->StartVertex = 0;
+	WaterSurface->VertexBuffer = GameState.WaterVertexBuffer;
+	WaterSurface->VertexFormat = vert_format::P1C1UV1;
+	WaterSurface->StartVertex = 0;
+	WaterSurface->VertexCount = (u32)SpritesVertices.size();
+	WaterSurface->Textures[0] = GameState.WhiteTexture;
+	WaterSurface->Textures[1] = GameState.WaterDisplacementTexture;
 
-	local_persist camera Camera;
-
-	r32 MetersToPixels = Platform.Width / 20.0f;
-	r32 PixelsToMeters = 1.0f / MetersToPixels;
-
-	//if(Input->Mouse.Left.EndedDown)
-	//{
-	//	MapDx -= Input->Mouse.xrel * PixelsToMeters;
-	//	MapDy -= Input->Mouse.yrel * PixelsToMeters;
-	//}
-
-	local_persist bool OnceUponAGame = false;
-	if(!OnceUponAGame)
-	{
-		OnceUponAGame = true;
-
-		WhiteTexture->LoadFile("white_texture.tga", texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, false);
-		WhiteTexture->CreateRenderResource();
-
-		LucyDiffuseTexture->LoadFile("models/lucy/lucy_diffuse.tga", texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
-		//LucyDiffuseTexture->LoadFile("models/lucy/stone_texture.tga", texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
-		LucyDiffuseTexture->CreateRenderResource();
-
-		// Setup shader
-		Shader = rndr::MakeShaderProgram("shaders/pbr_vs.glsl", "shaders/pbr_ps.glsl");
-		SpriteShader = rndr::MakeShaderProgram("shaders/basic_vs.glsl", "shaders/basic_ps.glsl");
-
-		SpriteCmdList = new render_cmd_list(MEGABYTE(1), SpriteShader);
-		HUDCmdList = new render_cmd_list(MEGABYTE(1), SpriteShader);
-		CmdList = new render_cmd_list(MEGABYTE(1), Shader);
-
-		SpriteCmdList->ViewMatrix = LookAt(vec3(MapDx, 0, 0), vec3(MapDx, 0, -1), vec3i(0, 1, 0));
-		SpriteCmdList->ProjectionMatrix = Orthographic(0, 20.0f, PixelsToMeters * Platform.Height, 0, -1, 1);
-
-		HUDCmdList->ViewMatrix = LookAt(vec3(0, 0, 0), vec3i(0, 0, -1), vec3i(0, 1, 0));
-		HUDCmdList->ProjectionMatrix = Screenspace(Platform.Width, Platform.Height);
-
-		DefaultTileTexture->LoadFile("default_tile.tga", texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
-		DefaultTileTexture->CreateRenderResource();
-		DefaultTileTexture->FreeContentMemory();
-
-		DebugFont->Load("fonts/Inconsolata/Inconsolata-Regular.ttf", 16);
-
-		SpriteVertexBuffer = rndr::MakeVertexBuffer(MEGABYTE(1), false);
-
-		UpdateCamera3D(Input, &Camera, true, vec3i(0, 150, 0), 150.0f, DEG2RAD(0), DEG2RAD(45));
-		CmdList->ViewMatrix = Camera.Matrix;
-		CmdList->ProjectionMatrix = Perspective(DEG2RAD(105), (r32)Platform.Width / Platform.Height, 0.1f, 500.0f);
-
-		// Load Model
-		std::vector<vert_P1N1UV1> LucyVertices;
-		std::vector<vert_index> LucyIndices;
-		PushMesh(&LucyVertices, &LucyIndices, "models/lucy/lucy.fbx", 0);
-		
-		// Setup buffers
-		VertexBuffer = rndr::MakeVertexBuffer((u32)LucyVertices.size() * sizeof(vert_P1N1UV1), false);
-		rndr::VertexBufferData(VertexBuffer, 0, (u32)LucyVertices.size() * sizeof(vert_P1N1UV1), &LucyVertices.front());
-
-		IndexBuffer = rndr::MakeIndexBuffer((u32)LucyIndices.size() * sizeof(vert_index), false);
-		IndicesCount = (u32)LucyIndices.size(); // Count of indices to draw
-		rndr::IndexBufferData(IndexBuffer, 0, (u32)LucyIndices.size() * sizeof(vert_index), &LucyIndices.front());
-
-		DebugVertexBuffer = rndr::MakeVertexBuffer(MEGABYTE(1), true);
-
-		int BreakPoint = 0000;
-	}
-	SpriteCmdList->ViewMatrix = LookAt(vec3(MapDx, MapDy, 0), vec3(MapDx, MapDy, -1), vec3i(0, 1, 0));
-
-	UpdateCamera3D(Input, &Camera);
-	CmdList->ViewMatrix = Camera.Matrix;
-
-	std::vector<vert_P1C1UV1> SpriteVertices;
-	for(int I = 0; I < PixelsToMeters * Platform.Height; ++I)
-	{
-		for(int J = 0; J < 20; ++J)
-		{
-			PushSprite(&SpriteVertices, vec3i(J, I, -1), vec2i(1, 1), vec4i(1, 1, 1, 1), vec4i(0, 0, 1, 1));
-		}
-	}
-	u32 DummyMapVertSize = (u32)SpriteVertices.size();
-	u32 DebugTextStartVert = (u32)SpriteVertices.size();
-	PushTextSprite(&SpriteVertices, DebugFont, vec3i(0, 720, 1), vec4i(1, 1, 0, 1), "%0.2f ms/frame", 1000.0f * Input->FrameTime);
-	//PushTextSprite(&SpriteVertices, DebugFont, vec3i(150, 720, 1), vec4i(1, 1, 1, 1), "Mouse xrel: %d, yrel: %d", Input->Mouse.xrel, Input->Mouse.yrel);
-	//PushTextSprite(&SpriteVertices, DebugFont, vec3i(350, 720, 1), vec4i(1, 1, 1, 1), "Mouse x: %d, y: %d", Input->Mouse.x, Input->Mouse.y);
-	PushTextSprite(&SpriteVertices, DebugFont, vec3i(150, 720, 1), vec4i(1, 1, 1, 1), "Pitch: %f, Yaw: %f", Camera.Pitch, Camera.Yaw);
-	u32 DebugTextVertCount = (u32)SpriteVertices.size() - DummyMapVertSize;
-
-	rndr::VertexBufferData(SpriteVertexBuffer, 0, (u32)SpriteVertices.size() * sizeof(vert_P1C1UV1), &SpriteVertices.front());
-
-	cmd::draw *DummyMapCmd = SpriteCmdList->AddCommand<cmd::draw>(1);
-	DummyMapCmd->VertexBuffer = SpriteVertexBuffer;
-	DummyMapCmd->VertexFormat = vert_format::P1C1UV1;
-	DummyMapCmd->StartVertex = 0;
-	DummyMapCmd->VertexCount = DummyMapVertSize;
-	DummyMapCmd->Textures[0] = DefaultTileTexture->RenderResource;
-
-	cmd::draw *DebugTextCmd = HUDCmdList->AddCommand<cmd::draw>(2);
-	DebugTextCmd->VertexBuffer = SpriteVertexBuffer;
-	DebugTextCmd->VertexFormat = vert_format::P1C1UV1;
-	DebugTextCmd->StartVertex = DebugTextStartVert;
-	DebugTextCmd->VertexCount = DebugTextVertCount;
-	DebugTextCmd->Textures[0] = DebugFont->TextureAtlas.Texture.RenderResource;
-
-	SpriteCmdList->Sort();
-	SpriteCmdList->Submit();
-	SpriteCmdList->Flush();
-
-	HUDCmdList->Sort();
-	HUDCmdList->Submit();
-	HUDCmdList->Flush();
-
-	cmd::draw_indexed *Lucy = CmdList->AddCommand<cmd::draw_indexed>(2);
-	Lucy->VertexBuffer = VertexBuffer;
-	Lucy->VertexFormat = vert_format::P1N1UV1;
-	Lucy->IndexBuffer = IndexBuffer;
-	Lucy->IndexCount = IndicesCount;
-	Lucy->Textures[0] = LucyDiffuseTexture->RenderResource;
-
-	CmdList->Sort();
-	CmdList->Submit();
-	CmdList->Flush();
+	GameState.Water->Sort();
+	GameState.Water->Submit();
+	GameState.Water->Flush();
 }

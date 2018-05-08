@@ -447,7 +447,7 @@ int main(int argc, char **argv)
 
 			if(GLContext)
 			{
-				//SDL_GL_SetSwapInterval(1);
+				SDL_GL_SetSwapInterval(1);
 
 				LoadGameCode(&GameCode);
 				GameCode.GameSetup(Platform, ImGui::GetCurrentContext());
@@ -458,6 +458,7 @@ int main(int argc, char **argv)
 				SDL_Event Event;
 				bool ShouldQuit = false;
 
+				r32 Time = 0;
 				r32 FrameTime = 0;
 
 				u64 PrevCounter, CurrentCounter, CounterFrequency;
@@ -518,6 +519,9 @@ int main(int argc, char **argv)
 					ImGui_NewFrame(Window);
 
 					ImGui::ShowTestWindow();
+
+					// Game running time
+					NewInput->Time = SDL_GetTicks(); //(r32)(SDL_GetPerformanceCounter() / CounterFrequency);
 
 					NewInput->FrameTime = FrameTime;
 

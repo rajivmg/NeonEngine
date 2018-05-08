@@ -90,7 +90,8 @@ struct game_controller_input
 
 struct game_input
 {
-	r32 FrameTime;
+	r32 Time;								//
+	r32 FrameTime;							// In seconds
 	game_mouse_state Mouse;
 	game_controller_input Controllers[1];
 };

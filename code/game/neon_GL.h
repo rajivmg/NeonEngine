@@ -12,6 +12,7 @@
 #define GL_VERTEX_SHADER                  0x8B31
 
 #define GL_VALIDATE_STATUS                0x8B83
+#define GL_UNIFORM_BUFFER                 0x8A11
 #define GL_ARRAY_BUFFER                   0x8892
 #define GL_ELEMENT_ARRAY_BUFFER           0x8893
 #define GL_STREAM_DRAW                    0x88E0
@@ -69,6 +70,8 @@ GLPROC(void,	GenBuffers, GLsizei n, GLuint *buffers)\
 GLPROC(void,	BindBuffer, GLenum target, GLuint buffer)\
 GLPROC(void,	BufferData, GLenum target, GLsizeiptr size, const void *data, GLenum usage)\
 GLPROC(void,	BufferSubData, GLenum target, GLintptr offset, GLsizeiptr size, const void *data)\
+GLPROC(void,	BindBufferRange, GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size)\
+GLPROC(void,	BindBufferBase, GLenum target, GLuint index, GLuint buffer)\
 GLPROC(void,	GenVertexArrays, GLsizei n, GLuint *arrays)\
 GLPROC(void,	BindVertexArray, GLuint array)\
 GLPROC(GLint,	GetAttribLocation, GLuint program, const GLchar *name)\
@@ -77,6 +80,7 @@ GLPROC(void,	EnableVertexAttribArray, GLuint index)\
 GLPROC(void,	DisableVertexAttribArray, GLuint index)\
 GLPROC(GLint,	GetUniformLocation, GLuint program, const GLchar *name)\
 GLPROC(void,	Uniform1i, GLint location, GLint v0)\
+GLPROC(void,	Uniform1f, GLint location, GLfloat v0)\
 GLPROC(void, 	UniformMatrix4fv, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)\
 GLPROC(void,	ActiveTexture, GLenum texture)\
 GLPROC(void, 	BindFramebuffer, GLenum target, GLuint framebuffer)\

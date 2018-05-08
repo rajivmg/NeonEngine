@@ -6,6 +6,7 @@
 
 const dispatch_fn cmd::draw::DISPATCH_FUNCTION = &rndr::Draw;
 const dispatch_fn cmd::draw_indexed::DISPATCH_FUNCTION = &rndr::DrawIndexed;
+const dispatch_fn cmd::copy_const_buffer::DISPATCH_FUNCTION = &rndr::CopyConstBuffer;
 
 //-----------------------------------------------------------------------------
 // Renderer Wrapper
@@ -35,7 +36,7 @@ void rndr::SetProjectionMatrix(mat4 Matrix)
 	ogl::SetProjectionMatrix(Matrix);
 }
 
-render_resource rndr::MakeTexture(texture * Texture)
+render_resource rndr::MakeTexture(texture *Texture)
 {
 	return ogl::MakeTexture(Texture);
 }
@@ -45,34 +46,24 @@ void rndr::DeleteTexture(render_resource Texture)
 	ogl::DeleteTexture(Texture);
 }
 
-render_resource rndr::MakeVertexBuffer(u32 Size, bool Dynamic)
+render_resource rndr::MakeBuffer(resource_type Type, u32 Size, bool Dynamic)
 {
-	return ogl::MakeVertexBuffer(Size, Dynamic);
+	return ogl::MakeBuffer(Type, Size, Dynamic);
 }
 
-void rndr::VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, void const *Data)
+void rndr::BufferData(render_resource Buffer, u32 Offset, u32 Size, void const *Data)
 {
-	ogl::VertexBufferData(VertexBuffer, Offset, Size, Data);
+	ogl::BufferData(Buffer, Offset, Size, Data);
 }
 
-void rndr::DeleteVertexBuffer(render_resource VertexBuffer)
+void rndr::DeleteBuffer(render_resource Buffer)
 {
-	ogl::DeleteVertexBuffer(VertexBuffer);
+	ogl::DeleteBuffer(Buffer);
 }
 
-render_resource rndr::MakeIndexBuffer(u32 Size, bool Dynamic)
+void rndr::BindBuffer(render_resource Buffer, u32 Index)
 {
-	return ogl::MakeIndexBuffer(Size, Dynamic);
-}
-
-void rndr::IndexBufferData(render_resource IndexBuffer, u32 Offset, u32 Size, void const *Data)
-{
-	ogl::IndexBufferData(IndexBuffer, Offset, Size, Data);
-}
-
-void rndr::DeleteIndexBuffer(render_resource IndexBuffer)
-{
-	ogl::DeleteIndexBuffer(IndexBuffer);
+	ogl::BindBuffer(Buffer, Index);
 }
 
 render_resource rndr::MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc)
@@ -100,6 +91,12 @@ void rndr::DrawIndexed(void const *Data)
 {
 	cmd::draw_indexed *Cmd = (cmd::draw_indexed *)Data;
 	ogl::DrawIndexed(Cmd);
+}
+
+void rndr::CopyConstBuffer(void const * Data)
+{
+	cmd::copy_const_buffer *Cmd = (cmd::copy_const_buffer *)Data;
+	ogl::BufferData(Cmd->ConstantBuffer, 0, Cmd->Size, Cmd->Data);
 }
 
 //-----------------------------------------------------------------------------
@@ -156,7 +153,7 @@ void render_cmd_list::Submit()
 {
 	rndr::UseShaderProgram(ShaderProgram);
 	rndr::SetViewMatrix(ViewMatrix);
-	rndr::SetProjectionMatrix(ProjectionMatrix);
+	rndr::SetProjectionMatrix(ProjMatrix);
 	for(u32 I = 0; I < Current; ++I)
 	{
 		cmd_packet *Packet = Packets[I];

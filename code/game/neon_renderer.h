@@ -52,16 +52,17 @@ typedef u16 vert_index;
 // Renderer Wrapper
 //-----------------------------------------------------------------------------
 
+enum class resource_type : u32
+{
+	NOT_INITIALIZED = 0x00000000,
+	CONSTANT_BUFFER, VERTEX_BUFFER, INDEX_BUFFER, SHADER_PROGRAM, TEXTURE, RENDER_TARGET,
+};
+
 struct render_resource
 {
-	enum resource_type : u32
-	{
-		NOT_INITIALIZED = 0x00000000,
-		VERTEX_BUFFER, INDEX_BUFFER, SHADER_PROGRAM, TEXTURE, RENDER_TARGET,
-	};
 
 	resource_type	Type;
-	s32				ResourceHandle;
+	u32				ResourceHandle;
 };
 
 namespace rndr
@@ -75,13 +76,10 @@ namespace rndr
 	render_resource MakeTexture(texture *Texture);
 	void			DeleteTexture(render_resource Texture);
 	
-	render_resource	MakeVertexBuffer(u32 Size, bool Dynamic = true);
-	void			VertexBufferData(render_resource VertexBuffer, u32 Offset, u32 Size, void const *Data);
-	void			DeleteVertexBuffer(render_resource VertexBuffer);
-	
-	render_resource	MakeIndexBuffer(u32 Size, bool Dynamic = true);
-	void			IndexBufferData(render_resource IndexBuffer, u32 Offset, u32 Size, void const *Data);
-	void			DeleteIndexBuffer(render_resource IndexBuffer);
+	render_resource MakeBuffer(resource_type Type, u32 Size, bool Dynamic = false);
+	void			BufferData(render_resource Buffer, u32 Offset, u32 Size, void const *Data);
+	void			DeleteBuffer(render_resource Buffer);
+	void			BindBuffer(render_resource Buffer, u32 Index);
 
 	render_resource MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc);
 	void			DeleteShaderProgram(render_resource ShaderProgram);
@@ -89,12 +87,25 @@ namespace rndr
 
 	void			Draw(void const *Data);
 	void			DrawIndexed(void const *Data);
+	void			CopyConstBuffer(void const *Data);
 }
 
 //-----------------------------------------------------------------------------
 // Render Commands
 //-----------------------------------------------------------------------------
 
+/*
+                                        sizeof(cmd_type)
+                                            |
++---------+sizeof(cmd_packet)+---------+    |
++-------------------------------------------v---------------------+
+|NextCmdPacket|DispatchFn|Cmd|AuxMemory|ActualCmd|Actual AuxMemory|
++--------------------------+------+---------^-------------^-------+
+                           |      |         |             |
+                           +----------------+             |
+                                  |                       |
+                                  +-----------------------+
+*/
 struct cmd_packet
 {
 	cmd_packet		*NextCmdPacket;
@@ -106,11 +117,6 @@ struct cmd_packet
 // NOTE: As actual cmd is stored right after the end of the struct cmd_packet.
 // We subtract the sizeof(cmd_packet) from the address of the actual cmd to get
 // address of the parent cmd_packet.
-//
-//+----------sizeof(cmd_packet)----------+
-//+------------------------------------------------+
-//|NextCmdPacket|DispatchFn|Cmd|AuxMemory|ActualCmd|
-//+------------------------------------------------+
 inline cmd_packet* GetCmdPacket(void *Cmd)
 {
 	return (cmd_packet *)((u8 *)Cmd - sizeof(cmd_packet));
@@ -128,7 +134,7 @@ struct render_cmd_list
 	render_resource ShaderProgram;
 
 	mat4	ViewMatrix;
-	mat4	ProjectionMatrix;
+	mat4	ProjMatrix;
 
 	render_cmd_list(u32 _BufferSize, render_resource ShaderProgram);
 	~render_cmd_list();
@@ -225,7 +231,7 @@ namespace cmd
 		vert_format			VertexFormat;
 		u32					StartVertex;
 		u32					VertexCount;
-		render_resource		Textures[10];
+		render_resource		Textures[8];
 		//render_resource		ShaderProgram;
 
 		static const dispatch_fn DISPATCH_FUNCTION;
@@ -238,12 +244,22 @@ namespace cmd
 		vert_format			VertexFormat;
 		render_resource		IndexBuffer;
 		u32					IndexCount;
-		render_resource		Textures[10];
+		render_resource		Textures[8];
 		//render_resource		ShaderProgram;
 
 		static const dispatch_fn DISPATCH_FUNCTION;
 	};
 	static_assert(std::is_pod<draw_indexed>::value == true, "Must be a POD.");
+
+	struct copy_const_buffer
+	{
+		render_resource ConstantBuffer;
+		void			*Data;
+		u32				Size;
+
+		static const dispatch_fn DISPATCH_FUNCTION;
+	};
+	static_assert(std::is_pod<copy_const_buffer>::value == true, "Must be a POD.");
 }
 
 // NOTE: P is top left point.
