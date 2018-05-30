@@ -20,7 +20,8 @@ void ogl::InitState()
 	RenderState.ShaderProgramCurrent = 0;
 
 	// Set clear color
-	glClearColor(0.006f, 0.098f, 0.223f, 1.0f);
+	//glClearColor(0.07f, 0.07f, 0.08f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// Set the viewport
 	glViewport(0, 0, Platform.Width, Platform.Height);
@@ -65,6 +66,7 @@ void ogl::SetProjectionMatrix(mat4 Matrix)
 	glUniformMatrix4fv(RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].ProjMatrix, 1, GL_FALSE, Matrix.Elements);
 }
 
+#if 0
 render_resource ogl::MakeTexture(texture *Texture)
 {
 	if(!Texture->IsValid())
@@ -102,6 +104,7 @@ render_resource ogl::MakeTexture(texture *Texture)
 
 	return RenderResource;
 }
+#endif
 
 render_resource ogl::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection)
 {

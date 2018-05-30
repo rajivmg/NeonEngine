@@ -42,6 +42,14 @@ s32 Clamp(s32 Min, s32 Value, s32 Max)
 	return Result;
 }
 
+inline
+r32	Lerp(r32 A, r32 t, r32 B)
+{
+	r32 Result = (1.0f - t) * A + t * B;
+
+	return Result;
+}
+
 //-----------------------------------------------------------------------------
 // Vector
 //-----------------------------------------------------------------------------
@@ -145,6 +153,14 @@ FORCE_INLINE r32 Length(vec3 const &A) { return sqrtf(Dot(A, A)); }
 FORCE_INLINE r32 LengthSq(vec3 const &A) { return Dot(A, A); }
 FORCE_INLINE vec3 Normalize(vec3 const &A) { return A * (1.0f / Length(A)); }
 FORCE_INLINE vec3 Lerp(vec3 const &A, vec3 const &B, r32 T) { return A + (B - A) * T; }
+
+inline
+vec3 Lerp(vec3 A, r32 t, vec3 B)
+{
+	vec3 Result = (1.0f - t) * A + t * B;
+
+	return Result;
+}
 
 struct vec4
 {

@@ -33,22 +33,17 @@ typedef struct tga_header
 
 enum class texture_type
 {
-	XX,
 	TEXTURE_2D
 };
 
 enum class texture_filter
 {
-	XX,
-	LINEAR,
-	NEAREST,
+	LINEAR, NEAREST
 };
 
 enum class texture_wrap
 {
-	XX,
-	CLAMP,
-	REPEAT
+	CLAMP, REPEAT
 };
 
 struct bitmap
@@ -65,6 +60,7 @@ void LoadBitmap(bitmap *Bitmap, char const *Filename);
 void FreeBitmap(bitmap *Bitmap);
 void BitmapFlipAroundY(bitmap *Bitmap);
 
+#if 0
 class texture
 {
 public:
@@ -111,7 +107,7 @@ public:
 	texture();
 	~texture();
 };
-
+#endif
 //-----------------------------------------------------------------------------
 // TextureAtlas
 //-----------------------------------------------------------------------------
@@ -139,10 +135,12 @@ struct binary_t_node
 	bool Filled;
 };
 
+#if 0
 class texture_atlas
 {
 public:
-	texture			Texture;		
+	//texture			Texture;
+	bitmap			Bitmap;
 	u32				Padding;
 
 	binary_t_node	Node;
@@ -150,15 +148,27 @@ public:
 	void			Init(u32 Width, u32 Height, u32 _Padding, texture_filter Filter, bool HwGammaCorrection = false);
 
 	// Returns true if texture atlas is valid
-	bool			IsValid();
+	//bool			IsValid();
 
 	// Returns the texture coordinates of the given texture in the texture atlas.
 	// Note that the coordinates will be in OGL style. i.e. (0,0) = Bottom Left
-	texture_coords	Pack(texture *_Texture);
+	texture_coords	Pack(bitmap *_Bitmap);
 
 	texture_atlas();
 	~texture_atlas();
 };
+#endif
+
+struct bitmap_pack
+{
+	bitmap Bitmap;
+	u32 Padding;
+
+	binary_t_node Node;	// [Internal use only]
+};
+
+void InitBitmapPack(bitmap_pack *BitmapPack, u32 Width, u32 Height, u32 Padding);
+texture_coords BitmapPackInsert(bitmap_pack *BitmapPack, bitmap *Bitmap);
 
 //-----------------------------------------------------------------------------
 // Texture Debugging
@@ -172,6 +182,6 @@ public:
 
 // Save texture object on disk in .tga format
 // Note that the first byte of texture data will be saved as the first top left pixel.
-void DebugTextureSave_(char const *Filename, texture *Texture);
+void DebugTextureSave_(char const *Filename, bitmap *Bitmap);
 
 #endif

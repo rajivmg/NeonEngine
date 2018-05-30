@@ -36,10 +36,12 @@ void rndr::SetProjectionMatrix(mat4 Matrix)
 	ogl::SetProjectionMatrix(Matrix);
 }
 
+#if 0
 render_resource rndr::MakeTexture(texture *Texture)
 {
 	return ogl::MakeTexture(Texture);
 }
+#endif
 
 render_resource rndr::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection)
 {

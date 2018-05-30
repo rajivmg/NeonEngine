@@ -35,6 +35,7 @@ typedef double		r64;
 #define GIGABYTE(X) 1024LL * MEGABYTE(X)
 #define FORCE_INLINE __forceinline
 #define OFFSET_OF(TYPE, MEMBER) (uintptr_t)&(((TYPE *)0)->MEMBER)
+#define	SAFE_MALLOC(Size) Safe_Malloc((Size))
 #define SAFE_FREE(x) { if(x) { free(x);	(x) = nullptr; } }
 #define SAFE_DELETE(x) { delete (x);	(x) = nullptr; }
 #define SAFE_DELETEA(x) { delete[] (x);	(x) = nullptr; }

@@ -22,7 +22,7 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 	FontHeight = aFontHeight;
 	Glyphs = (glyph *)malloc(sizeof(glyph) * (128 - 32));
 	
-	TextureAtlas.Init(512, 512, 2, texture_filter::NEAREST, false);
+	InitBitmapPack(&BitmapPack, 512, 512, 2);
 
 	FT_Library FTLib;
 	FT_Face Face;
@@ -49,7 +49,7 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 	Error = FT_Set_Pixel_Sizes(Face, 0, FontHeight);
 	assert(Error == 0);
 
-	texture *GlyphTexture = new texture;
+	bitmap *GlyphTexture = new bitmap();
 	for(int CIndex = 32; CIndex < 128; ++CIndex)
 	{
 		int GlyphIndex = FT_Get_Char_Index(Face, CIndex);
@@ -77,15 +77,15 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 
 		GlyphTexture->Width = Glyph->Width;
 		GlyphTexture->Height = Glyph->Height;
-		GlyphTexture->ContentSize = GlyphTexture->Width * GlyphTexture->Height * 4;
-		if(GlyphTexture->ContentSize != 0)
+		GlyphTexture->DataSize = GlyphTexture->Width * GlyphTexture->Height * 4;
+		if(GlyphTexture->DataSize != 0)
 		{
-			GlyphTexture->Content = malloc(GlyphTexture->ContentSize);
+			GlyphTexture->Data = malloc(GlyphTexture->DataSize);
 			assert(GlyphTexture != 0);
-			memset(GlyphTexture->Content, 255, GlyphTexture->ContentSize);
+			memset(GlyphTexture->Data, 255, GlyphTexture->DataSize);
 		}
 
-		u32 *DestTexel = (u32 *)GlyphTexture->Content;
+		u32 *DestTexel = (u32 *)GlyphTexture->Data;
 		u8 *SrcTexel = (u8 *)GlyphBitmap;
 
 		// Convert Glpyh's 8bit texture to 32bit texture
@@ -98,19 +98,20 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 			SrcTexel++;
 		}
 
-		if(GlyphTexture->ContentSize != 0)
+		if(GlyphTexture->DataSize != 0)
 		{
-			Glyph->Coords = TextureAtlas.Pack(GlyphTexture);
+			Glyph->Coords = BitmapPackInsert(&BitmapPack, GlyphTexture);
 		}
 
 		// After glyph texture has been copied to texture atlas free the glyph texture memory
-		if(GlyphTexture->ContentSize != 0)
+		if(GlyphTexture->DataSize != 0)
 		{
-			SAFE_FREE(GlyphTexture->Content);
+			SAFE_FREE(GlyphTexture->Data);
 		}
 	}
 
-	TextureAtlas.Texture.CreateRenderResource();
+	//TextureAtlas.Texture.CreateRenderResource();
+	FontTexture = rndr::MakeTexture(&BitmapPack.Bitmap, texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, false);
 
 	Initialised = true;
 

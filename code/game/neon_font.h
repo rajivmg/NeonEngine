@@ -29,7 +29,8 @@ public:
 	u32 const		InstanceID;
 	glyph			*Glyphs;
 	u32				FontHeight;
-	texture_atlas	TextureAtlas;
+	bitmap_pack		BitmapPack;
+	render_resource FontTexture; // TODO: << Rename this.
 	bool			Initialised;
 
 	void			Load(char const * FontSrc, u32 aFontHeight);
