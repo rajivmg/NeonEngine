@@ -1,7 +1,7 @@
 #include "neon_opengl.h"
 
 #include "neon_renderer.h"
-#include "neon_texture.h"
+#include "neon_bitmap.h"
 #include <imgui.h>
 
 #define NEON_INIT_GL
@@ -9,10 +9,6 @@
 #include "neon_GL.h"
 
 static render_state RenderState = {};
-
-//-----------------------------------------------------------------------------
-// gl helper functions
-//-----------------------------------------------------------------------------
 
 void ogl::InitState()
 {
@@ -65,46 +61,6 @@ void ogl::SetProjectionMatrix(mat4 Matrix)
 {
 	glUniformMatrix4fv(RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].ProjMatrix, 1, GL_FALSE, Matrix.Elements);
 }
-
-#if 0
-render_resource ogl::MakeTexture(texture *Texture)
-{
-	if(!Texture->IsValid())
-	{
-		assert(!"Texture is invalid.");
-	}
-
-	assert(RenderState.TextureCurrent < ARRAY_COUNT(RenderState.Textures));
-
-	render_resource RenderResource;
-	RenderResource.Type = resource_type::TEXTURE;
-	RenderResource.ResourceHandle = RenderState.TextureCurrent++;
-
-	// Generate and bind Texture
-	glGenTextures(1, &RenderState.Textures[RenderResource.ResourceHandle]);
-	// TODO: Add more texture type in future.
-	assert(Texture->Type == texture_type::TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, RenderState.Textures[RenderResource.ResourceHandle]);
-
-	// Orient the texture
-	if(!Texture->FlippedAroundY)
-		Texture->FlipAroundY();
-
-	// Upload the texture to the GPU
-	glTexImage2D(GL_TEXTURE_2D, 0, Texture->HwGammaCorrection ? GL_SRGB_ALPHA : GL_RGBA, Texture->Width, Texture->Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, Texture->Content);
-
-	// Set texture parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, Texture->Wrap == texture_wrap::REPEAT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, Texture->Wrap == texture_wrap::REPEAT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, Texture->Filter == texture_filter::NEAREST ? GL_NEAREST : GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Texture->Filter == texture_filter::NEAREST ? GL_NEAREST : GL_LINEAR);
-
-	// Unbind texture
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	return RenderResource;
-}
-#endif
 
 render_resource ogl::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection)
 {
@@ -681,43 +637,3 @@ IMGUI_INVALIDATE_DEVICE_OBJECTS(ImGui_InvalidateDeviceObjects)
         imgui_FontTexture = 0;
     }
 }
-
-/*
-void GLDrawDebugAxis()
-{
-	glDisable(GL_DEPTH_TEST);
-	glUseProgram(0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	static r32 Dy = 0.0f, Dx = 0.0f; 
-	mat4 LookAt = mat4::LookAt(vec3(Dx,Dy,3.0f), vec3(0,0,0), vec3(0,1,0));
-	Dy += 0.001f;
-	Dx += 0.001f;
-	LookAt = mat4::Transpose(LookAt);
-	glLoadMatrixf(LookAt.Elements);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	// mat4 Proj = mat4::Orthographic(-1.0f, 1.0f, 1.0f, -1.0f, 0.1f, 10.0f);
-	mat4 Proj = mat4::Perspective(110, 16/9, 0.1f, 100.0f);
-	mat4 Proj1 = mat4::Transpose(Proj);
-	glLoadMatrixf(Proj1.Elements);
-
-	vec3 Origin(0.0f, 0.0f, 0.0f), WidgetSize(2, 2, 2);
-	glBegin(GL_LINES);
-		glColor3f(1.0f, 0, 0);
-		glVertex3f(Origin.x, Origin.y, Origin.z);
-		glVertex3f(Origin.x + WidgetSize.x, Origin.y, Origin.z);
-
-		glColor3f(0, 1.0f, 0);
-		glVertex3f(Origin.x, Origin.y, Origin.z);
-		glVertex3f(Origin.x, Origin.y + WidgetSize.y, Origin.z);
-
-		glColor3f(0, 0, 1.0f);
-		glVertex3f(Origin.x, Origin.y, Origin.z);
-		glVertex3f(Origin.x, Origin.y, Origin.z + WidgetSize.z);
-	glEnd();
-	glEnable(GL_DEPTH_TEST);
-}
-*/

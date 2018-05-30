@@ -58,7 +58,6 @@ namespace ogl
 	void			Clear();
 	void			SetViewMatrix(mat4 Matrix);
 	void			SetProjectionMatrix(mat4 Matrix);
-	//render_resource MakeTexture(texture *Texture);
 	render_resource MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection);
 	void			DeleteTexture(render_resource Texture);
 	render_resource	MakeBuffer(resource_type Type, u32 Size, bool Dynamic = false);

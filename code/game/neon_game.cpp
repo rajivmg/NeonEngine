@@ -1,131 +1,11 @@
 #include "neon_game.h"
 
-#include "neon_font.h"
-#include "neon_primitive_mesh.h"
 #include "neon_mesh.h"
 
 static game_state GameState = {};
 
-#if 0
-void UpdateCamera(game_input *Input, camera *Camera, 
-				  bool SetCamera = false, vec3 _Target = vec3i(0,0,0), 
-				  r32 _Distance = 25.0f, r32 _Pitch = 0.0f, r32 _Yaw = 0.0f)
-{
-	auto Remap = [](vec2 MouseRel)
-	{
-		vec2 Center = vec2i(Platform.Width / 2, Platform.Height / 2);
-		return vec2((2*M_PI/Platform.Width) * (MouseRel.x + Center.x) - M_PI,
-					(2*M_PI/Platform.Height) * (MouseRel.y + Center.y) - M_PI);
-	};
-
-	if(SetCamera)
-	{
-		Camera->Target = _Target;
-		Camera->Distance = _Distance;
-		Camera->Pitch = _Pitch;
-		Camera->Yaw = _Yaw;
-	}
-	
-	static bool LockPitch = false, LockYaw = false;
-
-	ImGui::Begin("Camera");
-	ImGui::SliderFloat("Distance", &Camera->Distance, 0.0f, 500.0f);
-	ImGui::SliderFloat("Target X", &Camera->Target.x, -300.0f, 300.0f);
-	ImGui::SliderFloat("Target Y", &Camera->Target.y, -300.0f, 300.0f);
-	ImGui::SliderFloat("Target Z", &Camera->Target.z, -300.0f, 300.0f);
-	ImGui::Checkbox("Lock Pitch", &LockPitch);
-	ImGui::SameLine();
-	ImGui::Checkbox("Lock Yaw", &LockYaw);
-	if(ImGui::Button("Reset Yaw/Pitch"))
-	{
-		Camera->Yaw = 0.0f;
-		Camera->Pitch = 0.0f;
-	}
-	ImGui::SameLine();
-	if(ImGui::Button("Reset Target"))
-	{
-		Camera->Target = vec3i(0, 150, 0);
-	}
-	ImGui::End();
-
-	// Rotation
-	if(Input->Mouse.Left.EndedDown && (Input->Mouse.xrel != 0 || Input->Mouse.yrel != 0))
-	{
-		vec2 MouseRel = Remap(vec2i(Input->Mouse.xrel, Input->Mouse.yrel));
-		if(!LockPitch)
-		{
-			Camera->Pitch -= MouseRel.y;
-		}
-		if(!LockYaw)
-		{
-			Camera->Yaw -= MouseRel.x;
-		}
-
-		// TODO: These clamping are maybe wrong. FIX IT!!
-		if(Camera->Yaw > 2 * M_PI)
-		{
-			Camera->Yaw = Camera->Yaw - (2 * M_PI);
-		}
-		if(Camera->Yaw < 0)
-		{
-			Camera->Yaw = 2 * M_PI - Camera->Yaw;
-		}
-		Camera->Pitch = Clamp(-M_PI / 2, Camera->Pitch, M_PI / 2);
-	}
-
-	// Zoom
-	if(Input->Mouse.Middle.EndedDown && (Input->Mouse.yrel != 0))
-	{
-		Camera->Distance -= Input->Mouse.yrel;
-	}
-
-	Camera->P.x = Camera->Target.x + Camera->Distance * cosf(Camera->Pitch) * sinf(Camera->Yaw);
-	Camera->P.y = Camera->Target.y + Camera->Distance * sin(Camera->Pitch);
-	Camera->P.z = Camera->Target.z + Camera->Distance * cos(Camera->Pitch) * cos(Camera->Yaw);
-
-	Camera->Matrix = LookAt(Camera->P, Camera->Target, vec3i(0, 1, 0));
-	//Platform.Log("CamPos: (%f, %f, %f)", Camera->P.x, Camera->P.y, Camera->P.z);
-	ImGui::Begin("Camera");
-	ImGui::Text("Positon:");
-	ImGui::SameLine();
-	ImGui::TextColored(ImVec4(1, 0, 0, 1),"%.2f", Camera->P.x);
-	ImGui::SameLine();
-	ImGui::TextColored(ImVec4(0, 1, 0, 1),"%.2f", Camera->P.y);
-	ImGui::SameLine();
-	ImGui::TextColored(ImVec4(0, 0, 1, 1),"%.2f", Camera->P.z);
-	ImGui::Text("Yaw: %f Pitch: %f", Camera->Yaw, Camera->Pitch);
-	ImGui::End();
-}
-#endif
-
 void GenFloorTiles(room *Room, u32 *RoomMap)
 {
-#if 0
-	for(u32 Y = 0; Y < Room->SizeY; ++Y)
-	{
-		for(u32 X = 0; X < Room->RoomX; ++X)
-		{
-			if(*(RoomMap + X + Y * Room->RoomX) != '#')
-			{
-				++Room->FloorTilesCount;
-			}
-		}
-	}
-
-	Room->FloorTiles = (floor_tile *)malloc(sizeof(floor_tile) * Room->FloorTilesCount);
-
-	u32 TileCounter = 0;
-	for(u32 Y = 0; Y < Room->SizeY; ++Y)
-	{
-		for(u32 X = 0; X < Room->RoomX; ++X)
-		{
-			if(*(RoomMap + X + Y * Room->RoomX) != '#')
-			{
-				Room->FloorTiles[TileCounter++].P = vec3i(X, Y, -1);
-			}
-		}
-	}
-#else
 	Room->FloorTilesCount = Room->SizeX * Room->SizeY;
 	Room->FloorTiles = (floor_tile *)malloc(sizeof(floor_tile) * Room->FloorTilesCount);
 	
@@ -137,11 +17,8 @@ void GenFloorTiles(room *Room, u32 *RoomMap)
 			FloorTile->P = vec3i(X, Y, 0);
 		}
 	}
-
-#endif
 }
 
-// NOTE: Parse map to an entity based Room
 void GenRoom(room *Room)
 {
 	/**
@@ -305,16 +182,6 @@ void SimRoom(game_input *Input, room *Room)
 			PlayerNewP.y += 1;
 
 			CheckPlayerNewP = true;
-			//if(IsTileEmptyForPlayer(PlayerNewP))
-			//{
-			//	//Room->Player->P = PlayerNewP; // Lerp it outside
-			//	IsPlayerMoving = true;
-			//	PlayerMoveStartTime = Input->Time;
-			//}
-			//else
-			//{
-			//	IsPlayerMoving = false;
-			//}
 		}
 		if(Controller->Down.EndedDown && Controller->Down.HalfTransitionCount == 1)
 		{
@@ -393,8 +260,7 @@ GAME_SETUP(GameSetup)
 
 	GameState.RoomCenterOffset = vec3(((Platform.Width * GameState.PixelsToMeters) - GameState.Room.SizeX) / 2, 0, 0);
 
-	GameState.DebugFont = new font();
-	GameState.DebugFont->Load("fonts/Inconsolata/Inconsolata-Regular.ttf", 20);
+	InitFont(&GameState.DebugFont, "fonts/Inconsolata/Inconsolata-Regular.ttf", 20);
 
 	bitmap WhiteBitmap;
 	LoadBitmap(&WhiteBitmap, "sprites/white_texture.tga");
@@ -434,10 +300,9 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	std::vector<vert_P1C1UV1> TilesVertices;
 	std::vector<vert_P1C1UV1> DebugTextVertices;
-#if 1
+
 	for(u32 I = 0; I < GameState.Room.EntityCount; ++I)
 	{
-#if 1
 			entity *Entity = GameState.Room.Entities + I;
 			switch(Entity->Type)
 			{
@@ -461,59 +326,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					PushSprite(&TilesVertices, Entity->P + GameState.RoomCenterOffset, vec2i(1, 1), vec4(0.0f, 0.9f, 0.0f, 1.0f), vec4(0, 0, 1, 1));
 				} break;
 			}
-
-#else
-			vec3 P;
-			vec4 Color;
-			switch(*(GameState.Room.Tiles + X + Y * GameState.Room.RoomX))
-			{
-				case '#':
-				{
-					P = vec3((r32)X, (r32)Y, 0.0f);
-					Color = vec4(0.9f, 0.5f, 0.5, 1.0f);
-					PushSprite(&TilesVertices, P, vec2i(1, 1), Color, vec4(0, 0, 1, 1));		
-				} break;
-
-				case '@':
-				{
-					P = vec3((r32)X, (r32)Y, 0.0f);
-					Color = vec4(0.0f, 0.9f, 0.0f, 1.0f);
-					PushSprite(&TilesVertices, P, vec2i(1, 1), Color, vec4(0, 0, 1, 1));	
-
-					vec3 TextP = vec3(P.x * GameState.MetersToPixels + 0.4f * GameState.MetersToPixels,
-						P.y * GameState.MetersToPixels + GameState.MetersToPixels,
-						0.0f);
-					PushTextSprite(&DebugTextVertices, DebugFont, TextP, vec4i(1, 1, 1, 1), "@");
-					TextP.x -= 0.2f * GameState.MetersToPixels;
-					TextP.y -= 0.5f * GameState.MetersToPixels;
-					PushTextSprite(&DebugTextVertices, DebugFont, TextP, vec4i(1, 1, 1, 1), "HP: 3");
-				} break;
-
-				case '2':
-				{
-					P = vec3((r32)X, (r32)Y, 0.0f);
-					Color = vec4(0.9f, 0.0f, 0.0f, 1.0f);
-					PushSprite(&TilesVertices, P, vec2i(1, 1), Color, vec4(0, 0, 1, 1));
-
-					vec3 TextP = vec3(P.x * GameState.MetersToPixels + 0.4f * GameState.MetersToPixels,
-						P.y * GameState.MetersToPixels + GameState.MetersToPixels,
-						0.0f);
-					PushTextSprite(&DebugTextVertices, DebugFont, TextP, vec4i(1, 1, 1, 1), "2");
-					TextP.x -= 0.2f * GameState.MetersToPixels;
-					TextP.y -= 0.5f * GameState.MetersToPixels;
-					PushTextSprite(&DebugTextVertices, DebugFont, TextP, vec4i(1, 1, 1, 1), "HP: 2");
-				} break;
-
-				case 'F':
-				{
-					P = vec3((r32)X, (r32)Y, 0.0f);
-					Color = vec4(0.5f, 0.0f, 1.0f, 1.0f);
-					PushSprite(&TilesVertices, P, vec2i(1, 1), Color, vec4(0, 0, 1, 1));		
-				} break;
-			}
-#endif
 	}
-#endif
 
 	// Render FloorTiles
 	for(u32 I = 0; I < GameState.Room.FloorTilesCount; ++I)
@@ -546,7 +359,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	GameState.TileRenderList->Submit();
 	GameState.TileRenderList->Flush();
 	
-	PushTextSprite(&DebugTextVertices, GameState.DebugFont, vec3i(0, 720, 1), vec4i(1, 1, 0, 1), "%0.2f ms/frame", 1000.0f * Input->FrameTime);
+	PushTextSprite(&DebugTextVertices, &GameState.DebugFont, vec3i(0, 720, 1), vec4i(1, 1, 0, 1), "%0.2f ms/frame", 1000.0f * Input->FrameTime);
 	rndr::BufferData(GameState.DebugTextVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)DebugTextVertices.size(), &DebugTextVertices.front());
 
 	cmd::draw *DebugTextCmd = GameState.DebugTextCmdList->AddCommand<cmd::draw>(0);
@@ -554,7 +367,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	DebugTextCmd->VertexFormat = vert_format::P1C1UV1;
 	DebugTextCmd->StartVertex = 0;
 	DebugTextCmd->VertexCount = (u32)DebugTextVertices.size();
-	DebugTextCmd->Textures[0] = GameState.DebugFont->FontTexture;
+	DebugTextCmd->Textures[0] = GameState.DebugFont.FontTexture;
 	
 
 	GameState.DebugTextCmdList->Sort();

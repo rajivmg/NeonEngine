@@ -6,11 +6,7 @@
 #include FT_FREETYPE_H
 
 #include "../platform/neon_platform.h"
-#include "neon_texture.h"
-
-//-----------------------------------------------------------------------------
-// Font
-//-----------------------------------------------------------------------------
+#include "neon_bitmap.h"
 
 struct glyph
 {
@@ -23,21 +19,16 @@ struct glyph
 	texture_coords	Coords;
 };
 
-class font
+struct font
 {
-public:
-	u32 const		InstanceID;
-	glyph			*Glyphs;
-	u32				FontHeight;
-	bitmap_pack		BitmapPack;
-	render_resource FontTexture; // TODO: << Rename this.
-	bool			Initialised;
-
-	void			Load(char const * FontSrc, u32 aFontHeight);
-	vec2			GetTextDim(char const *Fmt, ...);
-
-	font();
-	~font();
+	glyph		*Glyphs;
+	u32			Height;
+	bitmap_pack BitmapPack;
+	render_resource FontTexture;
 };
+
+void InitFont(font *Font, char const *FontSrcFile, u32 FontHeight);
+void FreeFont(font *Font);
+vec2 GetTextDim(font *Font, char const *Format, ...);
 
 #endif

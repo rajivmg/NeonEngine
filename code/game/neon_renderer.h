@@ -7,7 +7,7 @@
 #include <vector>
 
 struct bitmap;
-class font;
+struct font;
 enum class texture_type;
 enum class texture_filter;
 enum class texture_wrap;
@@ -73,7 +73,6 @@ namespace rndr
 	void			SetViewMatrix(mat4 Matrix);
 	void			SetProjectionMatrix(mat4 Matrix);
 
-	//render_resource MakeTexture(texture *Texture);
 	render_resource MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection);
 	void			DeleteTexture(render_resource Texture);
 	
@@ -263,5 +262,6 @@ namespace cmd
 
 // NOTE: P is top left point.
 void PushTextSprite(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const * Format, ...);
+void PushSprite(std::vector<vert_P1C1UV1> *Vertices, vec3 P, vec2 Size, vec4 Color, vec4 UV);
 
 #endif

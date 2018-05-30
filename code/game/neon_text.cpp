@@ -1,28 +1,13 @@
-#include "neon_font.h"
+#include "neon_text.h"
 
 #include "neon_renderer.h"
 
-//-----------------------------------------------------------------------------
-// Font
-//-----------------------------------------------------------------------------
-
-font::font() : InstanceID(GEN_ID),
-			   Glyphs(0),
-			   Initialised(false)
+void InitFont(font *Font, char const *FontSrcFile, u32 FontHeight)
 {
-}
+	Font->Height = FontHeight;
+	Font->Glyphs = (glyph *)malloc(sizeof(glyph) * (128 - 32));
 
-font::~font()
-{
-	SAFE_FREE(Glyphs);
-}
-
-void font::Load(char const *FontSrc, u32 aFontHeight)
-{
-	FontHeight = aFontHeight;
-	Glyphs = (glyph *)malloc(sizeof(glyph) * (128 - 32));
-	
-	InitBitmapPack(&BitmapPack, 512, 512, 2);
+	InitBitmapPack(&Font->BitmapPack, 512, 512, 2);
 
 	FT_Library FTLib;
 	FT_Face Face;
@@ -33,7 +18,7 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 		assert(!"Error initialising the FreeType library.");
 	}
 
-	file_content FontData = Platform.ReadFile(FontSrc);
+	file_content FontData = Platform.ReadFile(FontSrcFile);
 	assert(FontData.NoError);
 
 	Error = FT_New_Memory_Face(FTLib, (const FT_Byte *)FontData.Content, (FT_Long)FontData.Size, 0, &Face);
@@ -62,7 +47,7 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 			FT_Render_Glyph(Face->glyph, FT_RENDER_MODE_NORMAL);
 		}
 
-		glyph *Glyph = Glyphs + (CIndex - 32);
+		glyph *Glyph = Font->Glyphs + (CIndex - 32);
 		Glyph->Width = Face->glyph->bitmap.width;
 		Glyph->Height = Face->glyph->bitmap.rows;
 
@@ -100,7 +85,7 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 
 		if(GlyphTexture->DataSize != 0)
 		{
-			Glyph->Coords = BitmapPackInsert(&BitmapPack, GlyphTexture);
+			Glyph->Coords = BitmapPackInsert(&Font->BitmapPack, GlyphTexture);
 		}
 
 		// After glyph texture has been copied to texture atlas free the glyph texture memory
@@ -110,31 +95,31 @@ void font::Load(char const *FontSrc, u32 aFontHeight)
 		}
 	}
 
-	//TextureAtlas.Texture.CreateRenderResource();
-	FontTexture = rndr::MakeTexture(&BitmapPack.Bitmap, texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, false);
-
-	Initialised = true;
+	Font->FontTexture = rndr::MakeTexture(&Font->BitmapPack.Bitmap, texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, false);
 
 	Platform.FreeFileContent(&FontData);
-	// Debugging
+	
 	// DebugTextureSave("FontAtlas.tga", &Atlas.Texture);
 }
 
-vec2 font::GetTextDim(char const *Fmt, ...)
+void FreeFont(font *Font)
 {
-	assert(Initialised);
+	SAFE_FREE(Font->Glyphs);
+}
 
+vec2 GetTextDim(font *Font, char const *Format, ...)
+{
 	vec2 Result(0, 0);
 
 	char Text[8192];
 
 	va_list Arguments;
-	va_start(Arguments, Fmt);
-	vsnprintf(Text, 8192, Fmt, Arguments);
+	va_start(Arguments, Format);
+	vsnprintf(Text, 8192, Format, Arguments);
 	va_end(Arguments);
 
 	vec2 Dim(0, 0);
-	Dim.y = (r32)FontHeight;
+	Dim.y = (r32)Font->Height;
 	s32 MaxHang = 0;
 	s32 PrevX = 0;
 	int Index = 0;
@@ -142,7 +127,7 @@ vec2 font::GetTextDim(char const *Fmt, ...)
 	{
 		if((int)Text[Index] == 10)
 		{
-			Dim.y += (r32)FontHeight;
+			Dim.y += (r32)Font->Height;
 			++Index;
 			MaxHang = 0;
 			PrevX = (s32)Dim.x;
@@ -150,7 +135,7 @@ vec2 font::GetTextDim(char const *Fmt, ...)
 			continue;
 		}
 
-		glyph *CharGlyph = Glyphs + ((int)Text[Index] - 32);
+		glyph *CharGlyph = Font->Glyphs + ((int)Text[Index] - 32);
 		Dim.x += CharGlyph->HoriAdvance;
 		++Index;
 
