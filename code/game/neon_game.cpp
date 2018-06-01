@@ -171,7 +171,7 @@ void SimRoom(game_input *Input, room *Room)
 	};
 	static bool CheckPlayerNewP = false;
 	static vec3 PlayerLastP, PlayerNewP;
-	static r32 PlayerMoveStartTime;
+	static r64 PlayerMoveStartTime;
 	if(!Room->Player->IsMoving)
 	{
 		if(Controller->Up.EndedDown && Controller->Up.HalfTransitionCount == 1)
@@ -231,7 +231,7 @@ void SimRoom(game_input *Input, room *Room)
 
 	if(Room->Player->IsMoving)
 	{
-		r32 Perc = (Input->Time - PlayerMoveStartTime) / 190.0f; //225
+		r32 Perc = (Input->Time - PlayerMoveStartTime) / 0.19; // 190ms
 		if(Perc >= 1.0f)
 		{
 			Perc = Clamp(0.0f, Perc, 1.0f);
@@ -295,7 +295,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	rndr::Clear();
 
 	ImGui::Begin("Debug");
-	ImGui::Text("%0.2f ms/frame", 1000.0f * Input->FrameTime);
+	ImGui::Text("%0.2f ms/frame", 1000.0f * Input->DeltaTime);
 	ImGui::End();
 
 	std::vector<vert_P1C1UV1> TilesVertices;
@@ -359,7 +359,8 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	GameState.TileRenderList->Submit();
 	GameState.TileRenderList->Flush();
 	
-	PushTextSprite(&DebugTextVertices, &GameState.DebugFont, vec3i(0, 720, 1), vec4i(1, 1, 0, 1), "%0.2f ms/frame", 1000.0f * Input->FrameTime);
+	PushTextSprite(&DebugTextVertices, &GameState.DebugFont, vec3i(0, 720, 1), vec4i(1, 1, 0, 1), "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
+	PushTextSprite(&DebugTextVertices, &GameState.DebugFont, vec3i(400, 720, 1), vec4i(1, 1, 0, 1), "Time %f", Input->Time);
 	rndr::BufferData(GameState.DebugTextVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)DebugTextVertices.size(), &DebugTextVertices.front());
 
 	cmd::draw *DebugTextCmd = GameState.DebugTextCmdList->AddCommand<cmd::draw>(0);

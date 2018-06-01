@@ -459,7 +459,7 @@ int main(int argc, char **argv)
 				bool ShouldQuit = false;
 
 				r32 Time = 0;
-				r32 FrameTime = 0;
+				r64 FrameTime = 0;
 
 				u64 PrevCounter, CurrentCounter, CounterFrequency;
 				CounterFrequency = SDL_GetPerformanceFrequency();
@@ -521,9 +521,8 @@ int main(int argc, char **argv)
 					ImGui::ShowTestWindow();
 
 					// Game running time
-					NewInput->Time = SDL_GetTicks(); //(r32)(SDL_GetPerformanceCounter() / CounterFrequency);
-
-					NewInput->FrameTime = FrameTime;
+					NewInput->Time = (SDL_GetPerformanceCounter() / (1.0 * CounterFrequency));
+					NewInput->DeltaTime = FrameTime;
 
 					// Simulate and render the game
 					GameCode.GameUpdateAndRender(NewInput);
@@ -537,7 +536,7 @@ int main(int argc, char **argv)
 					*OldInput = *NewInput;
 
 					CurrentCounter = SDL_GetPerformanceCounter();
-					FrameTime = (r32)((CurrentCounter - PrevCounter)) / CounterFrequency;
+					FrameTime = ((CurrentCounter - PrevCounter) / (1.0 * CounterFrequency));
 					PrevCounter = CurrentCounter;
 				}
 			}
