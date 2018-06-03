@@ -12,69 +12,73 @@ platform_t Platform;
 
 struct floor_tile
 {
-	vec3 P;
+    vec3 P;
 };
 
 enum class entity_type
 {
-	Entity_None,
-	Entity_Block,
-	Entity_Enemy1,
-	Entity_Portal,
-	Entity_Player
+    Entity_None,
+    Entity_Block,
+    Entity_Enemy1,
+    Entity_Portal,
+    Entity_Player
 };
 
 struct entity
 {
-	entity_type Type;
+    entity_type Type;
 
-	vec3 P;			// x, y, _z_ coordinates on screen
-	
-	u32 X;			// Tile's X coordinate
-	u32 Y;			// Tile's Y coordinate
+    vec3 P;         // x, y, _z_ coordinates on screen
 
-	bool IsMoving;	// True only if in moving state
-	bool Collide;	// True if collide
-	
-	u32 HP;
+    u32 X;          // Tile's X coordinate
+    u32 Y;          // Tile's Y coordinate
+
+    bool IsMoving;  // True only if in moving state
+    bool Collide;   // True if collide
+
+    u32 HP;
 };
 
 struct room
 {
-	u32 SizeX;
-	u32 SizeY;
+    u32 SizeX;
+    u32 SizeY;
 
-	u32	EntityCount;
-	entity Entities[256];
-	
-	entity *Player; // Pointer to player entity. Only _ONE_ per room.
+    u32 EntityCount;
+    entity Entities[256];
 
-	u32 FloorTilesCount; // RoomX * RoomY
-	floor_tile *FloorTiles;
+    entity *Player; // Pointer to player entity. Only _ONE_ per room.
 
-	u32 *SlotMap;
+    u32 FloorTilesCount; // RoomX * RoomY
+    floor_tile *FloorTiles;
+
+    u32 *SlotMap;
 };
 
 struct game_state
 {
-	room Room;
+    room Room;
 
-	render_resource WhiteTexture;
+    render_resource WhiteTexture;
 
-	render_resource SpriteShader;
-	render_resource TilesVertexBuffer;
-	render_cmd_list *TileRenderList;
+    render_resource SpriteShader;
+    render_resource TilesVertexBuffer;
+    render_cmd_list *TileRenderList;
 
-	font DebugFont;
+    font DebugFont;
 
-	render_resource TextShader;
-	render_resource DebugTextVertexBuffer;
-	render_cmd_list *DebugTextCmdList;
+    render_resource TextShader;
+    render_resource DebugTextVertexBuffer;
+    render_cmd_list *DebugTextCmdList;
 
-	r32 MetersToPixels;
-	r32 PixelsToMeters;
+    render_resource DebugLinesShader;
+    render_resource DebugLinesVertexBuffer;
+    render_cmd_list *DebugLinesRCD;
 
-	vec3 RoomCenterOffset;
+    r32 MetersToPixels;
+    r32 PixelsToMeters;
+
+    vec3 RoomCenterOffset;
 };
 
 #endif

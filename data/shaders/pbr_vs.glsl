@@ -9,27 +9,27 @@ uniform mat4 View;
 
 out VS_OUT
 {
-	vec2 VertUV;
-	vec3 N;
-	vec3 L;
-	vec3 V;
+    vec2 VertUV;
+    vec3 N;
+    vec3 L;
+    vec3 V;
 } vs_out;
 
 void main()
 {
-	// vec3 LightPos = mat3(View) * vec3(75.0, 327.0, -7.0);
+    // vec3 LightPos = mat3(View) * vec3(75.0, 327.0, -7.0);
 
-	const vec3 LightPos = vec3(0.0, 150.0, 80.0);
+    const vec3 LightPos = vec3(0.0, 150.0, 80.0);
 
-	vec4 P = View * vec4(VertP, 1.0);
+    vec4 P = View * vec4(VertP, 1.0);
 
-	vs_out.N = mat3(View) * VertN;
+    vs_out.N = mat3(View) * VertN;
 
-	vs_out.L = LightPos - P.xyz;
+    vs_out.L = LightPos - P.xyz;
 
-	vs_out.V = -P.xyz;
+    vs_out.V = -P.xyz;
 
-	gl_Position = Projection * P;
-	
-	vs_out.VertUV = VertUV;
+    gl_Position = Projection * P;
+    
+    vs_out.VertUV = VertUV;
 }

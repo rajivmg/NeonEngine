@@ -13,8 +13,9 @@ enum class resource_type : u32;
 
 namespace cmd
 {
-	struct draw;
-	struct draw_indexed;
+    struct draw;
+    struct draw_indexed;
+    struct draw_debug_lines;
 }
 
 enum class texture_type;
@@ -23,53 +24,54 @@ enum class texture_wrap;
 
 struct buffer_object
 {
-	GLuint	Buffer;
-	u32		Capacity;
-	bool	IsDynamic; // TODO: Remove this??
+    GLuint  Buffer;
+    u32     Capacity;
+    bool    IsDynamic; // TODO: Remove this??
 };
 
 struct shader_program
 {
-	GLuint	Program;
-	u32		SamplerCount;
-	GLint	Sampler[8];
-	GLint	ProjMatrix;
-	GLint	ViewMatrix;
+    GLuint  Program;
+    u32     SamplerCount;
+    GLint   Sampler[8];
+    GLint   ProjMatrix;
+    GLint   ViewMatrix;
 };
 
 // TODO: Reuse same slots after the buffer or texture is deleted.
 struct render_state
 {
-	GLuint			Textures[1024];
-	u32				TextureCurrent;
+    GLuint          Textures[1024];
+    u32             TextureCurrent;
 
-	shader_program	ShaderPrograms[1024];
-	u32				ShaderProgramCurrent;
+    shader_program  ShaderPrograms[1024];
+    u32             ShaderProgramCurrent;
 
-	buffer_object	BufferObjects[2048];
-	u32				BufferObjectCount;
+    buffer_object   BufferObjects[2048];
+    u32             BufferObjectCount;
 
-	u32				ActiveShaderProgram;
+    u32             ActiveShaderProgram;
 };
 
 namespace ogl
 {
-	void			InitState();
-	void			Clear();
-	void			SetViewMatrix(mat4 Matrix);
-	void			SetProjectionMatrix(mat4 Matrix);
-	render_resource MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection);
-	void			DeleteTexture(render_resource Texture);
-	render_resource	MakeBuffer(resource_type Type, u32 Size, bool Dynamic = false);
-	void			BufferData(render_resource Buffer, u32 Offset, u32 Size, void const *Data);
-	void			DeleteBuffer(render_resource Buffer);	
-	void			BindBuffer(render_resource Buffer, u32 Index);
-	render_resource MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc);
-	void			DeleteShaderProgram(render_resource ShaderProgram);
-	void			UseShaderProgram(render_resource ShaderProgram);
-	void			UpdateUniform(char const *UniformName, r32 Value);
-	void			Draw(cmd::draw *Cmd);
-	void			DrawIndexed(cmd::draw_indexed *Cmd);
+    void            InitState();
+    void            Clear();
+    void            SetViewMatrix(mat4 Matrix);
+    void            SetProjectionMatrix(mat4 Matrix);
+    render_resource MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection);
+    void            DeleteTexture(render_resource Texture);
+    render_resource MakeBuffer(resource_type Type, u32 Size, bool Dynamic = false);
+    void            BufferData(render_resource Buffer, u32 Offset, u32 Size, void const *Data);
+    void            DeleteBuffer(render_resource Buffer);
+    void            BindBuffer(render_resource Buffer, u32 Index);
+    render_resource MakeShaderProgram(char const *VertShaderSrc, char const *FragShaderSrc);
+    void            DeleteShaderProgram(render_resource ShaderProgram);
+    void            UseShaderProgram(render_resource ShaderProgram);
+    void            UpdateUniform(char const *UniformName, r32 Value);
+    void            Draw(cmd::draw *Cmd);
+    void            DrawIndexed(cmd::draw_indexed *Cmd);
+    void            DrawDebugLines(cmd::draw_debug_lines *Cmd);
 }
 
 #endif
