@@ -15,10 +15,6 @@ void ogl::InitState()
     RenderState.TextureCurrent = 0;
     RenderState.ShaderProgramCurrent = 0;
 
-    // Set clear color
-    //glClearColor(0.07f, 0.07f, 0.08f, 1.0f);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
     // Set the viewport
     glViewport(0, 0, Platform.WindowWidth, Platform.WindowHeight);
 
@@ -41,7 +37,12 @@ void ogl::InitState()
     // This converts fragments shader linear output to gamma correct output i.e. apply pow(1/2.2) to the colors
     // @NOTE: fragment shader must always output in linear color space
     // TODO: Check if SRGB framebuffer is supported.
-    glEnable(GL_FRAMEBUFFER_SRGB);
+    //glEnable(GL_FRAMEBUFFER_SRGB);
+
+    // Set clear color
+    //glClearColor(0.07f, 0.07f, 0.08f, 1.0f);
+    vec4 ClearColor = RGBA255To01(RGBAUnpack4x8(0x0c0c0cff));
+    glClearColor(ClearColor.r, ClearColor.g, ClearColor.b, ClearColor.a);
 
     // Enable multisampling
     glEnable(GL_MULTISAMPLE);

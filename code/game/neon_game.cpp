@@ -262,9 +262,13 @@ GAME_SETUP(GameSetup)
 
     InitFont(&GameState.DebugFont, "fonts/Inconsolata/Inconsolata-Regular.ttf", 20);
 
+    //bitmap WonderArtBitmap;
+    //LoadBitmap(&WonderArtBitmap, "Wonder_Art.tga");
+    //GameState.WonderArtTexture = rndr::MakeTexture(&WonderArtBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
+
     bitmap WhiteBitmap;
     LoadBitmap(&WhiteBitmap, "sprites/white_texture.tga");
-    GameState.WhiteTexture = rndr::MakeTexture(&WhiteBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
+    GameState.WhiteTexture = rndr::MakeTexture(&WhiteBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, false);
 
     GameState.SpriteShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
     GameState.TilesVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
@@ -284,6 +288,9 @@ GAME_SETUP(GameSetup)
     GameState.DebugLinesRCD = new render_cmd_list(MEGABYTE(1), GameState.DebugLinesShader);
     GameState.DebugLinesRCD->ViewMatrix = Mat4Identity();
     GameState.DebugLinesRCD->ProjMatrix = Screenspace(Platform.WindowWidth, Platform.WindowHeight);
+
+    //vec4 Color = RGBAUnpack4x8(0x0C0C0CFF);
+    int a = 0;
 }
 
 DLLEXPORT
@@ -306,7 +313,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
     std::vector<vert_P1C1UV1> TilesVertices;
     std::vector<vert_P1C1UV1> DebugTextVertices;
-
+#if 1
     for(u32 I = 0; I < GameState.Room.EntityCount; ++I)
     {
         entity *Entity = GameState.Room.Entities + I;
@@ -319,7 +326,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
             case entity_type::Entity_Enemy1:
             {
-                PushSprite(&TilesVertices, Entity->P + GameState.RoomCenterOffset, vec2i(1, 1), vec4(0.9f, 0.0f, 0.0f, 1.0f), vec4(0, 0, 1, 1));
+                PushSprite(&TilesVertices, Entity->P + GameState.RoomCenterOffset, vec2i(1, 1), RGBA255To01(RGBAUnpack4x8(0x29389eff)), vec4(0, 0, 1, 1)); // vec4(0.9f, 0.0f, 0.0f, 1.0f)
             } break;
 
             case entity_type::Entity_Portal:
@@ -339,7 +346,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     {
         PushSprite(&TilesVertices, GameState.Room.FloorTiles[I].P + GameState.RoomCenterOffset, vec2i(1, 1), vec4(0.7f, 0.5f, 0.5, 1.0f), vec4(0, 0, 1, 1));
     }
-
+#endif
     //vec3 P = vec3((r32)PlayerP.x, (r32)PlayerP.y, 0.0f);
     //vec4 Color = vec4(0.0f, 0.9f, 0.0f, 1.0f);
     //PushSprite(&TilesVertices, P, vec2i(1, 1), Color, vec4(0, 0, 1, 1));  
@@ -351,6 +358,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     //TextP.x -= 0.2f * GameState.MetersToPixels;
     //TextP.y -= 0.5f * GameState.MetersToPixels;
     //PushTextSprite(&DebugTextVertices, DebugFont, TextP, vec4i(1, 1, 1, 1), "HP: 3");
+    //PushSprite(&TilesVertices, vec3i(0, 0, 0), vec2i(7, 7), vec4(0.5f, 0, 0, 1), vec4i(0, 0, 1, 1));
 
     rndr::BufferData(GameState.TilesVertexBuffer, 0, (u32)(sizeof(vert_P1C1UV1) * TilesVertices.size()), &TilesVertices.front());
 

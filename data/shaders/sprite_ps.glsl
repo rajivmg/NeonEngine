@@ -4,15 +4,19 @@ uniform sampler2D Sampler0;
 
 in VS_OUT
 {
-    smooth vec2 VertUV;
-    smooth vec4 VertColor;
+    smooth vec2 UV;
+    smooth vec4 Color;
 } fs_in;
 
 out vec4 OutColor;
 
 void main()
 {
-    // OutColor = vec4( pow(fs_in.VertColor.rgb, vec3(2.2)), fs_in.VertColor.a);
-
-    OutColor = texture(Sampler0, fs_in.VertUV) * fs_in.VertColor;
+    // Texels are in linear gamma because of GL_SRGB_ALPHA texture format,
+    // Color is in sRGB gamma
+    
+    // vec4 Texel = texture(Sampler0, fs_in.UV) * fs_in.Color;
+    
+    vec4 Color = texture(Sampler0, fs_in.UV) * vec4(pow(fs_in.Color.rgb, vec3(2.2)), fs_in.Color.a);
+    OutColor = vec4(pow(Color.rgb, vec3(1.0/2.2)), Color.a);
 }

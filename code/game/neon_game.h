@@ -79,6 +79,8 @@ struct game_state
     r32 PixelsToMeters;
 
     vec3 RoomCenterOffset;
+
+    //render_resource WonderArtTexture;
 };
 
 #endif

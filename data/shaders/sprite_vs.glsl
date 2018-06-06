@@ -1,22 +1,22 @@
 #version 330
 
-layout(location = 0) in vec3 VertP;
-layout(location = 1) in vec2 VertUV;
-layout(location = 2) in vec4 VertColor;
+layout(location = 0) in vec3 P;
+layout(location = 1) in vec2 UV;
+layout(location = 2) in vec4 Color;
 
 uniform mat4 Projection;
 uniform mat4 View;
 
 out VS_OUT
 {
-    smooth vec2 VertUV;
-    smooth vec4 VertColor;
+    smooth vec2 UV;
+    smooth vec4 Color;
 } vs_out;
 
 void main()
 {
-    gl_Position = Projection * View * vec4(VertP, 1.0);
+    gl_Position = Projection * View * vec4(P, 1.0);
     
-    vs_out.VertUV = VertUV;
-    vs_out.VertColor = VertColor;
+    vs_out.UV = UV;
+    vs_out.Color = Color;
 }

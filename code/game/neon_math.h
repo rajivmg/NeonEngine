@@ -178,6 +178,10 @@ struct vec4
         };
         struct
         {
+            r32 r, g, b, a;
+        };
+        struct
+        {
             vec2 xy;
             r32 _Ignored0;
             r32 _Ignored1;
@@ -469,4 +473,67 @@ FORCE_INLINE mat4 LookAt(vec3 Eye, vec3 Direction, vec3 Up)
     return Matrix;
 }
 
+inline vec4 RGBAUnpack4x8(u32 Packed)
+{
+    vec4 Result;
+    Result.r = (r32)((Packed >> 24) & 0xFF);
+    Result.g = (r32)((Packed >> 16) & 0xFF);
+    Result.b = (r32)((Packed >> 8) & 0xFF);
+    Result.a = (r32)((Packed >> 0) & 0xFF);
+    return Result;
+}
+
+inline vec4 RGBA255To01(vec4 C)
+{
+    vec4 Result;
+    r32 Inv255 = 1.0f / 255.0f;
+    Result.r = C.r * Inv255;
+    Result.g = C.g * Inv255;
+    Result.b = C.b * Inv255;
+    Result.a = C.a * Inv255;
+    return Result;
+}
+
+inline vec4 SRGBToLinear(vec4 C)
+{
+    vec4 Result;
+    Result.r = powf(C.r, 2.2f);
+    Result.g = powf(C.g, 2.2f);
+    Result.b = powf(C.b, 2.2f);
+    Result.a = C.a;
+    return Result;
+}
+
+inline vec4 LinearToSRGB(vec4 C)
+{
+    vec4 Result;
+    r32 InvGamma = 1.0f / 2.2f;
+    Result.r = powf(C.r, InvGamma);
+    Result.g = powf(C.g, InvGamma);
+    Result.b = powf(C.b, InvGamma);
+    Result.a = C.a;
+    return Result;
+}
+
+inline vec4 SRGB255ToLinear1(vec4 C)
+{
+    vec4 Result;
+    r32 Inv255 = 1.0f / 255.0f;
+    Result.r = powf(C.r * Inv255, 2.2f);
+    Result.g = powf(C.g * Inv255, 2.2f);
+    Result.b = powf(C.b * Inv255, 2.2f);
+    Result.a = C.a / 255.0f;
+    return Result;
+}
+
+inline vec4 Linear1ToSRGB255(vec4 C)
+{
+    vec4 Result;
+    r32 InvGamma = 1.0f / 2.2f;
+    Result.r = 255.0f * powf(C.r, InvGamma);
+    Result.g = 255.0f * powf(C.g, InvGamma);
+    Result.b = 255.0f * powf(C.b, InvGamma);
+    Result.a = 255.0f * C.a;
+    return Result;
+}
 #endif
