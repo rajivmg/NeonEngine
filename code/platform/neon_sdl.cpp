@@ -421,9 +421,11 @@ int main(int argc, char **argv)
         SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 2);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4); // TODO: Replace MSAA with FXAA 
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
         // Request SRGB enabled framebuffer
+        // NOTE: Enabling this affect multisampling on Intel HD4000, make sure to
+        // explicitly glEnable(GL_MULTISAMPLE) and POLYGON_SMOOTH and LINE_SMOOTH.
         //SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
 
 #if defined(DEBUG)

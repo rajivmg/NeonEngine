@@ -16,15 +16,14 @@ struct glyph
     s32 HoriBearingY;
     s32 HoriAdvance;
     s32 Hang;
-    texture_coords Coords;
+    vec4 Coords;
 };
 
 struct font
 {
-    glyph *Glyphs;
     u32 Height;
-    bitmap_pack BitmapPack;
-    render_resource FontTexture;
+    glyph *Glyphs;
+    render_resource Texture;
 };
 
 void InitFont(font *Font, char const *FontSrcFile, u32 FontHeight);

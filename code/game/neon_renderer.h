@@ -278,12 +278,15 @@ namespace cmd
     };
 }
 
+//-----------------------------------------------------------------------------
+// Sprite and Text
+//-----------------------------------------------------------------------------
+
+void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Color, r32 Rotation, vec2 Origin, vec2 Scale, r32 Layer);
+void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Color, r32 Rotation, vec2 Origin, r32 Layer);
+
 // NOTE: P is top left point.
-void PushTextSprite(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const * Format, ...);
+void PushText(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const * Format, ...);
 
-// NOTE: P is bottom left point.
-void PushSprite(std::vector<vert_P1C1UV1> *Vertices, vec3 P, vec2 Size, vec4 Color, vec4 UV);
-
-void PushLine(std::vector<vert_P1C1> *Vertices, vec3 FromP, vec3 ToP, vec4 Color = vec4i(1, 0, 0, 1));
-
+void PushDbgLine(std::vector<vert_P1C1> *Vertices, vec3 FromP, vec3 ToP, vec4 Color);
 #endif

@@ -7,7 +7,8 @@ void InitFont(font *Font, char const *FontSrcFile, u32 FontHeight)
     Font->Height = FontHeight;
     Font->Glyphs = (glyph *)malloc(sizeof(glyph) * (128 - 32));
 
-    InitBitmapPack(&Font->BitmapPack, 512, 512, 2);
+    bitmap_pack BitmapPack;
+    InitBitmapPack(&BitmapPack, 512, 512, 2);
 
     FT_Library FTLib;
     FT_Face Face;
@@ -85,7 +86,7 @@ void InitFont(font *Font, char const *FontSrcFile, u32 FontHeight)
 
         if(GlyphTexture->DataSize != 0)
         {
-            Glyph->Coords = BitmapPackInsert(&Font->BitmapPack, GlyphTexture);
+            Glyph->Coords = BitmapPackInsert(&BitmapPack, GlyphTexture);
         }
 
         // After glyph texture has been copied to texture atlas free the glyph texture memory
@@ -95,8 +96,8 @@ void InitFont(font *Font, char const *FontSrcFile, u32 FontHeight)
         }
     }
 
-    Font->FontTexture = rndr::MakeTexture(&Font->BitmapPack.Bitmap, texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, false);
-
+    Font->Texture = rndr::MakeTexture(&BitmapPack.Bitmap, texture_type::TEXTURE_2D, texture_filter::LINEAR, texture_wrap::CLAMP, false);
+    FreeBitmapPack(&BitmapPack);
     Platform.FreeFileContent(&FontData);
 
     // DebugTextureSave("FontAtlas.tga", &Atlas.Texture);

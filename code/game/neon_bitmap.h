@@ -56,26 +56,11 @@ void LoadBitmap(bitmap *Bitmap, char const *Filename);
 void FreeBitmap(bitmap *Bitmap);
 void BitmapFlipAroundY(bitmap *Bitmap);
 
-struct texture_coords
-{
-    vec2 LowerLeft;
-    vec2 UpperRight;
-};
-
-struct texture_rect
-{
-    u32 OriginX;
-    u32 OriginY;
-
-    u32 Width;
-    u32 Height;
-};
-
 struct binary_t_node
 {
     binary_t_node *Child[2];
 
-    texture_rect Rect;
+    rect Rect;
     bool Filled;
 };
 
@@ -83,12 +68,12 @@ struct bitmap_pack
 {
     bitmap Bitmap;
     u32 Padding;
-
-    binary_t_node Node; // [Internal use only]
+    binary_t_node Node;
 };
 
 void InitBitmapPack(bitmap_pack *BitmapPack, u32 Width, u32 Height, u32 Padding);
-texture_coords BitmapPackInsert(bitmap_pack *BitmapPack, bitmap *Bitmap);
+void FreeBitmapPack(bitmap_pack *BitmapPack);
+vec4 BitmapPackInsert(bitmap_pack *BitmapPack, bitmap *Bitmap);
 
 #ifdef DEBUG
 #define DebugTextureSave(F, T) DebugTextureSave_(F, T)

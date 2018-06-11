@@ -536,4 +536,22 @@ inline vec4 Linear1ToSRGB255(vec4 C)
     Result.a = 255.0f * C.a;
     return Result;
 }
+
+struct rect
+{
+    r32 x;
+    r32 y;
+    r32 width;
+    r32 height;
+};
+
+FORCE_INLINE rect Rect(r32 _x, r32 _y, r32 _width, r32 _height)
+{
+    rect R;
+    R.x = _x;
+    R.y = _y;
+    R.width = _width;
+    R.height = _height;
+    return R;
+}
 #endif

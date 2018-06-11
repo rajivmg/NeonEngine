@@ -185,97 +185,99 @@ void render_cmd_list::Flush()
     BaseOffset = 0;
 }
 
-void PushSprite(std::vector<vert_P1C1UV1> *Vertices, vec3 P, vec2 Size, vec4 Color, vec4 UV)
+//-----------------------------------------------------------------------------
+// Sprite and Text
+//-----------------------------------------------------------------------------
+
+void PushSprite(std::vector<vert_P1C1UV1>* Vertices, rect Dest, vec4 UV, vec4 Color, r32 Rotation, vec2 Origin, vec2 Scale, r32 Layer)
 {
     /*
-    D--------C
-    |  U    /|
-    |      / |
-    |     /  |
-    |    /   |
-    |   /    |
-    |  /     |
-    | /      |
-    |/    B  |
-    A--------B
-
-    A.XYZ = Origin.XYZ
-    A.UV  = UVCoords.xY
-
-    B.X   = Origin.X + Size.x
-    B.Y   = Origin.Y
-    B.Z   = 0
-    B.U   = UVCoords.z
-    B.V   = UVCoords.y
-
-    C.X   = Origin.X + Size.x
-    C.Y   = Origin.Y + Size.y
-    C.Z   = 0
-    C.UV  = UVCoords.zW
-
-    D.X   = Origin.X
-    D.Y   = Origin.Y + Size.y
-    D.Z   = 0
-    D.U   = UVCoords.x
-    D.V   = UVCoords.w
+    0,1         1,1
+    D-----------C
+    |        /  |
+    |      /    |
+    |    /      |
+    |  /        |
+    A-----------B
+    0,0         1,0
+    (ACD)(ABC)
     */
 
-    // NOTE: Enabling this in debug build increase the frametime 5 times
-    //Vertices->reserve(Vertices->size() + 6);
+    // TODO: Fast path when rotation is 0
+    r32 SAng, CAng;
+    SAng = sinf(Rotation);
+    CAng = cosf(Rotation);
 
-    vert_P1C1UV1 Vertex;
+    // Translation factor to translate world origin aligned rectangle points to rectangle origin aligned points
+    vec2 T = vec2(Dest.x + Origin.x, Dest.y + Origin.y);
 
-    // D
-    Vertex.Position = vec3(P.x, P.y + Size.y, P.z);
-    Vertex.UV = vec2(UV.x, UV.w);
-    Vertex.Color = Color;
-    Vertices->push_back(Vertex);
+    // Align rectangle origin with world origin
+    vec2 P1, P2, P3, P4;
 
-    // A
-    Vertex.Position = P;
-    Vertex.UV = vec2(UV.x, UV.y);
-    Vertex.Color = Color;
-    Vertices->push_back(Vertex);
+    P1 = vec2(-Origin.x, -Origin.y);
+    P2 = vec2(Dest.width - Origin.x, -Origin.y);
+    P3 = vec2(Dest.width - Origin.x, Dest.height - Origin.y);
+    P4 = vec2(-Origin.x, Dest.height - Origin.y);
 
-    // C
-    Vertex.Position = vec3(P.x + Size.x, P.y + Size.y, P.z);
-    Vertex.UV = vec2(UV.z, UV.w);
-    Vertex.Color = Color;
-    Vertices->push_back(Vertex);
+    // Scale world origin aligned rectangle points
+    P1 = P1 * Scale;
+    P2 = P2 * Scale;
+    P3 = P3 * Scale;
+    P4 = P4 * Scale;
 
-    // C 
-    Vertex.Position = vec3(P.x + Size.x, P.y + Size.y, P.z);
-    Vertex.UV = vec2(UV.z, UV.w);
-    Vertex.Color = Color;
-    Vertices->push_back(Vertex);
+    // Rotate world origin aligned rectangle points and then translate to rectangle origin aligned points
+    vert_P1C1UV1 A, B, C, D;
 
-    // A
-    Vertex.Position = P;
-    Vertex.UV = vec2(UV.x, UV.y);
-    Vertex.Color = Color;
-    Vertices->push_back(Vertex);
+    A.Position = vec3(CAng * P1.x - SAng * P1.y + T.x, SAng * P1.x + CAng * P1.y + T.y, Layer);
+    A.UV = vec2(UV.x, UV.y);
+    A.Color = Color;
 
-    // B
-    Vertex.Position = vec3(P.x + Size.x, P.y, P.z);
-    Vertex.UV = vec2(UV.z, UV.y);
-    Vertex.Color = Color;
-    Vertices->push_back(Vertex);
+    B.Position = vec3(CAng * P2.x - SAng * P2.y + T.x, SAng * P2.x + CAng * P2.y + T.y, Layer);
+    B.UV = vec2(UV.z, UV.y);
+    B.Color = Color;
+
+    C.Position = vec3(CAng * P3.x - SAng * P3.y + T.x, SAng * P3.x + CAng * P3.y + T.y, Layer);
+    C.UV = vec2(UV.z, UV.w);
+    C.Color = Color;
+
+    D.Position = vec3(CAng * P4.x - SAng * P4.y + T.x, SAng * P4.x + CAng * P4.y + T.y, Layer);
+    D.UV = vec2(UV.x, UV.w);
+    D.Color = Color;
+
+    Vertices->push_back(A); Vertices->push_back(C); Vertices->push_back(D);
+    Vertices->push_back(A); Vertices->push_back(B); Vertices->push_back(C);
+
+    // When no rotation
+    /*
+    vert_P1C1UV1 A, B, C, D;
+
+    A.Position = vec3(Dest.x, Dest.y, Layer);
+    A.UV = vec2(UV.x, UV.y);
+    A.Color = Color;
+
+    B.Position = vec3(Dest.x + Dest.width, Dest.y, Layer);
+    B.UV = vec2(UV.z, UV.y);
+    B.Color = Color;
+
+    C.Position = vec3(Dest.x + Dest.width, Dest.y + Dest.height, Layer);
+    C.UV = vec2(UV.z, UV.y + UV.w);
+    C.Color = Color;
+
+    D.Position = vec3(Dest.x, Dest.y + Dest.height, Layer);
+    D.UV = vec2(UV.x, UV.w);
+    D.Color = Color;
+
+    Vertices->push_back(A); Vertices->push_back(C); Vertices->push_back(D);
+    Vertices->push_back(A); Vertices->push_back(B); Vertices->push_back(C);
+    */
 }
 
-void PushLine(std::vector<vert_P1C1> *Vertices, vec3 FromP, vec3 ToP, vec4 Color)
+void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Color, r32 Rotation, vec2 Origin, r32 Layer)
 {
-    vert_P1C1 Vertex;
-
-    Vertex.Position = FromP;
-    Vertex.Color = Color;
-    Vertices->push_back(Vertex);
-
-    Vertex.Position = ToP;
-    Vertex.Color = Color;
-    Vertices->push_back(Vertex);
+    PushSprite(Vertices, Dest, UV, Color, Rotation, Origin, vec2(1.0f), Layer);
 }
 
-void PushTextSprite(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const *Format, ...)
+void PushText(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const *Format, ...)
 {
     char Text[8192];
 
@@ -302,15 +304,12 @@ void PushTextSprite(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec
 
         // If the character is other than a new line
         glyph *CharGlyph = Font->Glyphs + ((int)Text[Index] - 32);
-        vec4 TexCoords = vec4(CharGlyph->Coords.LowerLeft.x, CharGlyph->Coords.LowerLeft.y,
-            CharGlyph->Coords.UpperRight.x, CharGlyph->Coords.UpperRight.y);
+        vec4 TexCoords = vec4(CharGlyph->Coords.x, CharGlyph->Coords.y,
+            CharGlyph->Coords.z, CharGlyph->Coords.w);
         vec3 CharOrigin = vec3(Pen.x + CharGlyph->HoriBearingX, Pen.y + CharGlyph->Hang, Pen.z);
 
-        PushSprite(Vertices,
-            CharOrigin,
-            vec2i(CharGlyph->Width, CharGlyph->Height),
-            Color,
-            TexCoords);
+        PushSprite(Vertices, Rect(CharOrigin.x, CharOrigin.y, (r32)CharGlyph->Width, (r32)CharGlyph->Height),
+            TexCoords, Color, 0.0f, vec2(0.0f, 0.0f), CharOrigin.z);
 
         ++CharCount;
 
@@ -318,4 +317,17 @@ void PushTextSprite(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec
 
         ++Index;
     }
+}
+
+void PushDbgLine(std::vector<vert_P1C1> *Vertices, vec3 FromP, vec3 ToP, vec4 Color)
+{
+    vert_P1C1 Vertex;
+
+    Vertex.Position = FromP;
+    Vertex.Color = Color;
+    Vertices->push_back(Vertex);
+
+    Vertex.Position = ToP;
+    Vertex.Color = Color;
+    Vertices->push_back(Vertex);
 }

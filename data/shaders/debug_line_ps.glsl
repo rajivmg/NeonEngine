@@ -2,7 +2,7 @@
 
 in VS_OUT
 {
-    vec4 Color;
+    smooth vec4 Color;
 } fs_in;
 
 out vec4 OutColor;

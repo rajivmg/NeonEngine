@@ -203,16 +203,14 @@ void InitBitmapPack(bitmap_pack *BitmapPack, u32 Width, u32 Height, u32 Padding)
         assert(!"Malloc error");
     }
 
-    //Texture.ContentSize = Texture.Width * Texture.Height * 4;
-
     memset(BitmapPack->Bitmap.Data, 0, BitmapPack->Bitmap.DataSize);
 
     BitmapPack->Node.Child[0] = 0;
     BitmapPack->Node.Child[1] = 0;
-    BitmapPack->Node.Rect.OriginX = 1;
-    BitmapPack->Node.Rect.OriginY = 1;
-    BitmapPack->Node.Rect.Width = Width;
-    BitmapPack->Node.Rect.Height = Height;
+    BitmapPack->Node.Rect.x = 1;
+    BitmapPack->Node.Rect.y = 1;
+    BitmapPack->Node.Rect.width = (r32)Width;
+    BitmapPack->Node.Rect.height = (r32)Height;
     BitmapPack->Node.Filled = false;
 
 #if 0
@@ -225,7 +223,13 @@ void InitBitmapPack(bitmap_pack *BitmapPack, u32 Width, u32 Height, u32 Padding)
 #endif
 }
 
-static inline binary_t_node* Atlas_Insert(binary_t_node *Node, bitmap *Bitmap, u32 Padding)
+void FreeBitmapPack(bitmap_pack *BitmapPack)
+{
+    FreeBitmap(&BitmapPack->Bitmap);
+    // NOTE: Not free-ing binary_t_node Nodes.
+}
+
+static binary_t_node* RectPack(binary_t_node *Node, bitmap *Bitmap, u32 Padding)
 {
     // if we're not a leaf node
     if(Node->Child[0] != 0 && Node->Child[1] != 0)
@@ -233,7 +237,7 @@ static inline binary_t_node* Atlas_Insert(binary_t_node *Node, bitmap *Bitmap, u
         binary_t_node *NewNode;
 
         // try inserting into first child
-        NewNode = Atlas_Insert(Node->Child[0], Bitmap, Padding);
+        NewNode = RectPack(Node->Child[0], Bitmap, Padding);
 
         // if new node is not null
         if(NewNode != 0)
@@ -243,29 +247,25 @@ static inline binary_t_node* Atlas_Insert(binary_t_node *Node, bitmap *Bitmap, u
         else
         {
             // no room in first child, try in second child
-            return Atlas_Insert(Node->Child[1], Bitmap, Padding);
+            return RectPack(Node->Child[1], Bitmap, Padding);
         }
     }
     // if we're a leaf node
     else
     {
         // if there's already a texture here, or the we're too small for the texture
-        if((Node->Filled) || (Node->Rect.Width < Bitmap->Width + Padding) ||
-            (Node->Rect.Height < Bitmap->Height + Padding))
+        if((Node->Filled) || (Node->Rect.width < Bitmap->Width + Padding) ||
+            (Node->Rect.height < Bitmap->Height + Padding))
         {
 
             return 0;
         }
 
         // if we're just right size
-        if((Node->Rect.Width == Bitmap->Width + Padding) &&
-            (Node->Rect.Height == Bitmap->Height + Padding))
+        if((Node->Rect.width == Bitmap->Width + Padding) &&
+            (Node->Rect.height == Bitmap->Height + Padding))
         {
             Node->Filled = true;
-
-            /*Platform->Log(INFO, "Node O_x=%d O_y=%d W=%d H=%d\n", Node->Rect.OriginX,Node->Rect.OriginY,
-            Node->Rect.Width, Node->Rect.Height);
-            */
             return Node;
         }
 
@@ -282,65 +282,57 @@ static inline binary_t_node* Atlas_Insert(binary_t_node *Node, bitmap *Bitmap, u
 
 
         // decide which way to split
-        u32 dw = Node->Rect.Width - (Bitmap->Width + Padding);
-        u32 dh = Node->Rect.Height - (Bitmap->Height + Padding);
+        r32 dw = Node->Rect.width - (Bitmap->Width + Padding);
+        r32 dh = Node->Rect.height - (Bitmap->Height + Padding);
 
         if(dw > dh)
         {
             // divide vertically
-            Node->Child[0]->Rect.OriginX = Node->Rect.OriginX;
-            Node->Child[0]->Rect.OriginY = Node->Rect.OriginY;
-            Node->Child[0]->Rect.Width = (Bitmap->Width + Padding);
-            Node->Child[0]->Rect.Height = Node->Rect.Height;
+            Node->Child[0]->Rect.x = Node->Rect.x;
+            Node->Child[0]->Rect.y= Node->Rect.y;
+            Node->Child[0]->Rect.width= (r32)(Bitmap->Width + Padding);
+            Node->Child[0]->Rect.height = Node->Rect.height;
 
-            Node->Child[1]->Rect.OriginX = Node->Rect.OriginX + (Bitmap->Width + Padding);
-            Node->Child[1]->Rect.OriginY = Node->Rect.OriginY;
-            Node->Child[1]->Rect.Width = Node->Rect.Width - (Bitmap->Width + Padding);
-            Node->Child[1]->Rect.Height = Node->Rect.Height;
+            Node->Child[1]->Rect.x = Node->Rect.x + (Bitmap->Width + Padding);
+            Node->Child[1]->Rect.y = Node->Rect.y;
+            Node->Child[1]->Rect.width = Node->Rect.width - (Bitmap->Width + Padding);
+            Node->Child[1]->Rect.height = Node->Rect.height;
 
-            return Atlas_Insert(Node->Child[0], Bitmap, Padding);
+            return RectPack(Node->Child[0], Bitmap, Padding);
         }
         else
         {
             // divide horizontally
-            Node->Child[0]->Rect.OriginX = Node->Rect.OriginX;
-            Node->Child[0]->Rect.OriginY = Node->Rect.OriginY;
-            Node->Child[0]->Rect.Width = (Bitmap->Width + Padding);
-            Node->Child[0]->Rect.Height = (Bitmap->Height + Padding);
+            Node->Child[0]->Rect.x = Node->Rect.x;
+            Node->Child[0]->Rect.y = Node->Rect.y;
+            Node->Child[0]->Rect.width = (r32)(Bitmap->Width + Padding);
+            Node->Child[0]->Rect.height = (r32)(Bitmap->Height + Padding);
 
-            Node->Child[1]->Rect.OriginX = Node->Rect.OriginX;
-            Node->Child[1]->Rect.OriginY = Node->Rect.OriginY + (Bitmap->Height + Padding);
-            Node->Child[1]->Rect.Width = Node->Rect.Width;
-            Node->Child[1]->Rect.Height = Node->Rect.Height - (Bitmap->Height + Padding);
+            Node->Child[1]->Rect.x = Node->Rect.x;
+            Node->Child[1]->Rect.y = Node->Rect.y + (Bitmap->Height + Padding);
+            Node->Child[1]->Rect.width = Node->Rect.width;
+            Node->Child[1]->Rect.height = Node->Rect.height - (Bitmap->Height + Padding);
 
-            return Atlas_Insert(Node->Child[0], Bitmap, Padding);
+            return RectPack(Node->Child[0], Bitmap, Padding);
         }
     }
 }
 
-texture_coords BitmapPackInsert(bitmap_pack *BitmapPack, bitmap *Bitmap)
+vec4 BitmapPackInsert(bitmap_pack *BitmapPack, bitmap *Bitmap)
 {
-    binary_t_node *NodeSlot = Atlas_Insert(&BitmapPack->Node, Bitmap, BitmapPack->Padding);
+    binary_t_node *NodeSlot = RectPack(&BitmapPack->Node, Bitmap, BitmapPack->Padding);
 
     if(NodeSlot == 0)
     {
         assert(!"Null returned.");
     }
 
-    texture_coords TCoord;
+    vec4 TCoord;
 
-    //TCoord.BL_X = (r32)(NodeSlot->Rect.OriginX - 1.5) / (r32)(Width - 1);
-    //TCoord.BL_Y = (r32)(NodeSlot->Rect.OriginY + NodeSlot->Rect.Height - Padding - 1.5) / (r32)(Height - 1);
-    //TCoord.TR_X = (r32)(NodeSlot->Rect.OriginX + NodeSlot->Rect.Width - Padding - 1.5) / (r32)(Width - 1);
-    //TCoord.TR_Y = (r32)(NodeSlot->Rect.OriginY - 1.5) / (r32)(Height - 1);
-
-    TCoord.LowerLeft.x = (r32)(NodeSlot->Rect.OriginX - 1.0) / (r32)(BitmapPack->Bitmap.Width - 0);
-    TCoord.LowerLeft.y = 1.0f - (r32)(NodeSlot->Rect.OriginY + NodeSlot->Rect.Height - BitmapPack->Padding - 1.0) / (r32)(BitmapPack->Bitmap.Height - 0);
-    TCoord.UpperRight.x = (r32)(NodeSlot->Rect.OriginX + NodeSlot->Rect.Width - BitmapPack->Padding - 1.0) / (r32)(BitmapPack->Bitmap.Width - 0);
-    TCoord.UpperRight.y = 1.0f - (r32)(NodeSlot->Rect.OriginY - 1.0) / (r32)(BitmapPack->Bitmap.Height - 0);
-
-
-    // Platform->Log(INFO, "BL_x=%f BL_y=%f TR_x=%f TR_y=%f\n", TCoord.BL_X, TCoord.BL_Y, TCoord.TR_X, TCoord.TR_Y);
+    TCoord.x = (r32)(NodeSlot->Rect.x - 1.0) / (r32)(BitmapPack->Bitmap.Width);
+    TCoord.y = 1.0f - (r32)(NodeSlot->Rect.y + NodeSlot->Rect.height - BitmapPack->Padding - 1.0) / (r32)(BitmapPack->Bitmap.Height);
+    TCoord.z = (r32)(NodeSlot->Rect.x + NodeSlot->Rect.width - BitmapPack->Padding - 1.0) / (r32)(BitmapPack->Bitmap.Width);
+    TCoord.w = 1.0f - (r32)(NodeSlot->Rect.y - 1.0) / (r32)(BitmapPack->Bitmap.Height);
 
     // Copy the texture on the atlas at its position.
     // x and y in range [1, width and height] that
@@ -348,9 +340,9 @@ texture_coords BitmapPackInsert(bitmap_pack *BitmapPack, bitmap *Bitmap)
     // write_at(x, y) = (u32)content_ptr + (x-1) + ((y-1) * width)
     u32 *pTextureContent = (u32 *)Bitmap->Data;
 
-    for(u32 y = NodeSlot->Rect.OriginY; y < NodeSlot->Rect.OriginY + NodeSlot->Rect.Height - BitmapPack->Padding; ++y)
+    for(u32 y = (u32)NodeSlot->Rect.y; y < NodeSlot->Rect.y + NodeSlot->Rect.height - BitmapPack->Padding; ++y)
     {
-        for(u32 x = NodeSlot->Rect.OriginX; x < NodeSlot->Rect.OriginX + NodeSlot->Rect.Width - BitmapPack->Padding; ++x)
+        for(u32 x = (u32)NodeSlot->Rect.x; x < NodeSlot->Rect.x + NodeSlot->Rect.width - BitmapPack->Padding; ++x)
         {
             u32 *Pixel = (u32 *)BitmapPack->Bitmap.Data + (x - 1) + ((y - 1) * BitmapPack->Bitmap.Width);
             *Pixel = *(pTextureContent);

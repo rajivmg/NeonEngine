@@ -570,8 +570,8 @@ IMGUI_CREATE_DEVICE_OBJECTS(ImGui_CreateDeviceObjects)
         "   Frag_Color = Color;\n"
         "   gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
         "}\n";
-
-    /*    const GLchar* fragment_shader =
+    
+    const GLchar* fragment_shader =
             "#version 330\n"
             "uniform sampler2D Texture;\n"
             "in vec2 Frag_UV;\n"
@@ -580,8 +580,9 @@ IMGUI_CREATE_DEVICE_OBJECTS(ImGui_CreateDeviceObjects)
             "void main()\n"
             "{\n"
             "   Out_Color = Frag_Color * texture( Texture, Frag_UV.st);\n"
-            "}\n";*/
-    const GLchar* fragment_shader =
+            "}\n";
+
+ /* const GLchar* fragment_shader =
         "#version 330\n"
         "uniform sampler2D Texture;\n"
         "in vec2 Frag_UV;\n"
@@ -591,7 +592,7 @@ IMGUI_CREATE_DEVICE_OBJECTS(ImGui_CreateDeviceObjects)
         "{\n"
         "   vec4 sRGB_Color = Frag_Color * texture( Texture, Frag_UV.st);\n" // Colors already in sRGB color-space.
         "   Out_Color = vec4(pow(sRGB_Color.rgb, vec3(2.2)), sRGB_Color.a);\n" // Apply gamma so that when GL apply sRGB transformation we get correct results.
-        "}\n";
+        "}\n"; */
 
     imgui_ShaderHandle = glCreateProgram();
     imgui_VertHandle = glCreateShader(GL_VERTEX_SHADER);
