@@ -46,6 +46,11 @@ void rndr::DeleteTexture(render_resource Texture)
     ogl::DeleteTexture(Texture);
 }
 
+void* rndr::GetTextureID(render_resource Texture)
+{
+    return ogl::GetTextureID(Texture);
+}
+
 render_resource rndr::MakeBuffer(resource_type Type, u32 Size, bool Dynamic)
 {
     return ogl::MakeBuffer(Type, Size, Dynamic);
@@ -279,6 +284,8 @@ void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Co
 
 void PushText(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const *Format, ...)
 {
+    // NOTE: P is top left point.
+
     char Text[8192];
 
     va_list ArgList;
@@ -318,6 +325,10 @@ void PushText(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Colo
         ++Index;
     }
 }
+
+//-----------------------------------------------------------------------------
+// Debugging
+//-----------------------------------------------------------------------------
 
 void PushDbgLine(std::vector<vert_P1C1> *Vertices, vec3 FromP, vec3 ToP, vec4 Color)
 {

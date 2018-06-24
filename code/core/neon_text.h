@@ -5,7 +5,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include "../platform/neon_platform.h"
+#include "neon_platform.h"
 #include "neon_bitmap.h"
 
 struct glyph

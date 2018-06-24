@@ -28,6 +28,7 @@ typedef int16_t     s16;
 typedef int8_t      s8;
 typedef float       r32;
 typedef double      r64;
+typedef intptr_t    iptr;
 
 #define ARRAY_COUNT(Array) (sizeof(Array)/sizeof((Array)[0]))
 #define KILOBYTE(X) 1024LL * (X)
@@ -41,13 +42,11 @@ typedef double      r64;
 #define SAFE_DELETEA(x) { delete[] (x); (x) = nullptr; }
 #define INVALID_CODE_PATH assert(!"Invalid code path!")
 #define INVALID_DEFAULT_CASE default: {assert(!"Invalid default case!");} break
-#define MIN(A, B) ((A < B) ? (A) : (B))
-#define MAX(A, B) ((A > B) ? (A) : (B))
+#define MIN(A, B) (((A) < (B)) ? (A) : (B))
+#define MAX(A, B) (((A) > (B)) ? (A) : (B))
 
 static u32 neon__COUNTER__ = 0;
 #define GEN_ID ++neon__COUNTER__
-
-#define local_persist static
 
 struct game_button_state
 {
@@ -119,34 +118,15 @@ typedef PLATFORM_LOG(platform_log);
 #define PLATFORM_LOG_ERROR(Name) void (Name)(char const *Format, ...)
 typedef PLATFORM_LOG_ERROR(platform_log_error);
 
-struct platform_t
+struct platform
 {
-    s32 WindowWidth; // In pixels
-    s32 WindowHeight; // In pixels
+    s32 WindowWidth;
+    s32 WindowHeight;
     platform_read_file *ReadFile;
     platform_free_file_content *FreeFileContent;
     platform_write_file *WriteFile;
     platform_log *Log;
     platform_log_error *LogError;
 };
-
-extern platform_t Platform;
-
-#include <imgui.h>
-
-#define GAME_SETUP(Name) void (Name)(platform_t _Platform, ImGuiContext *_ImGuiCtx)
-typedef GAME_SETUP(game_setup);
-
-#define GAME_UPDATE_AND_RENDER(Name) void (Name)(game_input *Input)
-typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
-
-#define IMGUI_RENDER_DRAW_LISTS(Name) void (Name)(ImDrawData* draw_data)
-typedef IMGUI_RENDER_DRAW_LISTS(imgui_render_draw_lists);
-
-#define IMGUI_CREATE_DEVICE_OBJECTS(Name) bool (Name)()
-typedef IMGUI_CREATE_DEVICE_OBJECTS(imgui_create_device_objects);
-
-#define IMGUI_INVALIDATE_DEVICE_OBJECTS(Name) void (Name)()
-typedef IMGUI_INVALIDATE_DEVICE_OBJECTS(imgui_invalidate_device_objects);
-
+extern platform Platform;
 #endif

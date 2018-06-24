@@ -1,16 +1,16 @@
 #ifndef NEON_RENDERER_H
 #define NEON_RENDERER_H
 
-#include "../platform/neon_platform.h"
+#include "neon_platform.h"
 #include "neon_math.h"
 
 #include <vector>
 
 struct bitmap;
 struct font;
-enum class texture_type;
-enum class texture_filter;
-enum class texture_wrap;
+//enum class texture_type;
+//enum class texture_filter;
+//enum class texture_wrap;
 
 typedef void (dispatch_fn)(void const *Data);
 typedef u16 vert_index;
@@ -52,6 +52,21 @@ typedef u16 vert_index;
 // Renderer Wrapper
 //-----------------------------------------------------------------------------
 
+enum class texture_type
+{
+    TEXTURE_2D
+};
+
+enum class texture_filter
+{
+    LINEAR, NEAREST
+};
+
+enum class texture_wrap
+{
+    CLAMP, REPEAT
+};
+
 enum class resource_type : u32
 {
     NOT_INITIALIZED = 0x00000000,
@@ -75,6 +90,7 @@ namespace rndr
 
     render_resource MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection);
     void            DeleteTexture(render_resource Texture);
+    void*           GetTextureID(render_resource Texture);
 
     render_resource MakeBuffer(resource_type Type, u32 Size, bool Dynamic = false);
     void            BufferData(render_resource Buffer, u32 Offset, u32 Size, void const *Data);
@@ -255,7 +271,6 @@ namespace cmd
 
         static dispatch_fn  *DISPATCH_FUNCTION;
     };
-    static_assert(std::is_pod<draw_indexed>::value == true, "Must be a POD.");
 
     struct copy_const_buffer
     {
@@ -265,7 +280,6 @@ namespace cmd
 
         static dispatch_fn  *DISPATCH_FUNCTION;
     };
-    static_assert(std::is_pod<copy_const_buffer>::value == true, "Must be a POD.");
 
     struct draw_debug_lines
     {
@@ -284,9 +298,12 @@ namespace cmd
 
 void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Color, r32 Rotation, vec2 Origin, vec2 Scale, r32 Layer);
 void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Color, r32 Rotation, vec2 Origin, r32 Layer);
-
-// NOTE: P is top left point.
 void PushText(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const * Format, ...);
+void PushText(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 Layer, font *Font, char const * Format, ...);
+
+//-----------------------------------------------------------------------------
+// Debugging
+//-----------------------------------------------------------------------------
 
 void PushDbgLine(std::vector<vert_P1C1> *Vertices, vec3 FromP, vec3 ToP, vec4 Color);
 #endif

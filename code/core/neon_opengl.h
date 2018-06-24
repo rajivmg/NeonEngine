@@ -3,7 +3,7 @@
 
 #include "neon_GL.h"
 
-#include "../platform/neon_platform.h"
+#include "neon_platform.h"
 #include "neon_math.h"
 
 class texture;
@@ -61,6 +61,7 @@ namespace ogl
     void            SetProjectionMatrix(mat4 Matrix);
     render_resource MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection);
     void            DeleteTexture(render_resource Texture);
+    void*           GetTextureID(render_resource Texture);
     render_resource MakeBuffer(resource_type Type, u32 Size, bool Dynamic = false);
     void            BufferData(render_resource Buffer, u32 Offset, u32 Size, void const *Data);
     void            DeleteBuffer(render_resource Buffer);
@@ -73,5 +74,4 @@ namespace ogl
     void            DrawIndexed(cmd::draw_indexed *Cmd);
     void            DrawDebugLines(cmd::draw_debug_lines *Cmd);
 }
-
 #endif

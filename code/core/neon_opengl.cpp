@@ -2,7 +2,7 @@
 
 #include "neon_renderer.h"
 #include "neon_bitmap.h"
-#include <imgui.h>
+#include <dear-imgui/imgui.h>
 
 #define NEON_INIT_GL
 #define NEON_DEBUG_GL
@@ -106,6 +106,11 @@ render_resource ogl::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filt
 void ogl::DeleteTexture(render_resource Texture)
 {
     glDeleteTextures(1, &RenderState.Textures[Texture.ResourceHandle]);
+}
+
+void* ogl::GetTextureID(render_resource Texture)
+{
+    return (void *)(iptr)RenderState.Textures[Texture.ResourceHandle];
 }
 
 render_resource ogl::MakeBuffer(resource_type Type, u32 Size, bool Dynamic)
@@ -415,8 +420,7 @@ static int          imgui_AttribLocationTex = 0, imgui_AttribLocationProjMtx = 0
 static int          imgui_AttribLocationPosition = 0, imgui_AttribLocationUV = 0, imgui_AttribLocationColor = 0;
 static unsigned int imgui_VboHandle = 0, imgui_VaoHandle = 0, imgui_ElementsHandle = 0;
 
-extern "C" DLLEXPORT
-IMGUI_RENDER_DRAW_LISTS(ImGui_RenderDrawLists)
+void ImGui_RenderDrawLists(ImDrawData* draw_data)
 {
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
     ImGuiIO& io = ImGui::GetIO();
@@ -522,6 +526,7 @@ IMGUI_RENDER_DRAW_LISTS(ImGui_RenderDrawLists)
 
 static void ImGui_CreateFontsTexture()
 {
+    // TODO: If even wanted to reload game dll then pass font texture atlas from main app for performance
     // Build texture atlas
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 16);
@@ -547,8 +552,7 @@ static void ImGui_CreateFontsTexture()
     glBindTexture(GL_TEXTURE_2D, last_texture);
 }
 
-DLLEXPORT
-IMGUI_CREATE_DEVICE_OBJECTS(ImGui_CreateDeviceObjects)
+bool ImGui_CreateDeviceObjects()
 {
     // Backup GL state
     GLint last_texture, last_array_buffer, last_vertex_array;
@@ -637,8 +641,7 @@ IMGUI_CREATE_DEVICE_OBJECTS(ImGui_CreateDeviceObjects)
     return true;
 }
 
-DLLEXPORT
-IMGUI_INVALIDATE_DEVICE_OBJECTS(ImGui_InvalidateDeviceObjects)
+void ImGui_InvalidateDeviceObjects()
 {
     if(imgui_VaoHandle) glDeleteVertexArrays(1, &imgui_VaoHandle);
     if(imgui_VboHandle) glDeleteBuffers(1, &imgui_VboHandle);

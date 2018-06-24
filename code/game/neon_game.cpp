@@ -1,34 +1,11 @@
 #include "neon_game.h"
-
-#include "neon_mesh.h"
+#include <dear-imgui/imgui.h>
 
 static game_state GameState = {};
 
-void GenWorld()
-{
-    GameState.DbgLineVertices.clear();
-    GameState.WorldVertices.clear();
-    ImGui::Begin("Sprite Test");
-    local_persist r32 AngleRad = 0.0f;
-    local_persist vec2 RectP = vec2i(2, 2);
-    local_persist vec2 RectO = vec2i(0, 0);
-    local_persist r32 Scale = 1.0f;
-    ImGui::SliderAngle("Rotation Angle", &AngleRad);
-    ImGui::SliderFloat("Scale", &Scale, 0.1f, 5.0f);
-    ImGui::InputFloat2("Origin", RectO.Elements);
-    ImGui::End();
-    PushSprite(&GameState.WorldVertices, Rect(RectP.x, RectP.y, 4, 4), vec4i(0, 0, 1, 1), vec4i(1, 1, 1, 1), AngleRad, RectO, vec2(Scale), 0.0f);
-    rndr::BufferData(GameState.WorldVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)GameState.WorldVertices.size(), &GameState.WorldVertices.front());
-    PushDbgLine(&GameState.DbgLineVertices, vec3(RectP.x + RectO.x, RectP.y + RectO.y, 1.0f), vec3(100.0f, RectP.y + RectO.y, 1.0f), vec4i(1, 1, 0, 1));
-    PushDbgLine(&GameState.DbgLineVertices, vec3(RectP.x + RectO.x, RectP.y + RectO.y, 1.0f), vec3(RectP.x + RectO.x, 100.0f, 1.0f), vec4i(1, 1, 0, 1));
-}
-
-DLLEXPORT
-GAME_SETUP(GameSetup)
+void GameSetup()
 {
     // Set pointers and init renderer
-    Platform = _Platform;
-    ImGui::SetCurrentContext(_ImGuiCtx);
     rndr::Init();
 
     // GameState
@@ -42,9 +19,10 @@ GAME_SETUP(GameSetup)
     InitFont(&GameState.DbgFont, "fonts/Inconsolata/Inconsolata-Regular.ttf", 20);
 
     bitmap WonderArtBitmap;
-    LoadBitmap(&WonderArtBitmap, "Wonder_Art.tga");
-    GameState.WonderArtTexture = rndr::MakeTexture(&WonderArtBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
-
+    LoadBitmap(&WonderArtBitmap, "sprites/cavesofgallet_tiles.tga");
+    //GameState.WonderArtTexture = rndr::MakeTexture(&WonderArtBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, false);
+    GameState.EditorTilesetTexture = rndr::MakeTexture(&WonderArtBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, false);
+    GameState.GameTilesetTexture = rndr::MakeTexture(&WonderArtBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
     bitmap WhiteBitmap;
     LoadBitmap(&WhiteBitmap, "sprites/white_texture.tga");
     GameState.WhiteTexture = rndr::MakeTexture(&WhiteBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, false);
@@ -69,34 +47,32 @@ GAME_SETUP(GameSetup)
 
     GameState.WorldVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(20), true);
 
-    //GenWorld();
     //vec4 Color = RGBAUnpack4x8(0x0C0C0CFF);
     int a = 0;
 }
 
-DLLEXPORT
-GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
+void GameUpdateAndRender(game_input *Input)
 {
     //-----------------------------------------------------------------------------
     // Game Update
     //-----------------------------------------------------------------------------
+    EditorTick(&GameState);
 
-    GenWorld();
     //-----------------------------------------------------------------------------
     // Game Render
     //-----------------------------------------------------------------------------
     rndr::Clear();
 
-    ImGui::Begin("Debug");
-    ImGui::Text("%0.2f ms/frame", 1000.0f * Input->DeltaTime);
-    ImGui::End();
+    //ImGui::Begin("Debug");
+    //ImGui::Text("%0.2f ms/frame", 1000.0f * Input->DeltaTime);
+    //ImGui::End();
 
     cmd::draw *WorldDrawCmd = GameState.WorldRender->AddCommand<cmd::draw>(0);
     WorldDrawCmd->VertexBuffer = GameState.WorldVertexBuffer;
     WorldDrawCmd->VertexFormat = vert_format::P1C1UV1;
     WorldDrawCmd->StartVertex = 0;
     WorldDrawCmd->VertexCount = (u32)GameState.WorldVertices.size();
-    WorldDrawCmd->Textures[0] = GameState.WonderArtTexture;
+    WorldDrawCmd->Textures[0] = GameState.GameTilesetTexture;
 
     GameState.WorldRender->Sort();
     GameState.WorldRender->Submit();
@@ -121,7 +97,7 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     GameState.DbgTextRender->Submit();
     GameState.DbgTextRender->Flush();
 
-#if 1
+#if 0
     //std::vector<vert_P1C1> DebugLinesVertices;
     //PushLine(&GameState.DbgLineVertices, vec3(2, 2, 0), vec3(12, 7, 0), vec4(1, 0, 1, 1));
     //u32 StepAngle = 4;

@@ -1,15 +1,34 @@
 #ifndef NEON_GAME_H
 #define NEON_GAME_H
 
-#include "../platform/neon_platform.h"
+#include <vector>
+#include <core/neon_bitmap.h>
+#include <core/neon_text.h>
+#include "neon_editor.h"
 
-#include "neon_renderer.h"
-#include "neon_math.h"
-#include "neon_bitmap.h"
-#include "neon_text.h"
+#define MAX_TILEMAP_X 200
+#define MAX_TILEMAP_Y 200
+#define MAX_TILEMAP_LAYERS 10
 
-platform_t Platform;
-
+struct tileset
+{
+    char *File;
+    bitmap *Bitmap;
+};
+struct tile
+{
+    u16 ID;     // Tile ID
+    u16 TsID;   // Tileset ID
+    r32 UV0, UV1, UV2, UV3; // BLx, BLy, TRx, TRy
+};
+struct tilemap
+{
+    std::vector<tileset> Tilesets;
+    std::vector<tile> Tiles;
+    u16 Map[MAX_TILEMAP_Y][MAX_TILEMAP_X];
+    u32 MapSizeX;
+    u32 MapSizeY;
+};
 
 struct game_state
 {
@@ -36,7 +55,9 @@ struct game_state
     r32 MetersToPixels;
     r32 PixelsToMeters;
 
-    render_resource WonderArtTexture;
-};
+    render_resource EditorTilesetTexture;
+    render_resource GameTilesetTexture;
 
+    editor_state EditorState;
+};
 #endif

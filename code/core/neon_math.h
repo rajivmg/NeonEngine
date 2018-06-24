@@ -1,16 +1,28 @@
 #ifndef NEON_MATH_H
 #define NEON_MATH_H
 
-#define M_PI        3.14159265358979323846f
-#define DEG2RAD(Angle) ((Angle)*M_PI/180.0f)
-#define RAD2DEG(Angle) ((Angle)*180.0f/M_PI)
-#define INT_MIN     (-2147483647 - 1)
-#define INT_MAX     2147483647
-#define FLT_MAX     3.402823466e+38F
+#ifndef M_PI
+    #define M_PI        3.14159265358979323846f
+#endif
+#ifndef INT_MIN
+    #define INT_MIN     (-2147483647 - 1)
+#endif
+#ifndef INT_MAX
+    #define INT_MAX     2147483647
+#endif
+#ifndef FLT_MAX
+    #define FLT_MAX     3.402823466e+38F
+#endif
+#ifndef DEG2RAD
+    #define DEG2RAD(Angle) ((Angle)*M_PI/180.0f)
+#endif
+#ifndef RAD2DEG
+    #define RAD2DEG(Angle) ((Angle)*180.0f/M_PI)
+#endif
 
 #include <math.h>
 
-#include "../platform/neon_platform.h"
+#include "neon_platform.h"
 
 inline
 r32 Clamp(r32 Min, r32 Value, r32 Max)

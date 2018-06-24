@@ -1,8 +1,8 @@
 #ifndef NEON_TEXTURE_H
 #define NEON_TEXTURE_H
 
-#include "../platform/neon_platform.h"
-#include "neon_math.h"
+#include "neon_platform.h"
+#include "math.h"
 
 #include <cstdlib> // malloc
 
@@ -26,21 +26,6 @@ typedef struct tga_header
     u8  ImageDescriptor;
 } tga_header;
 #pragma pack(pop)
-
-enum class texture_type
-{
-    TEXTURE_2D
-};
-
-enum class texture_filter
-{
-    LINEAR, NEAREST
-};
-
-enum class texture_wrap
-{
-    CLAMP, REPEAT
-};
 
 struct bitmap
 {
@@ -84,5 +69,4 @@ vec4 BitmapPackInsert(bitmap_pack *BitmapPack, bitmap *Bitmap);
 // Save texture object on disk in .tga format
 // Note that the first byte of texture data will be saved as the first top left pixel.
 void DebugTextureSave_(char const *Filename, bitmap *Bitmap);
-
 #endif

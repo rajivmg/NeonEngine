@@ -2,7 +2,7 @@
 #define NEON_MESH_H
 
 #include <vector>
-#include "../platform/neon_platform.h"
+#include "neon_platform.h"
 
 typedef u16 vert_index;
 struct vert_P1C1UV1;

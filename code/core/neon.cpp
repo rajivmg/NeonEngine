@@ -5,13 +5,11 @@
 
 #include <cstdio> // vsnprintf
 
-#include "neon_sdl.h"
+#include "neon.h"
 
-#include <imgui.h>
+#include <dear-imgui/imgui.h>
 
-platform_t Platform;
-
-static game_code GameCode = {};
+platform Platform;
 
 // ImGui Data
 static r64      imgui_Time = 0.0f;
@@ -179,39 +177,43 @@ static bool ImGui_ProcessEvent(SDL_Event* event)
     return false;
 }
 
-static bool ImGui_Init(SDL_Window* window, imgui_render_draw_lists *ImGui_RenderDrawListsFn)
+static bool ImGui_Init(SDL_Window* window, void (*ImGui_RenderDrawLists)(ImDrawData *draw_data))
 {
-    ImGuiIO& io = ImGui::GetIO();
-    io.KeyMap[ImGuiKey_Tab] = SDLK_TAB;                     // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
-    io.KeyMap[ImGuiKey_LeftArrow] = SDL_SCANCODE_LEFT;
-    io.KeyMap[ImGuiKey_RightArrow] = SDL_SCANCODE_RIGHT;
-    io.KeyMap[ImGuiKey_UpArrow] = SDL_SCANCODE_UP;
-    io.KeyMap[ImGuiKey_DownArrow] = SDL_SCANCODE_DOWN;
-    io.KeyMap[ImGuiKey_PageUp] = SDL_SCANCODE_PAGEUP;
-    io.KeyMap[ImGuiKey_PageDown] = SDL_SCANCODE_PAGEDOWN;
-    io.KeyMap[ImGuiKey_Home] = SDL_SCANCODE_HOME;
-    io.KeyMap[ImGuiKey_End] = SDL_SCANCODE_END;
-    io.KeyMap[ImGuiKey_Delete] = SDLK_DELETE;
-    io.KeyMap[ImGuiKey_Backspace] = SDLK_BACKSPACE;
-    io.KeyMap[ImGuiKey_Enter] = SDLK_RETURN;
-    io.KeyMap[ImGuiKey_Escape] = SDLK_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = SDLK_a;
-    io.KeyMap[ImGuiKey_C] = SDLK_c;
-    io.KeyMap[ImGuiKey_V] = SDLK_v;
-    io.KeyMap[ImGuiKey_X] = SDLK_x;
-    io.KeyMap[ImGuiKey_Y] = SDLK_y;
-    io.KeyMap[ImGuiKey_Z] = SDLK_z;
+    ImGuiIO& IO = ImGui::GetIO();
+    IO.KeyMap[ImGuiKey_Tab] = SDLK_TAB;                     // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
+    IO.KeyMap[ImGuiKey_LeftArrow] = SDL_SCANCODE_LEFT;
+    IO.KeyMap[ImGuiKey_RightArrow] = SDL_SCANCODE_RIGHT;
+    IO.KeyMap[ImGuiKey_UpArrow] = SDL_SCANCODE_UP;
+    IO.KeyMap[ImGuiKey_DownArrow] = SDL_SCANCODE_DOWN;
+    IO.KeyMap[ImGuiKey_PageUp] = SDL_SCANCODE_PAGEUP;
+    IO.KeyMap[ImGuiKey_PageDown] = SDL_SCANCODE_PAGEDOWN;
+    IO.KeyMap[ImGuiKey_Home] = SDL_SCANCODE_HOME;
+    IO.KeyMap[ImGuiKey_End] = SDL_SCANCODE_END;
+    IO.KeyMap[ImGuiKey_Delete] = SDLK_DELETE;
+    IO.KeyMap[ImGuiKey_Backspace] = SDLK_BACKSPACE;
+    IO.KeyMap[ImGuiKey_Enter] = SDLK_RETURN;
+    IO.KeyMap[ImGuiKey_Escape] = SDLK_ESCAPE;
+    IO.KeyMap[ImGuiKey_A] = SDLK_a;
+    IO.KeyMap[ImGuiKey_C] = SDLK_c;
+    IO.KeyMap[ImGuiKey_V] = SDLK_v;
+    IO.KeyMap[ImGuiKey_X] = SDLK_x;
+    IO.KeyMap[ImGuiKey_Y] = SDLK_y;
+    IO.KeyMap[ImGuiKey_Z] = SDLK_z;
 
-    io.RenderDrawListsFn = ImGui_RenderDrawListsFn;   // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
-    io.SetClipboardTextFn = ImGui_SetClipboardText;
-    io.GetClipboardTextFn = ImGui_GetClipboardText;
-    io.ClipboardUserData = NULL;
+    IO.RenderDrawListsFn = ImGui_RenderDrawLists;   // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
+    IO.SetClipboardTextFn = ImGui_SetClipboardText;
+    IO.GetClipboardTextFn = ImGui_GetClipboardText;
+    IO.ClipboardUserData = NULL;
+
+    ImGuiStyle& Style = ImGui::GetStyle();
+    Style.WindowRounding = 0.0f;
+    Style.ScrollbarRounding = 0.0f;
 
 #ifdef _WIN32
     SDL_SysWMinfo wmInfo;
     SDL_VERSION(&wmInfo.version);
     SDL_GetWindowWMInfo(window, &wmInfo);
-    io.ImeWindowHandle = wmInfo.info.win.window;
+    IO.ImeWindowHandle = wmInfo.info.win.window;
 #else
     (void)window;
 #endif
@@ -221,7 +223,7 @@ static bool ImGui_Init(SDL_Window* window, imgui_render_draw_lists *ImGui_Render
 
 static void ImGui_Shutdown()
 {
-    GameCode.ImGui_InvalidateDeviceObjects();
+    ImGui_InvalidateDeviceObjects();
     ImGui::Shutdown();
 }
 
@@ -229,7 +231,7 @@ static void ImGui_NewFrame(SDL_Window* window)
 {
     if(!imgui_FontTextureCreated)
     {
-        GameCode.ImGui_CreateDeviceObjects();
+        ImGui_CreateDeviceObjects();
         imgui_FontTextureCreated = true;
     }
 
@@ -273,6 +275,7 @@ static void ImGui_NewFrame(SDL_Window* window)
     ImGui::NewFrame();
 }
 
+#if 0
 static void* LoadFuncFromDLL(void *GameCodeHandle, char const *FuncName)
 {
     void *Result = SDL_LoadFunction(GameCodeHandle, FuncName);
@@ -297,6 +300,7 @@ static void LoadGameCode(game_code *GameCode)
     GameCode->ImGui_CreateDeviceObjects = (imgui_create_device_objects *)LoadFuncFromDLL(GameCode->Handle, "ImGui_CreateDeviceObjects");
     GameCode->ImGui_InvalidateDeviceObjects = (imgui_invalidate_device_objects *)LoadFuncFromDLL(GameCode->Handle, "ImGui_InvalidateDeviceObjects");
 }
+#endif
 
 static void SDLProcessButtonState(game_button_state *NewState, bool IsDown)
 {
@@ -454,11 +458,10 @@ int main(int argc, char **argv)
             {
                 SDL_GL_SetSwapInterval(1);
 
-                LoadGameCode(&GameCode);
-                GameCode.GameSetup(Platform, ImGui::GetCurrentContext());
+                GameSetup();
 
                 // Setup Imgui binding
-                ImGui_Init(Window, GameCode.ImGui_RenderDrawLists);
+                ImGui_Init(Window, ImGui_RenderDrawLists);
 
                 SDL_Event Event;
                 bool ShouldQuit = false;
@@ -530,7 +533,7 @@ int main(int argc, char **argv)
                     NewInput->DeltaTime = FrameTime;
 
                     // Simulate and render the game
-                    GameCode.GameUpdateAndRender(NewInput);
+                    GameUpdateAndRender(NewInput);
 
                     // Render ImGui
                     ImGui::Render();
