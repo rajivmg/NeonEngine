@@ -18,9 +18,7 @@ namespace cmd
     struct draw_debug_lines;
 }
 
-enum class texture_type;
-enum class texture_filter;
-enum class texture_wrap;
+enum class tex_param;
 
 struct buffer_object
 {
@@ -59,7 +57,7 @@ namespace ogl
     void            Clear();
     void            SetViewMatrix(mat4 Matrix);
     void            SetProjectionMatrix(mat4 Matrix);
-    render_resource MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection);
+    render_resource MakeTexture(bitmap *Bitmap, tex_param Type, tex_param Filter, tex_param Wrap, bool HwGammaCorrection);
     void            DeleteTexture(render_resource Texture);
     void*           GetTextureID(render_resource Texture);
     render_resource MakeBuffer(resource_type Type, u32 Size, bool Dynamic = false);

@@ -70,7 +70,7 @@ void ogl::SetProjectionMatrix(mat4 Matrix)
     glUniformMatrix4fv(RenderState.ShaderPrograms[RenderState.ActiveShaderProgram].ProjMatrix, 1, GL_FALSE, Matrix.Elements);
 }
 
-render_resource ogl::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection)
+render_resource ogl::MakeTexture(bitmap *Bitmap, tex_param Type, tex_param Filter, tex_param Wrap, bool HwGammaCorrection)
 {
     ASSERT(RenderState.TextureCurrent < ARRAY_COUNT(RenderState.Textures));
 
@@ -81,7 +81,7 @@ render_resource ogl::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filt
     // Generate and bind Texture
     glGenTextures(1, &RenderState.Textures[RenderResource.ResourceHandle]);
     // TODO: Add more texture type in future.
-    ASSERT(Type == texture_type::TEXTURE_2D);
+    ASSERT(Type == tex_param::TEX2D);
     glBindTexture(GL_TEXTURE_2D, RenderState.Textures[RenderResource.ResourceHandle]);
 
     // Orient the texture
@@ -92,10 +92,10 @@ render_resource ogl::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filt
     glTexImage2D(GL_TEXTURE_2D, 0, HwGammaCorrection ? GL_SRGB_ALPHA : GL_RGBA, Bitmap->Width, Bitmap->Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, Bitmap->Data);
 
     // Set texture parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, Wrap == texture_wrap::REPEAT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, Wrap == texture_wrap::REPEAT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, Filter == texture_filter::NEAREST ? GL_NEAREST : GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Filter == texture_filter::NEAREST ? GL_NEAREST : GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, Wrap == tex_param::REPEAT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, Wrap == tex_param::REPEAT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, Filter == tex_param::NEAREST ? GL_NEAREST : GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Filter == tex_param::NEAREST ? GL_NEAREST : GL_LINEAR);
 
     // Unbind texture
     glBindTexture(GL_TEXTURE_2D, 0);

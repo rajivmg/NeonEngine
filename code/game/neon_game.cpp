@@ -21,16 +21,16 @@ void GameSetup()
     bitmap WonderArtBitmap;
     LoadBitmap(&WonderArtBitmap, "sprites/cavesofgallet_tiles.tga");
 
-    GameState.EditorTilesetTexture = rndr::MakeTexture(&WonderArtBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, false);
-    GameState.GameTilesetTexture = rndr::MakeTexture(&WonderArtBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
+    GameState.EditorTilesetTexture = rndr::MakeTexture(&WonderArtBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
+    GameState.GameTilesetTexture = rndr::MakeTexture(&WonderArtBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, true);
     bitmap WhiteBitmap;
     LoadBitmap(&WhiteBitmap, "sprites/white_texture.tga");
-    GameState.WhiteTexture = rndr::MakeTexture(&WhiteBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, false);
+    GameState.WhiteTexture = rndr::MakeTexture(&WhiteBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
 
     GameState.SpriteShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
 
-    //GameState.TextShader = MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
-    GameState.TextShader = rndr::MakeShaderProgram("shaders/text_vs.glsl", "shaders/text_ps.glsl");
+    GameState.TextShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
+    //GameState.TextShader = rndr::MakeShaderProgram("shaders/text_vs.glsl", "shaders/text_ps.glsl");
 
     GameState.DbgTextVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
     GameState.DbgTextRender = new render_cmd_list(MEGABYTE(1), GameState.TextShader);

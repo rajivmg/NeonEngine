@@ -3,6 +3,7 @@
 #include "neon_platform.h"
 #include "neon_math.h"
 #include <vector>
+
 //
 //  NOTE:
 //  - Follow right-handed coordinate system.
@@ -46,22 +47,7 @@ typedef u16 vert_index;
 // Renderer Wrapper
 //-----------------------------------------------------------------------------
 
-enum class texture_type
-{
-    TEXTURE_2D
-};
-
-enum class texture_filter
-{
-    LINEAR, NEAREST
-};
-
-enum class texture_wrap
-{
-    CLAMP, REPEAT
-};
-
-enum class tex
+enum class tex_param
 {
     TEX2D,
     LINEAR, NEAREST,
@@ -87,7 +73,7 @@ namespace rndr
     void            SetViewMatrix(mat4 Matrix);
     void            SetProjectionMatrix(mat4 Matrix);
 
-    render_resource MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection);
+    render_resource MakeTexture(bitmap *Bitmap, tex_param Type, tex_param Filter, tex_param Wrap, bool HwGammaCorrection);
     void            DeleteTexture(render_resource Texture);
     void*           GetTextureID(render_resource Texture);
 
