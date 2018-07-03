@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <core/neon_bitmap.h>
-#include <core/neon_text.h>
+#include <core/neon_font.h>
 #include "neon_editor.h"
 
 #define MAX_TILEMAP_X 200
@@ -40,7 +40,7 @@ struct game_state
 
     render_resource SpriteShader;
 
-    font DbgFont;
+    font *DbgFont;
 
     render_resource TextShader;
 

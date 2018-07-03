@@ -71,7 +71,7 @@ PLATFORM_READ_FILE(ReadFile)
         SDL_RWseek(Fp, 0, RW_SEEK_SET);
 
         // Allocate the required memory
-        Result.Content = (void *)malloc(sizeof(char) * Result.Size);
+        Result.Content = (void *)MALLOC(sizeof(char) * Result.Size);
         if(Result.Content == nullptr)
         {
             Result.NoError = false;
@@ -279,7 +279,7 @@ static void ImGui_NewFrame(SDL_Window* window)
 static void* LoadFuncFromDLL(void *GameCodeHandle, char const *FuncName)
 {
     void *Result = SDL_LoadFunction(GameCodeHandle, FuncName);
-    assert(Result != nullptr);
+    ASSERT(Result != nullptr);
     return Result;
 }
 
@@ -292,7 +292,7 @@ static void LoadGameCode(game_code *GameCode)
         Log(SDL_GetError());
     }
 
-    assert(GameCode->Handle != nullptr);
+    ASSERT(GameCode->Handle != nullptr);
 
     GameCode->GameUpdateAndRender = (game_update_and_render *)LoadFuncFromDLL(GameCode->Handle, "GameUpdateAndRender");
     GameCode->GameSetup = (game_setup *)LoadFuncFromDLL(GameCode->Handle, "GameSetup");

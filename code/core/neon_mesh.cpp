@@ -31,7 +31,7 @@ void PushMesh(std::vector<vert_P1C1UV1> *Vertices, std::vector<vert_index> *Indi
     for(s64 J = 0; J < Mesh->mNumFaces; ++J)
     {
         aiFace *Face = &Mesh->mFaces[J];
-        assert(Face->mNumIndices == 3);
+        ASSERT(Face->mNumIndices == 3);
         Indices->push_back(Face->mIndices[0]);
         Indices->push_back(Face->mIndices[1]);
         Indices->push_back(Face->mIndices[2]);
@@ -63,7 +63,7 @@ void PushMesh(std::vector<vert_P1N1UV1> *Vertices, std::vector<vert_index> *Indi
     for(u32 J = 0; J < Mesh->mNumFaces; ++J)
     {
         aiFace *Face = &Mesh->mFaces[J];
-        assert(Face->mNumIndices == 3);
+        ASSERT(Face->mNumIndices == 3);
         Indices->push_back(Face->mIndices[0]);
         Indices->push_back(Face->mIndices[1]);
         Indices->push_back(Face->mIndices[2]);

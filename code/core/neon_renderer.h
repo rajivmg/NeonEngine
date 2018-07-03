@@ -1,20 +1,8 @@
 #ifndef NEON_RENDERER_H
 #define NEON_RENDERER_H
-
 #include "neon_platform.h"
 #include "neon_math.h"
-
 #include <vector>
-
-struct bitmap;
-struct font;
-//enum class texture_type;
-//enum class texture_filter;
-//enum class texture_wrap;
-
-typedef void (dispatch_fn)(void const *Data);
-typedef u16 vert_index;
-
 //
 //  NOTE:
 //  - Follow right-handed coordinate system.
@@ -48,6 +36,12 @@ typedef u16 vert_index;
 //
 //
 
+struct bitmap;
+struct font;
+
+typedef void (dispatch_fn)(void const *Data);
+typedef u16 vert_index;
+
 //-----------------------------------------------------------------------------
 // Renderer Wrapper
 //-----------------------------------------------------------------------------
@@ -67,6 +61,12 @@ enum class texture_wrap
     CLAMP, REPEAT
 };
 
+enum class tex
+{
+    TEX2D,
+    LINEAR, NEAREST,
+    CLAMP, REPEAT
+};
 enum class resource_type : u32
 {
     NOT_INITIALIZED = 0x00000000,
@@ -75,7 +75,6 @@ enum class resource_type : u32
 
 struct render_resource
 {
-
     resource_type   Type;
     u32             ResourceHandle;
 };
@@ -134,7 +133,7 @@ struct cmd_packet
 // NOTE: As actual cmd is stored right after the end of the struct cmd_packet.
 // We subtract the sizeof(cmd_packet) from the address of the actual cmd to get
 // address of the parent cmd_packet.
-inline cmd_packet* GetCmdPacket(void *Cmd)
+inline cmd_packet *GetCmdPacket(void *Cmd)
 {
     return (cmd_packet *)((u8 *)Cmd - sizeof(cmd_packet));
 }
@@ -161,15 +160,15 @@ struct render_cmd_list
 
     // Create a cmd_packet and initialise it's members.
     template <typename U>
-    cmd_packet* CreateCmdPacket(u32 AuxMemorySize);
+    cmd_packet *CreateCmdPacket(u32 AuxMemorySize);
 
     template <typename U>
-    U* AddCommand(u32 Key, u32 AuxMemorySize = 0);
+    U *AddCommand(u32 Key, u32 AuxMemorySize = 0);
 
     template <typename U, typename V>
-    U* AppendCommand(V *Cmd, u32 AuxMemorySize = 0);
+    U *AppendCommand(V *Cmd, u32 AuxMemorySize = 0);
 
-    void* AllocateMemory(u32 MemorySize);
+    void *AllocateMemory(u32 MemorySize);
     void Sort();
     void Submit();
     void Flush();
@@ -182,7 +181,7 @@ inline u32 render_cmd_list::GetCmdPacketSize(u32 AuxMemorySize)
 }
 
 template <typename U>
-inline cmd_packet* render_cmd_list::CreateCmdPacket(u32 AuxMemorySize)
+inline cmd_packet *render_cmd_list::CreateCmdPacket(u32 AuxMemorySize)
 {
     cmd_packet *Packet = (cmd_packet *)AllocateMemory(GetCmdPacketSize<U>(AuxMemorySize));
     Packet->NextCmdPacket = nullptr;
@@ -194,7 +193,7 @@ inline cmd_packet* render_cmd_list::CreateCmdPacket(u32 AuxMemorySize)
 }
 
 template <typename U>
-inline U* render_cmd_list::AddCommand(u32 Key, u32 AuxMemorySize)
+inline U *render_cmd_list::AddCommand(u32 Key, u32 AuxMemorySize)
 {
     cmd_packet *Packet = CreateCmdPacket<U>(AuxMemorySize);
 
@@ -209,7 +208,7 @@ inline U* render_cmd_list::AddCommand(u32 Key, u32 AuxMemorySize)
 }
 
 template <typename U, typename V>
-inline U* render_cmd_list::AppendCommand(V *Cmd, u32 AuxMemorySize)
+inline U *render_cmd_list::AppendCommand(V *Cmd, u32 AuxMemorySize)
 {
     cmd_packet *Packet = CreateCmdPacket<U>(AuxMemorySize);
 
@@ -298,7 +297,6 @@ namespace cmd
 
 void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Color, r32 Rotation, vec2 Origin, vec2 Scale, r32 Layer);
 void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Color, r32 Rotation, vec2 Origin, r32 Layer);
-void PushText(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const * Format, ...);
 void PushText(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 Layer, font *Font, char const * Format, ...);
 
 //-----------------------------------------------------------------------------

@@ -41,7 +41,7 @@ void ogl::InitState()
 
     // Set clear color
     //glClearColor(0.07f, 0.07f, 0.08f, 1.0f);
-    vec4 ClearColor = RGBA255To01(RGBAUnpack4x8(0x0c0c0cff));
+    vec4 ClearColor = RGBA255To01(RGBAUnpack4x8(0x565656ff));
     glClearColor(ClearColor.r, ClearColor.g, ClearColor.b, ClearColor.a);
 
     // Enable multisampling
@@ -72,7 +72,7 @@ void ogl::SetProjectionMatrix(mat4 Matrix)
 
 render_resource ogl::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filter Filter, texture_wrap Wrap, bool HwGammaCorrection)
 {
-    assert(RenderState.TextureCurrent < ARRAY_COUNT(RenderState.Textures));
+    ASSERT(RenderState.TextureCurrent < ARRAY_COUNT(RenderState.Textures));
 
     render_resource RenderResource;
     RenderResource.Type = resource_type::TEXTURE;
@@ -81,7 +81,7 @@ render_resource ogl::MakeTexture(bitmap *Bitmap, texture_type Type, texture_filt
     // Generate and bind Texture
     glGenTextures(1, &RenderState.Textures[RenderResource.ResourceHandle]);
     // TODO: Add more texture type in future.
-    assert(Type == texture_type::TEXTURE_2D);
+    ASSERT(Type == texture_type::TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, RenderState.Textures[RenderResource.ResourceHandle]);
 
     // Orient the texture
@@ -136,7 +136,7 @@ render_resource ogl::MakeBuffer(resource_type Type, u32 Size, bool Dynamic)
         INVALID_DEFAULT_CASE;
     }
 
-    assert(Size > 0);
+    ASSERT(Size > 0);
 
     render_resource RenderResource;
     RenderResource.Type = Type;
@@ -175,7 +175,7 @@ void ogl::BufferData(render_resource Buffer, u32 Offset, u32 Size, void const *D
         INVALID_DEFAULT_CASE;
     }
 
-    assert(Size > 0 && Size <= RenderState.BufferObjects[Buffer.ResourceHandle].Capacity);
+    ASSERT(Size > 0 && Size <= RenderState.BufferObjects[Buffer.ResourceHandle].Capacity);
 
     glBindBuffer(BufferEnum, RenderState.BufferObjects[Buffer.ResourceHandle].Buffer);
     glBufferSubData(BufferEnum, Offset, Size, Data);
@@ -203,8 +203,8 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 
     file_content VsFile = Platform.ReadFile(VertShaderSrc);
     file_content FsFile = Platform.ReadFile(FragShaderSrc);
-    assert(VsFile.NoError);
-    assert(FsFile.NoError);
+    ASSERT(VsFile.NoError);
+    ASSERT(FsFile.NoError);
 
     GLuint Vs = glCreateShader(GL_VERTEX_SHADER);
     GLuint Fs = glCreateShader(GL_FRAGMENT_SHADER);
@@ -238,7 +238,7 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
         glGetShaderInfoLog(Fs, sizeof(FsErrors), 0, FsErrors);
         glGetProgramInfoLog(ShaderProgram->Program, sizeof(ProgramErrors), 0, ProgramErrors);
 
-        assert(!"Shader compilation and/or linking failed");
+        ASSERT(!"Shader compilation and/or linking failed");
     }
 
     glDetachShader(ShaderProgram->Program, Vs);
@@ -280,7 +280,7 @@ render_resource ogl::MakeShaderProgram(char const *VertShaderSrc, char const *Fr
 
 void ogl::DeleteShaderProgram(render_resource ShaderProgram)
 {
-    assert(ShaderProgram.Type == resource_type::SHADER_PROGRAM);
+    ASSERT(ShaderProgram.Type == resource_type::SHADER_PROGRAM);
     glDeleteProgram(RenderState.ShaderPrograms[ShaderProgram.ResourceHandle].Program);
     RenderState.ShaderPrograms[ShaderProgram.ResourceHandle].SamplerCount = 0;
 }
@@ -393,7 +393,7 @@ void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
 
 void ogl::DrawDebugLines(cmd::draw_debug_lines *Cmd)
 {
-    assert(Cmd->VertexFormat == vert_format::P1C1);
+    ASSERT(Cmd->VertexFormat == vert_format::P1C1);
 
     glBindBuffer(GL_ARRAY_BUFFER, RenderState.BufferObjects[Cmd->VertexBuffer.ResourceHandle].Buffer);
 

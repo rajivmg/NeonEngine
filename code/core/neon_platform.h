@@ -14,8 +14,8 @@
 #   error DLLEXPORT not implemented for this platform!
 #endif
 
-// assert functions
-#include <cassert>
+#include <cassert> // assert()
+#include <cstdlib>
 
 #include <cstdint>
 typedef uint64_t    u64;
@@ -30,23 +30,32 @@ typedef float       r32;
 typedef double      r64;
 typedef intptr_t    iptr;
 
+#define ASSERT(Exp) assert(Exp)
 #define ARRAY_COUNT(Array) (sizeof(Array)/sizeof((Array)[0]))
 #define KILOBYTE(X) 1024LL * (X)
 #define MEGABYTE(X) 1024LL * KILOBYTE(X)
 #define GIGABYTE(X) 1024LL * MEGABYTE(X)
 #define FORCE_INLINE __forceinline
-#define OFFSET_OF(TYPE, MEMBER) (uintptr_t)&(((TYPE *)0)->MEMBER)
-#define SAFE_MALLOC(Size) Safe_Malloc((Size))
+#define OFFSET_OF(TYPE, MEMBER) ((uintptr_t)&(((TYPE *)0)->MEMBER))
+#define MALLOC(Size) Neon__Malloc((Size))
+#define MALLOC_STRUCT(Type, Count) ((Type*)(MALLOC(sizeof(Type)*(Count))))
 #define SAFE_FREE(x) { if(x) { free(x); (x) = nullptr; } }
 #define SAFE_DELETE(x) { delete (x);    (x) = nullptr; }
 #define SAFE_DELETEA(x) { delete[] (x); (x) = nullptr; }
-#define INVALID_CODE_PATH assert(!"Invalid code path!")
-#define INVALID_DEFAULT_CASE default: {assert(!"Invalid default case!");} break
+#define INVALID_CODE_PATH ASSERT(!"Invalid code path!")
+#define INVALID_DEFAULT_CASE default: {ASSERT(!"Invalid default case!");} break
 #define MIN(A, B) (((A) < (B)) ? (A) : (B))
 #define MAX(A, B) (((A) > (B)) ? (A) : (B))
 
 static u32 neon__COUNTER__ = 0;
 #define GEN_ID ++neon__COUNTER__
+
+inline void* Neon__Malloc(size_t Size)
+{
+    void *Ptr = malloc(Size);
+    ASSERT(Ptr);
+    return Ptr;
+}
 
 struct game_button_state
 {

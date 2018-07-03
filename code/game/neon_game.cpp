@@ -16,11 +16,11 @@ void GameSetup()
     mat4 ViewMatrix = LookAt(vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
     mat4 ProjMatrix = Orthographic(0.0f, 16.0f, 9.0f, 0.0f, -1.0f, 1.0f);
 
-    InitFont(&GameState.DbgFont, "fonts/Inconsolata/Inconsolata-Regular.ttf", 20);
+    GameState.DbgFont = new font("fonts/dbg_font_26.fnt");
 
     bitmap WonderArtBitmap;
     LoadBitmap(&WonderArtBitmap, "sprites/cavesofgallet_tiles.tga");
-    //GameState.WonderArtTexture = rndr::MakeTexture(&WonderArtBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, false);
+
     GameState.EditorTilesetTexture = rndr::MakeTexture(&WonderArtBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, false);
     GameState.GameTilesetTexture = rndr::MakeTexture(&WonderArtBitmap, texture_type::TEXTURE_2D, texture_filter::NEAREST, texture_wrap::CLAMP, true);
     bitmap WhiteBitmap;
@@ -29,7 +29,9 @@ void GameSetup()
 
     GameState.SpriteShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
 
-    GameState.TextShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
+    //GameState.TextShader = MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
+    GameState.TextShader = rndr::MakeShaderProgram("shaders/text_vs.glsl", "shaders/text_ps.glsl");
+
     GameState.DbgTextVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
     GameState.DbgTextRender = new render_cmd_list(MEGABYTE(1), GameState.TextShader);
     GameState.DbgTextRender->ViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
@@ -80,10 +82,9 @@ void GameUpdateAndRender(game_input *Input)
 
     std::vector<vert_P1C1UV1> DebugTextVertices;
 
-    //PushSprite(&TilesVertices, vec3i(0, 0, 0), vec2i(7, 7), vec4(0.5f, 0, 0, 1), vec4i(0, 0, 1, 1));
-
-    PushText(&DebugTextVertices, &GameState.DbgFont, vec3i(0, 720, 1), vec4i(1, 1, 0, 1), "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
-    PushText(&DebugTextVertices, &GameState.DbgFont, vec3i(400, 720, 1), vec4i(1, 1, 0, 1), "Time %f", Input->Time);
+    PushText(&DebugTextVertices, Rect(600, 720, 1, 1), vec4i(1, 1, 0, 1), 1.0f, GameState.DbgFont, "A quick brown fox: %d\nA quick brown fox: %d\nJoe\nNEON", 1, 2);
+    PushText(&DebugTextVertices, Rect(0, 720, 1, 1), vec4i(1, 1, 0, 1), 1.0f, GameState.DbgFont, "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
+    PushText(&DebugTextVertices, Rect(400, 720, 1, 1), vec4i(1, 1, 0, 1), 1.0f, GameState.DbgFont, "Time %f", Input->Time);
     rndr::BufferData(GameState.DbgTextVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)DebugTextVertices.size(), &DebugTextVertices.front());
 
     cmd::draw *DebugTextCmd = GameState.DbgTextRender->AddCommand<cmd::draw>(0);
@@ -91,7 +92,7 @@ void GameUpdateAndRender(game_input *Input)
     DebugTextCmd->VertexFormat = vert_format::P1C1UV1;
     DebugTextCmd->StartVertex = 0;
     DebugTextCmd->VertexCount = (u32)DebugTextVertices.size();
-    DebugTextCmd->Textures[0] = GameState.DbgFont.Texture;
+    DebugTextCmd->Textures[0] = GameState.DbgFont->Texture;
 
     GameState.DbgTextRender->Sort();
     GameState.DbgTextRender->Submit();
@@ -109,7 +110,7 @@ void GameUpdateAndRender(game_input *Input)
     //    PushDbgLine(&GameState.DbgLineVertices, FromP, ToP, RGBA255To01(RGBAUnpack4x8(0xFF00FFFF)));
     //}
 
-    rndr::BufferData(GameState.DbgLineVertexBuffer, 0, (u32)sizeof(vert_P1C1) * (u32)GameState.DbgLineVertices.size(), &GameState.DbgLineVertices.front());
+    ne::BufferData(GameState.DbgLineVertexBuffer, 0, (u32)sizeof(vert_P1C1) * (u32)GameState.DbgLineVertices.size(), &GameState.DbgLineVertices.front());
 
     cmd::draw_debug_lines *DrawDebugLinesCmd = GameState.DbgLineRender->AddCommand<cmd::draw_debug_lines>(0);
     DrawDebugLinesCmd->VertexBuffer = GameState.DbgLineVertexBuffer;

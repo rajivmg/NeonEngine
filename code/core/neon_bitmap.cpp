@@ -5,13 +5,13 @@
 void LoadBitmap(bitmap *Bitmap, char const *Filename)
 {
     file_content File = Platform.ReadFile(Filename);
-    assert(File.NoError);
+    ASSERT(File.NoError);
 
     tga_header *TGAHeader = (tga_header *)File.Content;
 
     // Check if the tga file type is what we want.
     // 2 == Uncompressed, True-color Image
-    assert(TGAHeader->ImageType == 2);
+    ASSERT(TGAHeader->ImageType == 2);
 
     // Assign members with width and height values from file
     Bitmap->Width = (u32)TGAHeader->Width;
@@ -32,7 +32,7 @@ void LoadBitmap(bitmap *Bitmap, char const *Filename)
     u8 BitsPerPixel = TGAHeader->PixelDepth;
 
     // 4 bytes per pixel (RGBA)
-    assert(BitsPerPixel == 32);
+    ASSERT(BitsPerPixel == 32);
 
     Bitmap->BytesPerPixel = BitsPerPixel / 8;
 
@@ -40,7 +40,7 @@ void LoadBitmap(bitmap *Bitmap, char const *Filename)
     Bitmap->DataSize = Bitmap->Width * Bitmap->Height * (BitsPerPixel / 8);
 
     // Allocate memory for pixel data
-    Bitmap->Data = malloc(Bitmap->DataSize);
+    Bitmap->Data = MALLOC(Bitmap->DataSize);
 
     // Copy pixel data from file to our memory
     memcpy(Bitmap->Data, (u8 *)File.Content + sizeof(tga_header), Bitmap->DataSize);
@@ -123,7 +123,7 @@ void BitmapFlipAroundY(bitmap *Bitmap)
 {
     Bitmap->FlippedAroundY = !Bitmap->FlippedAroundY;
 
-    u32 *Data = (u32 *)malloc(Bitmap->DataSize);
+    u32 *Data = (u32 *)MALLOC(Bitmap->DataSize);
 
     memcpy(Data, Bitmap->Data, Bitmap->DataSize);
     for(u32 Row = 0; Row < Bitmap->Height; ++Row)
@@ -163,7 +163,7 @@ void DebugTextureSave_(char const * Filename, bitmap *Bitmap)
     // Change the colors byte position
     // Little-endian
     // Spec:   AA RR GG BB [ BB GG RR AA (On file) ]
-    u32 *PixelPointer = (u32 *)malloc(Bitmap->DataSize);
+    u32 *PixelPointer = (u32 *)MALLOC(Bitmap->DataSize);
 
     memcpy(PixelPointer, Bitmap->Data, Bitmap->DataSize);
 
@@ -178,12 +178,12 @@ void DebugTextureSave_(char const * Filename, bitmap *Bitmap)
         *Pixel = A | R | G | B;
     }
 
-    void *FileContent = malloc(sizeof(tga_header) + Bitmap->DataSize);
+    void *FileContent = MALLOC(sizeof(tga_header) + Bitmap->DataSize);
     memcpy(FileContent, &Header, sizeof(tga_header));
     memcpy((u8 *)FileContent + sizeof(tga_header), PixelPointer, Bitmap->DataSize);
     Platform.WriteFile(Filename, sizeof(tga_header) + Bitmap->DataSize, FileContent);
 
-    free(FileContent);
+    SAFE_FREE(FileContent);
 }
 
 void InitBitmapPack(bitmap_pack *BitmapPack, u32 Width, u32 Height, u32 Padding)
@@ -197,10 +197,10 @@ void InitBitmapPack(bitmap_pack *BitmapPack, u32 Width, u32 Height, u32 Padding)
 
     BitmapPack->Padding = Padding;
 
-    BitmapPack->Bitmap.Data = malloc(BitmapPack->Bitmap.DataSize);
+    BitmapPack->Bitmap.Data = MALLOC(BitmapPack->Bitmap.DataSize);
     if(BitmapPack->Bitmap.Data == 0)
     {
-        assert(!"Malloc error");
+        ASSERT(!"Malloc error");
     }
 
     memset(BitmapPack->Bitmap.Data, 0, BitmapPack->Bitmap.DataSize);
@@ -269,8 +269,8 @@ static binary_t_node* RectPack(binary_t_node *Node, bitmap *Bitmap, u32 Padding)
             return Node;
         }
 
-        Node->Child[0] = (binary_t_node *)malloc(sizeof(binary_t_node));
-        Node->Child[1] = (binary_t_node *)malloc(sizeof(binary_t_node));
+        Node->Child[0] = (binary_t_node *)MALLOC(sizeof(binary_t_node));
+        Node->Child[1] = (binary_t_node *)MALLOC(sizeof(binary_t_node));
 
         Node->Child[0]->Filled = false;
         Node->Child[1]->Filled = false;
@@ -324,7 +324,7 @@ vec4 BitmapPackInsert(bitmap_pack *BitmapPack, bitmap *Bitmap)
 
     if(NodeSlot == 0)
     {
-        assert(!"Null returned.");
+        ASSERT(!"Null returned.");
     }
 
     vec4 TCoord;

@@ -1,6 +1,6 @@
 #include "neon_renderer.h"
 
-#include "neon_text.h"
+#include "neon_font.h"
 #include "neon_opengl.h"
 
 dispatch_fn *cmd::draw::DISPATCH_FUNCTION = &rndr::Draw;
@@ -122,10 +122,10 @@ render_cmd_list::render_cmd_list(u32 _BufferSize, render_resource _ShaderProgram
 {
     const u32 MaxPacketsInList = 2048;
 
-    Buffer = malloc(BufferSize);
+    Buffer = MALLOC(BufferSize);
     memset(Buffer, 0, BufferSize);
-    Keys = (u32 *)malloc(sizeof(u32) * MaxPacketsInList);
-    Packets = (cmd_packet **)malloc(sizeof(cmd_packet *) * (MaxPacketsInList));
+    Keys = (u32 *)MALLOC(sizeof(u32) * MaxPacketsInList);
+    Packets = (cmd_packet **)MALLOC(sizeof(cmd_packet *) * (MaxPacketsInList));
 }
 
 render_cmd_list::~render_cmd_list()
@@ -133,9 +133,9 @@ render_cmd_list::~render_cmd_list()
     SAFE_FREE(Buffer)
 }
 
-void* render_cmd_list::AllocateMemory(u32 MemorySize)
+void *render_cmd_list::AllocateMemory(u32 MemorySize)
 {
-    assert((BufferSize - BaseOffset) >= MemorySize);
+    ASSERT((BufferSize - BaseOffset) >= MemorySize);
     void *Mem = ((u8 *)Buffer + BaseOffset);
     BaseOffset += MemorySize;
     return Mem;
@@ -282,6 +282,7 @@ void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Co
     PushSprite(Vertices, Dest, UV, Color, Rotation, Origin, vec2(1.0f), Layer);
 }
 
+#if 0
 void PushText(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const *Format, ...)
 {
     // NOTE: P is top left point.
@@ -323,6 +324,57 @@ void PushText(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Colo
         Pen.x += CharGlyph->HoriAdvance;
 
         ++Index;
+    }
+}
+#endif
+
+void PushText(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 Layer, font *Font, char const *Format, ...)
+{
+    char Text[8192];
+
+    va_list ArgList;
+    va_start(ArgList, Format);
+    vsnprintf(Text, 8192, Format, ArgList);
+    va_end(ArgList);
+
+    vec2 Cursor = vec2(Dest.x, Dest.y);
+
+    char *CharCurs = Text;
+    
+    while(*CharCurs != '\0')
+    {
+        if((u32)*CharCurs == 10) /* new line */
+        {
+            Cursor.x = Dest.x;
+            Cursor.y = Cursor.y - Font->LineHeight;
+            ++CharCurs;
+            continue;
+        }
+
+        glyph *Glyph = Font->GetGlyph((u32)*CharCurs);
+        //glyph *Glyph = Font->Glyphs + ((u32)*CharCurs - 32);
+
+        /*
+            x,y                 x+w,y
+            ---------------------
+            -                   -
+            -                   -
+            -                   -
+            --------------------- 
+            x,y+h              x+w,y+h
+        */
+        vec4 TexCoord = vec4(Glyph->Rect.x / Font->ScaleW, 1.0f - (Glyph->Rect.y + Glyph->Rect.height) / Font->ScaleH,
+                            (Glyph->Rect.x + Glyph->Rect.width) / Font->ScaleW, 1.0f - Glyph->Rect.y / Font->ScaleH);
+
+        /*rect Dest = Rect(Cursor.x + Glyph->XOffset, Cursor.y + Glyph->YOffset, Glyph->Rect.width, Glyph->Rect.height);*/
+        //rect Dest = Rect(Cursor.x + Glyph->XOffset, Cursor.y, Glyph->Rect.width, Glyph->Rect.height);
+
+        rect Dest = Rect(Cursor.x + Glyph->XOffset, Cursor.y - Glyph->YOffset - Glyph->Rect.height, Glyph->Rect.width, Glyph->Rect.height);
+        
+        PushSprite(Vertices, Dest, TexCoord, Color, 0.0f, vec2(0.0f), Layer);
+        
+        ++CharCurs;
+        Cursor.x = Cursor.x + Glyph->XAdvance;
     }
 }
 
