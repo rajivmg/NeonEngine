@@ -82,6 +82,7 @@ PLATFORM_READ_FILE(ReadFile)
         if(ContentReadSize != Result.Size)
         {
             Result.NoError = false;
+            SAFE_FREE(Result.Content);
         }
 
         // Close FP

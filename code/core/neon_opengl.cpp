@@ -20,7 +20,7 @@ void ogl::InitState()
 
     // Enable depth testing
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+    glDepthFunc(GL_LESS);
 
     // Set CCW vertex winding as triangle's front.
     glFrontFace(GL_CCW);
@@ -31,7 +31,8 @@ void ogl::InitState()
 
     // Enable the alpha blending
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Src.rgb * Src_Alpha + Dest.rgb * (1 - Src.Alpha) aka post-multiplied alpha blending
+    //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // Src.rgb * One + Dest.rgb * (1 - Src.Alpha) aka pre-multiplied alpha blending
 
     // Enable SRGB framebuffer
     // This converts fragments shader linear output to gamma correct output i.e. apply pow(1/2.2) to the colors

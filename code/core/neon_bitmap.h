@@ -38,6 +38,7 @@ struct bitmap
 };
 
 void LoadBitmap(bitmap *Bitmap, char const *Filename);
+void LoadBitmap(bitmap *Bitmap, file_content File);
 void FreeBitmap(bitmap *Bitmap);
 void BitmapFlipAroundY(bitmap *Bitmap);
 
