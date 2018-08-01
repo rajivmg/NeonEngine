@@ -5,7 +5,7 @@
 #include <rapidxml/rapidxml.hpp>
 using namespace rapidxml;
 
-static bool Show_TilesetHelperWindow = false;
+static bool Show_TilesetHelperWindow = true;
 
 void TilesetHelperWindow(editor_state *State)
 {
@@ -16,27 +16,26 @@ void TilesetHelperWindow(editor_state *State)
     static render_resource TilesetTexture;
     static char *ErrMsg = nullptr;
 
-    ImGui::Begin("Tileset Helper", &Show_TilesetHelperWindow, ImGuiWindowFlags_MenuBar);
+    ImGui::Begin("Tileset Helper", &Show_TilesetHelperWindow, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar);
 
     // Menu bar
     bool MenuFileOpen = false;
+    bool MenuFileClose = false;
     if(ImGui::BeginMenuBar())
     {
         if(ImGui::BeginMenu("File"))
         {
-            if(ImGui::MenuItem("Open", 0, false, !FileOpened)) { 
-                MenuFileOpen = true; }
-
-            ImGui::MenuItem("Close", 0, false, FileOpened);
+            if(ImGui::MenuItem("Open", 0, false, !FileOpened)) { MenuFileOpen = true; }
+            if(ImGui::MenuItem("Close", 0, false, FileOpened)) { MenuFileClose = true; };
             ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
     }
 
     if(MenuFileOpen) { ImGui::OpenPopup("Open File"); }
-
+    if(MenuFileClose) { ImGui::OpenPopup("Close File"); }
     // Menu bar End
-
+#if 0
     ImGui::Text("FILE: %s", Filename);
     if(!FileOpened)
     {
@@ -46,6 +45,7 @@ void TilesetHelperWindow(editor_state *State)
             ImGui::OpenPopup("Open File");
         }
     }
+#endif
     if(ImGui::BeginPopupModal("Open File", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::InputText("File", Filename, 128);
@@ -79,6 +79,26 @@ void TilesetHelperWindow(editor_state *State)
         ImGui::EndPopup();
     }
 
+    if(ImGui::BeginPopupModal("Close File", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Are you sure?");
+        if(ImGui::Button("YES"))
+        {
+            ASSERT(FileOpened);
+            rndr::DeleteTexture(TilesetTexture);
+            Filename[0] = '\0';
+            FileOpened = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if(ImGui::Button("NO"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+#if 0
     if(FileOpened)
     {
         //ImGui::SameLine(ImGui::GetWindowWidth() - 120);
@@ -95,17 +115,22 @@ void TilesetHelperWindow(editor_state *State)
             FileOpened = false;
         }
     }
-    ImGui::Separator();
+#endif
+
+    //ImGui::Separator();
 
     // Tileset
     if(FileOpened)
     {
+        ImGui::Columns(2, "TilesetWindowColumns", true);
+        ImGui::BeginChild("CanvasWindow", vec2i(400, 400), true, ImGuiWindowFlags_HorizontalScrollbar);
         r32 TileScale = 2.0f;
         vec2 TileSize = vec2(16.0f);
         vec2 TileScaledSize = TileSize * TileScale;
         vec2 TilesetSize = vec2i(TilesetBitmap.Width, TilesetBitmap.Height) * TileScale;
 
         static vec4 SelTileUV = vec4i(0, 0, 0, 0);
+        static vec2 SelectedTileP = vec2i(-1, -1);
         bool IsCanvasHovered;
         ImDrawList *DrawList = ImGui::GetWindowDrawList();
         vec2 CanvasPos = ImGui::GetCursorScreenPos();
@@ -130,16 +155,13 @@ void TilesetHelperWindow(editor_state *State)
                 */
                 MousePos = ImGui::GetIO().MousePos;;
                 HoveredTile = vec2(floorf((MousePos.x - CanvasPos.x) / TileScaledSize.x), floorf((MousePos.y - CanvasPos.y) / TileScaledSize.y));
+                SelectedTileP = HoveredTile;
                 SelTileUV = vec4((HoveredTile.x * TileScaledSize.x) / TilesetSize.x,
                     1.0f - ((HoveredTile.y + 1) * TileScaledSize.y) / TilesetSize.y,
                     ((HoveredTile.x + 1) * TileScaledSize.x) / TilesetSize.x,
                     1.0f - (HoveredTile.y * TileScaledSize.y) / TilesetSize.y);
             }
         }
-
-        ImGui::TextUnformatted("Selected tile:\0");
-        ImGui::SameLine();
-        ImGui::Image(rndr::GetTextureID(TilesetTexture), ImVec2(32, 32), ImVec2(SelTileUV.x, SelTileUV.w), ImVec2(SelTileUV.z, SelTileUV.y));
 
         for(r32 X = 0; X <= TilesetSize.x; X += TileScaledSize.x)
         {
@@ -149,6 +171,20 @@ void TilesetHelperWindow(editor_state *State)
         {
             DrawList->AddLine(CanvasPos + vec2(0, Y), CanvasPos + vec2(TilesetSize.x, Y), 0x7D000000);
         }
+        ImGui::EndChild();
+
+        ImGui::NextColumn();
+        ImGui::BeginChild("HelperWindow", vec2i(400, 400), true);
+        //ImGui::TextUnformatted("Selected tile:\0");
+        //ImGui::SameLine();
+        //vec2 C = ImGui::GetCursorScreenPos();
+        //DrawList->AddRectFilled(C, C + vec2i(64, 64), IM_COL32(255, 255, 255, 255));
+        //DrawList->AddImage(rndr::GetTextureID(TilesetTexture), C, C + vec2(64, 64), ImVec2(SelTileUV.x, SelTileUV.w), ImVec2(SelTileUV.z, SelTileUV.y));
+        ImGui::SameLine(168.0f);
+        ImGui::Image(rndr::GetTextureID(TilesetTexture), ImVec2(64, 64), ImVec2(SelTileUV.x, SelTileUV.w), ImVec2(SelTileUV.z, SelTileUV.y));
+        ImGui::Text("x=%.0f, y=%.0f", SelectedTileP.x * 16, SelectedTileP.y * 16);
+        ImGui::EndChild();
+        ImGui::Columns(1);
     }
     // Tileset end
 
