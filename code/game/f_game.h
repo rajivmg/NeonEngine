@@ -53,9 +53,8 @@ struct game_state
     std::vector<vert_P1C1> DbgLineVertices;
     render_cmd_list *DbgLineRender;
 
-    render_resource IsoTileTexture;
-    
-    level Level;
+    render_resource TilesetTexture;
+    level Level; // << Remove this
     
     render_cmd_list *GameRender;
     render_resource GameVertexBuffer;

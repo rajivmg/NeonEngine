@@ -157,6 +157,7 @@ void TilesetHelperWindow(editor_state *State)
 
 void InitEditor(editor_state *State)
 {
+#if 0
     file_content FileData = Platform.ReadFile("tilesets.xml");
     ASSERT(FileData.NoError);
 
@@ -186,9 +187,10 @@ void InitEditor(editor_state *State)
         TilesetNode = TilesetNode->next_sibling("tileset");
     }
     State->TilesetsCount = TilesetIndex;
+#endif
 }
 
-void Editor(editor_state *State)
+void EditorUpdate(editor_state *State)
 {
     if(Show_TilesetHelperWindow) TilesetHelperWindow(State);
 
@@ -199,27 +201,26 @@ void Editor(editor_state *State)
         ImGui::End();
         return;
     }
+    if(ImGui::BeginMenuBar())
     {
-        if(ImGui::BeginMenuBar())
+        if(ImGui::BeginMenu("View"))
         {
-            if(ImGui::BeginMenu("View"))
-            {
-                ImGui::MenuItem("Tileset Helper", 0, &Show_TilesetHelperWindow);
-                ImGui::EndMenu();
-            }
-            ImGui::EndMenuBar();
+            ImGui::MenuItem("Tileset Helper", 0, &Show_TilesetHelperWindow);
+            ImGui::EndMenu();
         }
+        ImGui::EndMenuBar();
+    }
         //ImGui::Combo("Mode", &EditorMode, "Tileset Creation\0Edit\0");
         ImGui::Spacing();
-
-        static int CurrentTileset = 0;
-        auto TsFilenameGetter = [](void *Data, int Idx, const char **OutText)
-        {
-            *OutText = ((ed_tilesets *)Data)[Idx].File;
-            return true;
-        };
-        ImGui::Combo("Tileset", &CurrentTileset, TsFilenameGetter, State->Tilesets, State->TilesetsCount);
-    }
+#if 0
+    static int CurrentTileset = 0;
+    auto TsFilenameGetter = [](void *Data, int Idx, const char **OutText)
+    {
+        *OutText = ((ed_tilesets *)Data)[Idx].File;
+        return true;
+    };
+    ImGui::Combo("Tileset", &CurrentTileset, TsFilenameGetter, State->Tilesets, State->TilesetsCount);
+#endif
     ImGui::End();
 #if 0
         r32 EditorTileScale = 3.0f;

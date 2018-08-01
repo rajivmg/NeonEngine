@@ -85,75 +85,7 @@ void LoadLevels()
 
     Doc.clear();
     SAFE_FREE(XmlFile);
-#if 0
-    /* 
-        Null       = 0
-        Background = 1
-        Wall       = 2
-        Crate      = 3
-        Player     = 4
-    */ 
-    static u32 Map[] =
-    {
-        2, 2, 2, 2, 2, 2, 2, 2, 2,
-        2, 1, 1, 1, 1, 1, 1, 1, 2,
-        2, 1, 1, 1, 1, 1, 1, 1, 2,
-        2, 1, 1, 2, 2, 2, 1, 1, 2,
-        2, 1, 3, 3, 2, 1, 1, 3, 2,
-        2, 1, 1, 1, 1, 1, 1, 3, 2,
-        2, 3, 1, 4, 1, 1, 1, 1, 2,
-        2, 1, 1, 1, 1, 1, 1, 1, 2,
-        2, 2, 2, 2, 2, 2, 2, 2, 2
-    };
-
-    // Background
-    for(int X = 0; X < 9; ++X)
-    {
-        for(int Y = 0; Y < 9; ++Y)
-        {
-            GameState.Room.EntityMap[Y][X][0].Type = Entity_Background;
-            GameState.Room.EntityMap[Y][X][0].P = vec3i(X, Y, 0);
-        }
-    }
-    
-    // Foreground
-    for(int X = 0; X < 9; ++X)
-    {
-        for(int Y = 0; Y < 9; ++Y)
-        {
-            switch(Map[X + Y * 9])
-            {
-                case Entity_Wall:
-                {
-                    GameState.Room.EntityMap[Y][X][1].Type = Entity_Wall;
-                    GameState.Room.EntityMap[Y][X][1].P = vec3i(X, Y, 1);
-                } break;
-                case Entity_Crate:
-                {
-                    GameState.Room.EntityMap[Y][X][1].Type = Entity_Crate;
-                    GameState.Room.EntityMap[Y][X][1].P = vec3i(X, Y, 1);
-                } break;
-                case Entity_Player:
-                {
-                    GameState.Room.EntityMap[Y][X][1].Type = Entity_Player;
-                    GameState.Room.EntityMap[Y][X][1].P = vec3i(X, Y, 1);
-                    GameState.Room.Player = vec2i(X, Y);
-                } break;
-            }
-        }
-    }
-#endif
 }
-
-//bool MoveEntity(room *Room, entity *Entity, vec2 Direction)
-//{
-//    entity *DestEntity = &GET_ENTITY(Room, Entity->X + (s32)Direction.x, Entity->Y + (s32)Direction.y, 1);
-//    if(DestEntity->Type == GameObject_Null)
-//    {
-//        *DestEntity = *Entity;
-//        Entity->Type = GameObject_Null;
-//    }
-//}
 
 void GameUpdate(game_input *Input)
 {
@@ -205,7 +137,6 @@ void GameUpdate(game_input *Input)
 
 void GameSetup()
 {
-    // Set pointers and init renderer
     rndr::Init();
 
     // GameState
@@ -220,12 +151,11 @@ void GameSetup()
 
     GameState.DbgFont = new font("fonts/dbg_font_26.fnt");
 
-    bitmap IsoTileBitmap;
-    //LoadBitmap(&IsoTileBitmap, "programmer_iso.tga");
-    LoadBitmap(&IsoTileBitmap, "Ground_1.tga");
+    bitmap AtlasBitmap;
+    LoadBitmap(&AtlasBitmap, "Atlas.tga");
 
 
-    GameState.IsoTileTexture = rndr::MakeTexture(&IsoTileBitmap, tex_param::TEX2D, tex_param::LINEAR, tex_param::CLAMP, true);
+    GameState.TilesetTexture = rndr::MakeTexture(&AtlasBitmap, tex_param::TEX2D, tex_param::LINEAR, tex_param::CLAMP, true);
     
     bitmap WhiteBitmap;
     LoadBitmap(&WhiteBitmap, "sprites/white_texture.tga");
@@ -265,7 +195,7 @@ void GameUpdateAndRender(game_input *Input)
     //-----------------------------------------------------------------------------
     // Game Update
     //-----------------------------------------------------------------------------
-    Editor(&EditorState);
+    EditorUpdate(&EditorState);
 
     GameUpdate(Input);
     //-----------------------------------------------------------------------------
@@ -340,7 +270,7 @@ void GameUpdateAndRender(game_input *Input)
         }
     }
 
-#if 1
+#if 0
     if(!GameState.GameVertices.empty())
     {
         rndr::BufferData(GameState.GameVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)GameState.GameVertices.size(), &GameState.GameVertices.front());
@@ -350,7 +280,7 @@ void GameUpdateAndRender(game_input *Input)
         WorldDrawCmd->VertexFormat = vert_format::P1C1UV1;
         WorldDrawCmd->StartVertex = 0;
         WorldDrawCmd->VertexCount = (u32)GameState.GameVertices.size();
-        WorldDrawCmd->Textures[0] = GameState.IsoTileTexture;
+        WorldDrawCmd->Textures[0] = GameState.TilesetTexture;
 
         GameState.GameVertices.clear();
 
@@ -361,8 +291,8 @@ void GameUpdateAndRender(game_input *Input)
 #endif
 
     //PushText(&GameState.DbgTextVertices, Rect(600, 720, 1, 1), vec4i(1, 1, 0, 1), 1.0f, GameState.DbgFont, "A quick brown fox: %d\nA quick brown fox: %d\nJoe\nNEON", 1, 2);
-    PushText(&GameState.DbgTextVertices, Rect(0, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
-    PushText(&GameState.DbgTextVertices, Rect(400, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "Time %f", Input->Time);
+    PushText(&GameState.DbgTextVertices, Rect(900, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
+    //PushText(&GameState.DbgTextVertices, Rect(400, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "Time %f", Input->Time);
    
     //PushDbgLine(&GameState.DbgLineVertices, vec3(0, 0, 0), vec3(500, 500, 0), vec4i(1, 0, 0, 1));
 
