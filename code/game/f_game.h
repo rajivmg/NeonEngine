@@ -6,6 +6,24 @@
 #include <core/neon_font.h>
 #include <vector>
 
+enum game_mode
+{
+    GameMode_Editor,
+    GameMode_Play,
+    GameMode_Pause
+};
+
+struct game_tile
+{
+    u16 ID;
+    vec4 UV;
+};
+
+struct game_level
+{
+    game_tile Level[20][12];
+};
+
 enum game_object_type
 {
     GameObject_Null,
@@ -36,6 +54,8 @@ struct level
 
 struct game_state
 {
+    game_mode GameMode;
+
     r32 MetersToPixels;
     r32 PixelsToMeters;
 
@@ -53,8 +73,8 @@ struct game_state
     std::vector<vert_P1C1> DbgLineVertices;
     render_cmd_list *DbgLineRender;
 
-    render_resource TilesetTexture;
-    level Level; // << Remove this
+    render_resource AtlasTexture;
+    game_level Level;
     
     render_cmd_list *GameRender;
     render_resource GameVertexBuffer;

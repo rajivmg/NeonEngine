@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<tileset bitmap="AlphaAtlas.tga" tilewidth="16" tileheight="16" count="1">
+	<tile id="0" name="platform_0" x="32" y="32" w="16" h="16"/>
+</tileset>

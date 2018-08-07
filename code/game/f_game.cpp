@@ -8,6 +8,7 @@ using namespace rapidxml;
 static game_state GameState = {};
 static editor_state EditorState = {};
 
+#if 0
 void LoadLevels()
 {
     file_content LevelFile = Platform.ReadFile("levels.xml");
@@ -86,9 +87,11 @@ void LoadLevels()
     Doc.clear();
     SAFE_FREE(XmlFile);
 }
+#endif
 
 void GameUpdate(game_input *Input)
 {
+#if 0
     game_controller_input *Controller = &Input->Controllers[0];
     level *Room = &GameState.Level;
     s32 PlayerX = (s32)Room->Player.x;
@@ -133,6 +136,7 @@ void GameUpdate(game_input *Input)
             Room->Player += vec2i(0, -1);
         }
     }
+#endif
 }
 
 void GameSetup()
@@ -140,22 +144,20 @@ void GameSetup()
     rndr::Init();
 
     // GameState
-    GameState.MetersToPixels = Platform.WindowWidth / 16.0f; 
+    GameState.MetersToPixels = Platform.WindowWidth / 24.9f; 
     GameState.PixelsToMeters = 1.0f / GameState.MetersToPixels;
 
     // Screen is 16x9 meters
     mat4 ViewMatrix = LookAt(vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
-    //mat4 ProjMatrix = Orthographic(0.0f, 16.0f, 9.0f, 0.0f, -10.0f, 0.0f);
-    mat4 ProjMatrix = Orthographic(-5.0f, 5.0f, 5.0f, 0.0f, -10.0f, 1.0f);
+    mat4 ProjMatrix = Orthographic(0.0f, 24.9f, 14.0f, 0.0f, -10.0f, 1.0f);
+    //mat4 ProjMatrix = Orthographic(-5.0f, 5.0f, 5.0f, 0.0f, -10.0f, 1.0f);
 
 
     GameState.DbgFont = new font("fonts/dbg_font_26.fnt");
 
     bitmap AtlasBitmap;
-    LoadBitmap(&AtlasBitmap, "Atlas.tga");
-
-
-    GameState.TilesetTexture = rndr::MakeTexture(&AtlasBitmap, tex_param::TEX2D, tex_param::LINEAR, tex_param::CLAMP, true);
+    LoadBitmap(&AtlasBitmap, "AlphaAtlas.tga");
+    GameState.AtlasTexture = rndr::MakeTexture(&AtlasBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, true);
     
     bitmap WhiteBitmap;
     LoadBitmap(&WhiteBitmap, "sprites/white_texture.tga");
@@ -183,9 +185,17 @@ void GameSetup()
 
     GameState.GameVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(20), true);
 
-    LoadLevels();
+    //LoadLevels();
+    for(int X = 0; X < 20; ++X)
+    {
+        for(int Y = 0; Y < 12; ++Y)
+        {
+            GameState.Level.Level[X][Y].ID = 65535;
+        }
+    }
 
     InitEditor(&EditorState);
+    GameState.GameMode = GameMode_Editor;
     //vec4 Color = RGBAUnpack4x8(0x0C0C0CFF);
     int a = 0;
 }
@@ -203,74 +213,47 @@ void GameUpdateAndRender(game_input *Input)
     //-----------------------------------------------------------------------------
     rndr::Clear();
 
-#if 0
-    for(int X = 0; X < 9; ++X)
+    // Draw tile grid
+    for(int X = 0; X <= 20; ++X)
     {
-        for(int Y = 0; Y < 9; ++Y)
-        {
-            for(int Z = 0; Z < 2; ++Z)
-            {
-                entity *Entity = &GameState.Room.EntityMap[Y][X][Z];
-                switch(Entity->Type)
-                {
-                    case Entity_Background:
-                    {
-                        PushSprite(&GameState.GameVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), vec4i(0,0,1,1), vec4i(1,1,1,1), 0.0f, vec2(0.0f), (r32)Z);
-                    } break;
-                    case Entity_Wall:
-                    {
-                        PushSprite(&GameState.GameVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), vec4i(0,0,1,1), RGBA255To01(RGBAUnpack4x8(0x7354a8ff)), 0.0f, vec2(0.0f), (r32)Z);
-                    } break;
-                    case Entity_Crate:
-                    {
-                        PushSprite(&GameState.GameVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), vec4i(0,0,1,1), RGBA255To01(RGBAUnpack4x8(0xa87154ff)), 0.0f, vec2(0.0f), (r32)Z);
-                    } break;
-                    case Entity_Player:
-                    {
-                        PushSprite(&GameState.GameVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), vec4i(0,0,1,1), RGBA255To01(RGBAUnpack4x8(0xd6f441ff)), 0.0f, vec2(0.0f), (r32)Z);
-                    } break;
-                }
-            }
-        }
+        PushDbgLine(&GameState.DbgLineVertices, vec3i(X, 0, 0), vec3i(X, 12, 0), vec4i(1, 1, 0, 1));
     }
-#endif
-
-    for(int X = 7; X >= 0; --X)
+    for(int Y = 0; Y <= 12; ++Y)
     {
-        for(int Y = 7; Y >= 0; --Y)
+        PushDbgLine(&GameState.DbgLineVertices, vec3i(0, Y, 0), vec3i(20, Y, 0), vec4i(1, 1, 0, 1));
+    }
+
+    if(EditorState.SelectedTile != nullptr)
+    {
+        vec4 UV = vec4(EditorState.SelectedTile->X / 256.0f,
+                      (256.0f - EditorState.SelectedTile->Y - 16) / 256.0f,
+                      (EditorState.SelectedTile->X + 16) / 256.0f,
+                      (256.0f - EditorState.SelectedTile->Y) / 256.0f);
+        s32 X, Y;
+        X = Clamp(0, (s32)floor(Input->Mouse.x * GameState.PixelsToMeters), 19);
+        Y = Clamp(0, (s32)floor(Input->Mouse.y * GameState.PixelsToMeters), 11);
+        
+        if(Input->Mouse.Left.EndedDown && Input->Mouse.Left.HalfTransitionCount == 1)
         {
-            game_object *Entity = &GameState.Level.Objects[Y][X][1];
-            //r32 Sx = (X - Y) * 0.50f;
-            //r32 Sy = (X + Y) * 0.25f;
-            r32 Sx = (X - Y) * 1.0f;
-            r32 Sy = (X + Y) * 0.25f;
-            switch(Entity->Type)
+            PushText(&GameState.DbgTextVertices, Rect(100, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "Jj");
+            GameState.Level.Level[X][Y].ID = (u16)EditorState.SelectedTile->ID;
+            GameState.Level.Level[X][Y].UV = UV;
+        }
+        PushSprite(&GameState.GameVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), UV, vec4(1.0f), 0.0f, vec2(0.0f), 1.0f);
+    }
+
+    for(int X = 0; X < 20; ++X)
+    {
+        for(int Y = 0; Y < 12; ++Y)
+        {
+            if(GameState.Level.Level[X][Y].ID != 65535)
             {
-                case GameObject_Wall:
-                {
-                    PushSprite(&GameState.GameVertices, Rect((r32)Sx - 0.5f, (r32)Sy, 2.0f, 1.0f), vec4i(0,0,1,1), RGBA255To01(RGBAUnpack4x8(0x7354a8ff)), 0.0f, vec2(0.0f), (r32)1.0f);
-                } break;
-                case GameObject_Crate:
-                {
-                    PushSprite(&GameState.GameVertices, Rect((r32)Sx - 0.5f, (r32)Sy, 2.0f, 1.0f), vec4i(0,0,1,1), RGBA255To01(RGBAUnpack4x8(0xa87154ff)), 0.0f, vec2(0.0f), (r32)1.0f);
-                } break;
-                case GameObject_Player:
-                {
-                    PushSprite(&GameState.GameVertices, Rect((r32)Sx - 0.5f, (r32)Sy, 2.0f, 1.0f), vec4i(0,0,1,1), RGBA255To01(RGBAUnpack4x8(0xd6f441ff)), 0.0f, vec2(0.0f), (r32)1.0f);
-                } break;
-                default: //case GameObject_Floor:
-                {
-                    PushSprite(&GameState.GameVertices, Rect((r32)Sx - 0.5f, (r32)Sy, 2.0f, 1.0f), vec4i(0,0,1,1), vec4i(1, 1, 1, 1), 0.0f, vec2(0.0f), (r32)0.6f - Y/16.0f - X/16.0f);
-                } break;
-               /* default:
-                { 
-                    PushSprite(&GameState.GameVertices, Rect((r32)Sx - 0.5f, (r32)Sy, 1.0f, 1.0f), vec4i(0,0,1,1), vec4i(1,1,1,1), 0.0f, vec2(0.0f), (r32)1.0f);
-                } break;*/
+                PushSprite(&GameState.GameVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), GameState.Level.Level[X][Y].UV, vec4(1.0f), 0.0f, vec2(0.0f), 1.0f);
             }
         }
     }
 
-#if 0
+#if 1
     if(!GameState.GameVertices.empty())
     {
         rndr::BufferData(GameState.GameVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)GameState.GameVertices.size(), &GameState.GameVertices.front());
@@ -280,7 +263,7 @@ void GameUpdateAndRender(game_input *Input)
         WorldDrawCmd->VertexFormat = vert_format::P1C1UV1;
         WorldDrawCmd->StartVertex = 0;
         WorldDrawCmd->VertexCount = (u32)GameState.GameVertices.size();
-        WorldDrawCmd->Textures[0] = GameState.TilesetTexture;
+        WorldDrawCmd->Textures[0] = GameState.AtlasTexture;
 
         GameState.GameVertices.clear();
 
