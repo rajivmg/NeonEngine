@@ -6,7 +6,7 @@
 using namespace rapidxml;
 
 static game_state GameState = {};
-static editor_state EditorState = {};
+static editor_ctx EditorCtx = {};
 
 #if 0
 void LoadLevels()
@@ -89,56 +89,6 @@ void LoadLevels()
 }
 #endif
 
-void GameUpdate(game_input *Input)
-{
-#if 0
-    game_controller_input *Controller = &Input->Controllers[0];
-    level *Room = &GameState.Level;
-    s32 PlayerX = (s32)Room->Player.x;
-    s32 PlayerY = (s32)Room->Player.y;
-    if(Controller->Left.EndedDown && Controller->Left.HalfTransitionCount == 1)
-    {
-        if(GET_ENTITY(Room, PlayerX-1, PlayerY, 1).Type == GameObject_Null)
-        {
-            GET_ENTITY(Room, PlayerX-1, PlayerY, 1) = GET_ENTITY(Room, PlayerX, PlayerY, 1);
-            GET_ENTITY(Room, PlayerX, PlayerY, 1).Type = GameObject_Null;
-
-            Room->Player += vec2i(-1, 0);
-        }
-    }
-    if(Controller->Right.EndedDown && Controller->Right.HalfTransitionCount == 1)
-    {
-        if(GET_ENTITY(Room, PlayerX + 1, PlayerY, 1).Type == GameObject_Null)
-        {
-            GET_ENTITY(Room, PlayerX + 1, PlayerY, 1) = GET_ENTITY(Room, PlayerX, PlayerY, 1);
-            GET_ENTITY(Room, PlayerX, PlayerY, 1).Type = GameObject_Null;
-
-            Room->Player += vec2i(1, 0);
-        }
-    }
-    if(Controller->Up.EndedDown && Controller->Up.HalfTransitionCount == 1)
-    {
-        if(GET_ENTITY(Room, PlayerX, PlayerY + 1, 1).Type == GameObject_Null)
-        {
-            GET_ENTITY(Room, PlayerX, PlayerY + 1, 1) = GET_ENTITY(Room, PlayerX, PlayerY, 1);
-            GET_ENTITY(Room, PlayerX, PlayerY, 1).Type = GameObject_Null;
-
-            Room->Player += vec2i(0, 1);
-        }
-    }
-    if(Controller->Down.EndedDown && Controller->Down.HalfTransitionCount == 1)
-    {
-        if(GET_ENTITY(Room, PlayerX, PlayerY-1, 1).Type == GameObject_Null)
-        {
-            GET_ENTITY(Room, PlayerX, PlayerY - 1, 1) = GET_ENTITY(Room, PlayerX, PlayerY, 1);
-            GET_ENTITY(Room, PlayerX, PlayerY, 1).Type = GameObject_Null;
-
-            Room->Player += vec2i(0, -1);
-        }
-    }
-#endif
-}
-
 void GameSetup()
 {
     rndr::Init();
@@ -148,15 +98,15 @@ void GameSetup()
     GameState.PixelsToMeters = 1.0f / GameState.MetersToPixels;
 
     // Screen is 16x9 meters
-    mat4 ViewMatrix = LookAt(vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
-    mat4 ProjMatrix = Orthographic(0.0f, 24.9f, 14.0f, 0.0f, -10.0f, 1.0f);
+    static mat4 ViewMatrix = LookAt(vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
+    static mat4 ProjMatrix = Orthographic(0.0f, 24.9f, 14.0f, 0.0f, -10.0f, 1.0f);
     //mat4 ProjMatrix = Orthographic(-5.0f, 5.0f, 5.0f, 0.0f, -10.0f, 1.0f);
-
+    GameState.EditViewMatrix = LookAt(vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
 
     GameState.DbgFont = new font("fonts/dbg_font_26.fnt");
 
     bitmap AtlasBitmap;
-    LoadBitmap(&AtlasBitmap, "AlphaAtlas.tga");
+    LoadBitmap(&AtlasBitmap, "Atlas.tga");
     GameState.AtlasTexture = rndr::MakeTexture(&AtlasBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, true);
     
     bitmap WhiteBitmap;
@@ -168,20 +118,22 @@ void GameSetup()
     GameState.TextShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
     //GameState.TextShader = rndr::MakeShaderProgram("shaders/text_vs.glsl", "shaders/text_ps.glsl");
 
+    static mat4 ScreenProjMatrix = Orthographic(0.0f, (r32)Platform.WindowWidth, (r32)Platform.WindowHeight, 0.0f, -1.0f, 1.0f);
+    static mat4 ScreenViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
     GameState.DbgTextVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
     GameState.DbgTextRender = new render_cmd_list(MEGABYTE(1), GameState.TextShader);
-    GameState.DbgTextRender->ViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
-    GameState.DbgTextRender->ProjMatrix = Orthographic(0.0f, (r32)Platform.WindowWidth, (r32)Platform.WindowHeight, 0.0f, -1.0f, 1.0f);
+    GameState.DbgTextRender->ViewMatrix = &ScreenViewMatrix;
+    GameState.DbgTextRender->ProjMatrix = &ScreenProjMatrix;
 
     GameState.DbgLineShader = rndr::MakeShaderProgram("shaders/debug_line_vs.glsl", "shaders/debug_line_ps.glsl");
     GameState.DbgLineVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(5), true);
     GameState.DbgLineRender = new render_cmd_list(MEGABYTE(1), GameState.DbgLineShader);
-    GameState.DbgLineRender->ViewMatrix = ViewMatrix;
-    GameState.DbgLineRender->ProjMatrix = ProjMatrix;
+    GameState.DbgLineRender->ViewMatrix = &GameState.EditViewMatrix;
+    GameState.DbgLineRender->ProjMatrix = &ProjMatrix;
 
     GameState.GameRender = new render_cmd_list(MEGABYTE(2), GameState.SpriteShader);
-    GameState.GameRender->ViewMatrix = ViewMatrix;
-    GameState.GameRender->ProjMatrix = ProjMatrix;
+    GameState.GameRender->ViewMatrix = &GameState.EditViewMatrix;
+    GameState.GameRender->ProjMatrix = &ProjMatrix;
 
     GameState.GameVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(20), true);
 
@@ -194,7 +146,7 @@ void GameSetup()
         }
     }
 
-    InitEditor(&EditorState);
+    InitEditor(&EditorCtx);
     GameState.GameMode = GameMode_Editor;
     //vec4 Color = RGBAUnpack4x8(0x0C0C0CFF);
     int a = 0;
@@ -205,46 +157,56 @@ void GameUpdateAndRender(game_input *Input)
     //-----------------------------------------------------------------------------
     // Game Update
     //-----------------------------------------------------------------------------
-    EditorUpdate(&EditorState);
+    EditorUpdate(&EditorCtx);
 
-    GameUpdate(Input);
     //-----------------------------------------------------------------------------
     // Game Render
     //-----------------------------------------------------------------------------
     rndr::Clear();
 
-    // Draw tile grid
-    for(int X = 0; X <= 20; ++X)
+    static vec3 EditorCamP = vec3(0.0f);
+
+    if(Input->Mouse.Right.EndedDown && !EditorCtx.Hovered)
     {
-        PushDbgLine(&GameState.DbgLineVertices, vec3i(X, 0, 0), vec3i(X, 12, 0), vec4i(1, 1, 0, 1));
-    }
-    for(int Y = 0; Y <= 12; ++Y)
-    {
-        PushDbgLine(&GameState.DbgLineVertices, vec3i(0, Y, 0), vec3i(20, Y, 0), vec4i(1, 1, 0, 1));
+        EditorCamP.x -= Input->Mouse.xrel * GameState.PixelsToMeters * 1.3f;
+        EditorCamP.y -= Input->Mouse.yrel * GameState.PixelsToMeters * 1.3f;
     }
 
-    if(EditorState.SelectedTile != nullptr)
+    GameState.EditViewMatrix = LookAt(EditorCamP, vec3(EditorCamP.x, EditorCamP.y, -1.0f), vec3i(0, 1, 0));
+
+    vec2 LevelSize = vec2i(50, 50);
+    // Draw tile grid
+    for(int X = 0; X <= LevelSize.x; ++X)
     {
-        vec4 UV = vec4(EditorState.SelectedTile->X / 256.0f,
-                      (256.0f - EditorState.SelectedTile->Y - 16) / 256.0f,
-                      (EditorState.SelectedTile->X + 16) / 256.0f,
-                      (256.0f - EditorState.SelectedTile->Y) / 256.0f);
+        PushDbgLine(&GameState.DbgLineVertices, vec3((r32)X, 0, 0), vec3((r32)X, LevelSize.y, 0), vec4i(1, 1, 1, 1));
+    }
+    for(int Y = 0; Y <= LevelSize.y; ++Y)
+    {
+        PushDbgLine(&GameState.DbgLineVertices, vec3(0, (r32)Y, 0), vec3(LevelSize.x, (r32)Y, 0), vec4i(1, 1, 1, 1));
+    }
+
+    if(EditorCtx.SelectedTile != nullptr && !EditorCtx.Hovered)
+    {
+        vec4 UV = vec4(EditorCtx.SelectedTile->X / EditorCtx.AtlasWidth,
+                      (EditorCtx.AtlasHeight - EditorCtx.SelectedTile->Y - 16) / EditorCtx.AtlasHeight,
+                      (EditorCtx.SelectedTile->X + 16) / EditorCtx.AtlasWidth,
+                      (EditorCtx.AtlasHeight - EditorCtx.SelectedTile->Y) / EditorCtx.AtlasHeight);
         s32 X, Y;
-        X = Clamp(0, (s32)floor(Input->Mouse.x * GameState.PixelsToMeters), 19);
-        Y = Clamp(0, (s32)floor(Input->Mouse.y * GameState.PixelsToMeters), 11);
+        X = Clamp(0, (s32)floor(EditorCamP.x + Input->Mouse.x * GameState.PixelsToMeters), (s32)LevelSize.x - 1);
+        Y = Clamp(0, (s32)floor(EditorCamP.y + Input->Mouse.y * GameState.PixelsToMeters), (s32)LevelSize.y - 1);
         
         if(Input->Mouse.Left.EndedDown && Input->Mouse.Left.HalfTransitionCount == 1)
         {
-            PushText(&GameState.DbgTextVertices, Rect(100, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "Jj");
-            GameState.Level.Level[X][Y].ID = (u16)EditorState.SelectedTile->ID;
+            //PushText(&GameState.DbgTextVertices, Rect(100, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "Left Click 1");
+            GameState.Level.Level[X][Y].ID = (u16)EditorCtx.SelectedTile->ID;
             GameState.Level.Level[X][Y].UV = UV;
         }
         PushSprite(&GameState.GameVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), UV, vec4(1.0f), 0.0f, vec2(0.0f), 1.0f);
     }
 
-    for(int X = 0; X < 20; ++X)
+    for(int X = 0; X < 50; ++X)
     {
-        for(int Y = 0; Y < 12; ++Y)
+        for(int Y = 0; Y < 50; ++Y)
         {
             if(GameState.Level.Level[X][Y].ID != 65535)
             {
@@ -253,7 +215,6 @@ void GameUpdateAndRender(game_input *Input)
         }
     }
 
-#if 1
     if(!GameState.GameVertices.empty())
     {
         rndr::BufferData(GameState.GameVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)GameState.GameVertices.size(), &GameState.GameVertices.front());
@@ -271,7 +232,6 @@ void GameUpdateAndRender(game_input *Input)
         GameState.GameRender->Submit();
         GameState.GameRender->Flush();
     }
-#endif
 
     //PushText(&GameState.DbgTextVertices, Rect(600, 720, 1, 1), vec4i(1, 1, 0, 1), 1.0f, GameState.DbgFont, "A quick brown fox: %d\nA quick brown fox: %d\nJoe\nNEON", 1, 2);
     PushText(&GameState.DbgTextVertices, Rect(900, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);

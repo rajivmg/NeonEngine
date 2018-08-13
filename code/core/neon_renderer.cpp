@@ -163,8 +163,8 @@ void render_cmd_list::Sort()
 void render_cmd_list::Submit()
 {
     rndr::UseShaderProgram(ShaderProgram);
-    rndr::SetViewMatrix(ViewMatrix);
-    rndr::SetProjectionMatrix(ProjMatrix);
+    rndr::SetViewMatrix(*ViewMatrix);
+    rndr::SetProjectionMatrix(*ProjMatrix);
     for(u32 I = 0; I < Current; ++I)
     {
         cmd_packet *Packet = Packets[I];

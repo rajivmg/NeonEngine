@@ -21,7 +21,8 @@ struct game_tile
 
 struct game_level
 {
-    game_tile Level[20][12];
+    game_tile Level[50][50];
+    u32 SizeX, SizeY;
 };
 
 enum game_object_type
@@ -76,6 +77,8 @@ struct game_state
     render_resource AtlasTexture;
     game_level Level;
     
+    mat4 EditViewMatrix;
+
     render_cmd_list *GameRender;
     render_resource GameVertexBuffer;
     std::vector<vert_P1C1UV1> GameVertices;
