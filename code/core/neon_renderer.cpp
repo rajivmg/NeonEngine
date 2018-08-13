@@ -114,9 +114,11 @@ void rndr::DrawDebugLines(void const * Data)
 // Render Commands
 //-----------------------------------------------------------------------------
 
-render_cmd_list::render_cmd_list(u32 _BufferSize, render_resource _ShaderProgram) :
+render_cmd_list::render_cmd_list(u32 _BufferSize, render_resource _ShaderProgram, mat4 *_ViewMatrix, mat4 *_ProjMatrix) :
     BufferSize(_BufferSize),
     ShaderProgram(_ShaderProgram),
+    ViewMatrix(_ViewMatrix),
+    ProjMatrix(_ProjMatrix),
     BaseOffset(0),
     Current(0)
 {
@@ -194,7 +196,7 @@ void render_cmd_list::Flush()
 // Sprite and Text
 //-----------------------------------------------------------------------------
 
-void PushSprite(std::vector<vert_P1C1UV1>* Vertices, rect Dest, vec4 UV, vec4 Color, r32 Rotation, vec2 Origin, vec2 Scale, r32 Layer)
+void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Color, r32 Rotation, vec2 Origin, vec2 Scale, r32 Layer)
 {
     /*
     0,1         1,1

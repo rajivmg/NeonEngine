@@ -17,10 +17,10 @@ void main()
     
     vec4 Texel = texture(Sampler0, fs_in.UV);
 
-    if(Texel.a < 0.2) // 0.4 orginal
+/*  if(Texel.a < 0.2) // 0.4 orginal
     {
         discard;
-    }
+    } */
 
     vec4 Color = Texel * vec4(pow(fs_in.Color.rgb, vec3(2.2)), fs_in.Color.a);
     

@@ -138,7 +138,7 @@ struct render_cmd_list
     mat4    *ViewMatrix;
     mat4    *ProjMatrix;
 
-    render_cmd_list(u32 _BufferSize, render_resource ShaderProgram);
+    render_cmd_list(u32 _BufferSize, render_resource _ShaderProgram, mat4 *_ViewMatrix, mat4 *_ProjMatrix);
     ~render_cmd_list();
 
     template <typename U>

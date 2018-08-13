@@ -13,6 +13,9 @@
 #ifndef FLT_MAX
     #define FLT_MAX     3.402823466e+38F
 #endif
+#ifndef U16_MAX
+    #define U16_MAX 65535
+#endif
 #ifndef DEG2RAD
     #define DEG2RAD(Angle) ((Angle)*M_PI/180.0f)
 #endif

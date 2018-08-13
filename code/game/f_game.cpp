@@ -6,7 +6,7 @@
 using namespace rapidxml;
 
 static game_state GameState = {};
-static editor_ctx EditorCtx = {};
+static editor_state EditorCtx = {};
 
 #if 0
 void LoadLevels()
@@ -121,19 +121,13 @@ void GameSetup()
     static mat4 ScreenProjMatrix = Orthographic(0.0f, (r32)Platform.WindowWidth, (r32)Platform.WindowHeight, 0.0f, -1.0f, 1.0f);
     static mat4 ScreenViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
     GameState.DbgTextVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
-    GameState.DbgTextRender = new render_cmd_list(MEGABYTE(1), GameState.TextShader);
-    GameState.DbgTextRender->ViewMatrix = &ScreenViewMatrix;
-    GameState.DbgTextRender->ProjMatrix = &ScreenProjMatrix;
+    GameState.DbgTextRender = new render_cmd_list(MEGABYTE(1), GameState.TextShader, &ScreenViewMatrix, &ScreenProjMatrix);
 
     GameState.DbgLineShader = rndr::MakeShaderProgram("shaders/debug_line_vs.glsl", "shaders/debug_line_ps.glsl");
     GameState.DbgLineVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(5), true);
-    GameState.DbgLineRender = new render_cmd_list(MEGABYTE(1), GameState.DbgLineShader);
-    GameState.DbgLineRender->ViewMatrix = &GameState.EditViewMatrix;
-    GameState.DbgLineRender->ProjMatrix = &ProjMatrix;
+    GameState.DbgLineRender = new render_cmd_list(MEGABYTE(1), GameState.DbgLineShader, &GameState.EditViewMatrix, &ProjMatrix);
 
-    GameState.GameRender = new render_cmd_list(MEGABYTE(2), GameState.SpriteShader);
-    GameState.GameRender->ViewMatrix = &GameState.EditViewMatrix;
-    GameState.GameRender->ProjMatrix = &ProjMatrix;
+    GameState.GameRender = new render_cmd_list(MEGABYTE(2), GameState.SpriteShader, &GameState.EditViewMatrix, &ProjMatrix);
 
     GameState.GameVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(20), true);
 
@@ -157,63 +151,13 @@ void GameUpdateAndRender(game_input *Input)
     //-----------------------------------------------------------------------------
     // Game Update
     //-----------------------------------------------------------------------------
-    EditorUpdate(&EditorCtx);
 
     //-----------------------------------------------------------------------------
     // Game Render
     //-----------------------------------------------------------------------------
     rndr::Clear();
 
-    static vec3 EditorCamP = vec3(0.0f);
-
-    if(Input->Mouse.Right.EndedDown && !EditorCtx.Hovered)
-    {
-        EditorCamP.x -= Input->Mouse.xrel * GameState.PixelsToMeters * 1.3f;
-        EditorCamP.y -= Input->Mouse.yrel * GameState.PixelsToMeters * 1.3f;
-    }
-
-    GameState.EditViewMatrix = LookAt(EditorCamP, vec3(EditorCamP.x, EditorCamP.y, -1.0f), vec3i(0, 1, 0));
-
-    vec2 LevelSize = vec2i(50, 50);
-    // Draw tile grid
-    for(int X = 0; X <= LevelSize.x; ++X)
-    {
-        PushDbgLine(&GameState.DbgLineVertices, vec3((r32)X, 0, 0), vec3((r32)X, LevelSize.y, 0), vec4i(1, 1, 1, 1));
-    }
-    for(int Y = 0; Y <= LevelSize.y; ++Y)
-    {
-        PushDbgLine(&GameState.DbgLineVertices, vec3(0, (r32)Y, 0), vec3(LevelSize.x, (r32)Y, 0), vec4i(1, 1, 1, 1));
-    }
-
-    if(EditorCtx.SelectedTile != nullptr && !EditorCtx.Hovered)
-    {
-        vec4 UV = vec4(EditorCtx.SelectedTile->X / EditorCtx.AtlasWidth,
-                      (EditorCtx.AtlasHeight - EditorCtx.SelectedTile->Y - 16) / EditorCtx.AtlasHeight,
-                      (EditorCtx.SelectedTile->X + 16) / EditorCtx.AtlasWidth,
-                      (EditorCtx.AtlasHeight - EditorCtx.SelectedTile->Y) / EditorCtx.AtlasHeight);
-        s32 X, Y;
-        X = Clamp(0, (s32)floor(EditorCamP.x + Input->Mouse.x * GameState.PixelsToMeters), (s32)LevelSize.x - 1);
-        Y = Clamp(0, (s32)floor(EditorCamP.y + Input->Mouse.y * GameState.PixelsToMeters), (s32)LevelSize.y - 1);
-        
-        if(Input->Mouse.Left.EndedDown && Input->Mouse.Left.HalfTransitionCount == 1)
-        {
-            //PushText(&GameState.DbgTextVertices, Rect(100, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "Left Click 1");
-            GameState.Level.Level[X][Y].ID = (u16)EditorCtx.SelectedTile->ID;
-            GameState.Level.Level[X][Y].UV = UV;
-        }
-        PushSprite(&GameState.GameVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), UV, vec4(1.0f), 0.0f, vec2(0.0f), 1.0f);
-    }
-
-    for(int X = 0; X < 50; ++X)
-    {
-        for(int Y = 0; Y < 50; ++Y)
-        {
-            if(GameState.Level.Level[X][Y].ID != 65535)
-            {
-                PushSprite(&GameState.GameVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), GameState.Level.Level[X][Y].UV, vec4(1.0f), 0.0f, vec2(0.0f), 1.0f);
-            }
-        }
-    }
+    EditorUpdateAndRender(&EditorCtx, Input);
 
     if(!GameState.GameVertices.empty())
     {

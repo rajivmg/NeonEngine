@@ -2,12 +2,15 @@
 
 #include <core/neon_bitmap.h>
 #include <dear-imgui/imgui.h>
+
 #include <rapidxml/rapidxml.hpp>
 using namespace rapidxml;
 
+#include "f_game.h"
+
 static bool Show_TilesetHelperWindow = false;
 
-void TilesetHelperWindow(editor_ctx *EditorCtx)
+static void TilesetHelperWindow(editor_state *EditorState)
 {
     static bool FileOpened = false;
     static char Filename[256];
@@ -35,17 +38,7 @@ void TilesetHelperWindow(editor_ctx *EditorCtx)
     if(MenuFileOpen) { ImGui::OpenPopup("Open File"); }
     if(MenuFileClose) { ImGui::OpenPopup("Close File"); }
     // Menu bar End
-#if 0
-    ImGui::Text("FILE: %s", Filename);
-    if(!FileOpened)
-    {
-        ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-        if(ImGui::Button("OPEN"))
-        {
-            ImGui::OpenPopup("Open File");
-        }
-    }
-#endif
+
     if(ImGui::BeginPopupModal("Open File", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::InputText("File", Filename, 128);
@@ -98,26 +91,6 @@ void TilesetHelperWindow(editor_ctx *EditorCtx)
 
         ImGui::EndPopup();
     }
-#if 0
-    if(FileOpened)
-    {
-        //ImGui::SameLine(ImGui::GetWindowWidth() - 120);
-        //if(ImGui::Button("SAVE"))
-        //{
-
-        //}
-
-        ImGui::SameLine(ImGui::GetWindowWidth() - 70);
-        if(ImGui::Button("CLOSE"))
-        {
-            rndr::DeleteTexture(TilesetTexture);
-            Filename[0] = '\0';
-            FileOpened = false;
-        }
-    }
-#endif
-
-    //ImGui::Separator();
 
     // Tileset
     if(FileOpened)
@@ -197,21 +170,51 @@ void TilesetHelperWindow(editor_ctx *EditorCtx)
     ImGui::End();
 }
 
-void InitEditor(editor_ctx *EditorCtx)
+void InitEditor(editor_state *EditorState)
 {
+    // Initialise editor state and buffers
+    EditorState->MetersToPixels = Platform.WindowWidth / 24.8889f; 
+    EditorState->PixelsToMeters = 1.0f / EditorState->MetersToPixels;
+    EditorState->CameraP = vec3(0.0f);
+
+    EditorState->ViewMatrix = LookAt(EditorState->CameraP, EditorState->CameraP + vec3i(0, 0, -1), vec3i(0, 1, 0));
+    EditorState->ProjMatrix = Orthographic(0.0f, 24.8889f, 14.0f, 0.0f, -10.0f, 1.0f);
+
+    EditorState->DbgLineShader = rndr::MakeShaderProgram("shaders/debug_line_vs.glsl", "shaders/debug_line_ps.glsl");
+    EditorState->DbgLineVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(5), true);
+    EditorState->DbgLineRender = new render_cmd_list(MEGABYTE(1), EditorState->DbgLineShader, &EditorState->ViewMatrix, &EditorState->ProjMatrix);
+    
+    EditorState->SpriteShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
+    EditorState->SpriteVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(16), true);
+    EditorState->SpriteRender = new render_cmd_list(MEGABYTE(5), EditorState->SpriteShader, &EditorState->ViewMatrix, &EditorState->ProjMatrix);
+
+    EditorState->LevelWidth = 24; EditorState->LevelHeight = 14;
+    EditorState->EditLevel = (editor_game_tile *)MALLOC(sizeof(editor_game_tile) * EditorState->LevelWidth * EditorState->LevelHeight);
+
+    for(int X = 0; X < EditorState->LevelWidth; ++X)
+    {
+        for(int Y = 0; Y < EditorState->LevelHeight; ++Y)
+        {
+            editor_game_tile *Tile = (EditorState->EditLevel + X + (Y * EditorState->LevelWidth));
+            Tile->ID = U16_MAX;
+            Tile->Collide = false;
+        }
+    }
+
+    // Load tileset file
     file_content FileData = Platform.ReadFile("Tileset.xml");
     ASSERT(FileData.NoError);
 
     // Null terminate xml file for parsing
-    EditorCtx->TilesetXmlFile = (char *)MALLOC(sizeof(char) * (FileData.Size + 1));
-    memcpy(EditorCtx->TilesetXmlFile, FileData.Content, FileData.Size + 1);
-    EditorCtx->TilesetXmlFile[FileData.Size] = '\0';
+    EditorState->TilesetXmlFile = (char *)MALLOC(sizeof(char) * (FileData.Size + 1));
+    memcpy(EditorState->TilesetXmlFile, FileData.Content, FileData.Size + 1);
+    EditorState->TilesetXmlFile[FileData.Size] = '\0';
 
     Platform.FreeFileContent(&FileData);
 
     // Parse
     xml_document<> Doc;
-    Doc.parse<0>(EditorCtx->TilesetXmlFile);
+    Doc.parse<0>(EditorState->TilesetXmlFile);
 
     xml_node<> *TilesetNode = Doc.first_node("tileset");
     xml_attribute<> *TilesetBitmapAttr = TilesetNode->first_attribute("bitmap");
@@ -219,13 +222,14 @@ void InitEditor(editor_ctx *EditorCtx)
     
     bitmap AtlasBitmap;
     LoadBitmap(&AtlasBitmap, TilesetBitmapAttr->value());
-    EditorCtx->AtlasTexture = rndr::MakeTexture(&AtlasBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
-    EditorCtx->AtlasWidth = (r32)AtlasBitmap.Width;
-    EditorCtx->AtlasHeight = (r32)AtlasBitmap.Height;
+    EditorState->SRGBAtlasTexture = rndr::MakeTexture(&AtlasBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
+    EditorState->AtlasTexture = rndr::MakeTexture(&AtlasBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, true);
+    EditorState->AtlasWidth = (r32)AtlasBitmap.Width;
+    EditorState->AtlasHeight = (r32)AtlasBitmap.Height;
     FreeBitmap(&AtlasBitmap);
 
     s32 TileCount = strtol(TilesetCountAttr->value(), nullptr, 10);
-    EditorCtx->EditorTiles = (editor_tile *)MALLOC(sizeof(editor_tile) * TileCount);
+    EditorState->EditorTiles = (editor_tile *)MALLOC(sizeof(editor_tile) * TileCount);
     Platform.Log("Tile Count: %d", TileCount);
     xml_node<> *TileNode = TilesetNode->first_node("tile");
     s32 TileCounter = 0;
@@ -238,16 +242,16 @@ void InitEditor(editor_ctx *EditorCtx)
         xml_attribute<> *TileWAttr = TileNode->first_attribute("w");
         xml_attribute<> *TileHAttr = TileNode->first_attribute("h");
 
-        EditorCtx->EditorTiles[TileCounter].ID = strtoul(TileIdAttr->value(), nullptr, 10);
-        strncpy(EditorCtx->EditorTiles[TileCounter].Name, TileNameAttr->value(), 128);
-        EditorCtx->EditorTiles[TileCounter].X = strtoul(TileXAttr->value(), nullptr, 10);
-        EditorCtx->EditorTiles[TileCounter].Y = strtoul(TileYAttr->value(), nullptr, 10);
-        EditorCtx->EditorTiles[TileCounter].W = strtoul(TileWAttr->value(), nullptr, 10);
-        EditorCtx->EditorTiles[TileCounter].H = strtoul(TileHAttr->value(), nullptr, 10);
+        EditorState->EditorTiles[TileCounter].ID = strtoul(TileIdAttr->value(), nullptr, 10);
+        strncpy(EditorState->EditorTiles[TileCounter].Name, TileNameAttr->value(), 128);
+        EditorState->EditorTiles[TileCounter].X = strtoul(TileXAttr->value(), nullptr, 10);
+        EditorState->EditorTiles[TileCounter].Y = strtoul(TileYAttr->value(), nullptr, 10);
+        EditorState->EditorTiles[TileCounter].W = strtoul(TileWAttr->value(), nullptr, 10);
+        EditorState->EditorTiles[TileCounter].H = strtoul(TileHAttr->value(), nullptr, 10);
 
-        u32 X = EditorCtx->EditorTiles[TileCounter].X / 16;
-        u32 Y = EditorCtx->EditorTiles[TileCounter].Y / 16;
-        EditorCtx->EditorGrid[X][Y] = &EditorCtx->EditorTiles[TileCounter];
+        u32 X = EditorState->EditorTiles[TileCounter].X / 16;
+        u32 Y = EditorState->EditorTiles[TileCounter].Y / 16;
+        EditorState->EditorGrid[X][Y] = &EditorState->EditorTiles[TileCounter];
 
         ++TileCounter;
         TileNode = TileNode->next_sibling("tile");
@@ -256,17 +260,19 @@ void InitEditor(editor_ctx *EditorCtx)
     //ASSERT(TileCount == TileCounter);
 }
 
-void EditorUpdate(editor_ctx *EditorCtx)
+void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
 {
-    if(Show_TilesetHelperWindow) TilesetHelperWindow(EditorCtx);
+    // Begin ImGui
+    if(Show_TilesetHelperWindow) { TilesetHelperWindow(EditorState); }
 
-    static vec4 SelTileUV = vec4i(0, 0, 0, 0);
     ImGui::SetNextWindowSize(ImVec2(350, 560), ImGuiCond_FirstUseEver);
     if(!ImGui::Begin("Editor", 0, ImGuiWindowFlags_MenuBar))
     {
         ImGui::End();
         return;
     }
+
+    // Editor Menu Bar
     if(ImGui::BeginMenuBar())
     {
         if(ImGui::BeginMenu("View"))
@@ -276,44 +282,37 @@ void EditorUpdate(editor_ctx *EditorCtx)
         }
         ImGui::EndMenuBar();
     }
-        //ImGui::Combo("Mode", &EditorMode, "Tileset Creation\0Edit\0");
-        ImGui::Spacing();
-#if 0
-    static int CurrentTileset = 0;
-    auto TsFilenameGetter = [](void *Data, int Idx, const char **OutText)
-    {
-        *OutText = ((ed_tilesets *)Data)[Idx].File;
-        return true;
-    };
-    ImGui::Combo("Tileset", &CurrentTileset, TsFilenameGetter, EditorCtx->Tilesets, EditorCtx->TilesetsCount);
-#endif
+    
+    ImGui::Spacing();
+    
     // Mouse hover check
     if(ImGui::IsWindowHovered())
     {
-        EditorCtx->Hovered = true;
+        EditorState->WindowHovered = true;
     }
     else
     {
-        EditorCtx->Hovered = false;
+        EditorState->WindowHovered = false;
     }
 
     r32 Scale = 2.0f;
     vec2 TileSize = vec2i(16, 16);
     vec2 ScaledTileSize = TileSize * Scale;
-    vec2 ScaledAtlasSize = vec2(EditorCtx->AtlasWidth, EditorCtx->AtlasHeight) * Scale;
+    vec2 ScaledAtlasSize = vec2(EditorState->AtlasWidth, EditorState->AtlasHeight) * Scale;
 
     ImGui::BeginChild("CanvasWindow##editor", vec2i(288, 416), true, ImGuiWindowFlags_HorizontalScrollbar);
     static ImDrawList *DrawList = ImGui::GetWindowDrawList();
     vec2 CanvasP = ImGui::GetCursorScreenPos();
     DrawList->AddRectFilled(CanvasP, CanvasP + ScaledAtlasSize, IM_COL32(255, 255, 255, 255));
-    DrawList->AddImage(rndr::GetTextureID(EditorCtx->AtlasTexture), CanvasP, CanvasP + ScaledAtlasSize, vec2i(0, 1), vec2i(1, 0));
+    DrawList->AddImage(rndr::GetTextureID(EditorState->SRGBAtlasTexture), CanvasP, CanvasP + ScaledAtlasSize, vec2i(0, 1), vec2i(1, 0));
     ImGui::InvisibleButton("canvas##editor", ScaledAtlasSize);
-    static vec2 P;
-    //static u32 SelectedTileX, SelectedTileY;
+
+    static s32 STileX, STileY;
     if(ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
     {
         vec2 MouseP = ImGui::GetIO().MousePos;
-        P = vec2(floor((MouseP.x - CanvasP.x) / ScaledTileSize.x), floor((MouseP.y - CanvasP.y) / ScaledTileSize.y));
+        STileX = (s32)floor((MouseP.x - CanvasP.x) / ScaledTileSize.x);
+        STileY = (s32)floor((MouseP.y - CanvasP.y) / ScaledTileSize.y);
     }
     for(r32 X = 0; X <= ScaledAtlasSize.x; X += ScaledTileSize.x)
     {
@@ -325,86 +324,114 @@ void EditorUpdate(editor_ctx *EditorCtx)
     }
 
     // Mouse hover check
-    if(ImGui::IsWindowHovered() && !EditorCtx->Hovered)
+    if(ImGui::IsWindowHovered() && !EditorState->WindowHovered)
     {
-        EditorCtx->Hovered = true;
+        EditorState->WindowHovered = true;
     }
-    //else
-    //{
-    //    EditorCtx->Hovered = false;
-    //}
 
     ImGui::EndChild();
     
-    if(EditorCtx->EditorGrid[(u32)P.x][(u32)P.y] != nullptr)
+    if(EditorState->EditorGrid[STileX][STileY] != nullptr)
     {
-        ImGui::Text("Name=%s X = %d, Y = %d", EditorCtx->EditorGrid[(u32)P.x][(u32)P.y]->Name, EditorCtx->EditorGrid[(u32)P.x][(u32)P.y]->X, EditorCtx->EditorGrid[(u32)P.x][(u32)P.y]->Y);
-        EditorCtx->SelectedTile = EditorCtx->EditorGrid[(u32)P.x][(u32)P.y];
+        editor_tile *Tile = EditorState->EditorGrid[STileX][STileY];
+        ImGui::Text("Name=%s X = %d, Y = %d", Tile->Name, Tile->X, Tile->Y);
+        EditorState->SelectedTile = EditorState->EditorGrid[STileX][STileY];
     }
     else
     {
-        EditorCtx->SelectedTile = nullptr;
+        EditorState->SelectedTile = nullptr;
     }
-    ImGui::End();
-#if 0
-        r32 EditorTileScale = 3.0f;
-        vec2 TileSize = vec2(8.0f) * EditorTileScale;
-        vec2 TilesetSize = vec2(64, 96) * EditorTileScale;
+    
+    ImGui::End(); // End ImGui
 
-        bool IsCanvasHovered;
-        ImDrawList *DrawList = ImGui::GetWindowDrawList();
-        vec2 CanvasPos = ImGui::GetCursorScreenPos();
+    // In-Game editor 
+    if(GameInput->Mouse.Right.EndedDown && !EditorState->WindowHovered)
+    {
+        EditorState->CameraP.x -= GameInput->Mouse.xrel * EditorState->PixelsToMeters * 1.3f;
+        EditorState->CameraP.y -= GameInput->Mouse.yrel * EditorState->PixelsToMeters * 1.3f;
+    }
 
-        DrawList->AddImage(rndr::GetTextureID(GameState->EditorTilesetTexture), CanvasPos, CanvasPos + TilesetSize, ImVec2(0, 1), ImVec2(1, 0));
-        ImGui::InvisibleButton("canvas", TilesetSize);
-        IsCanvasHovered = ImGui::IsItemHovered();
+    EditorState->ViewMatrix = LookAt(EditorState->CameraP, EditorState->CameraP + vec3i(0, 0, -1), vec3i(0, 1, 0));
 
-        vec2 MousePos;
-        vec2 HoveredTile;
+    // 
+    if(EditorState->SelectedTile != nullptr && !EditorState->WindowHovered)
+    {
+        vec4 UV = vec4(EditorState->SelectedTile->X / EditorState->AtlasWidth,
+            (EditorState->AtlasHeight - EditorState->SelectedTile->Y - TileSize.y) / EditorState->AtlasHeight,
+            (EditorState->SelectedTile->X + TileSize.x) / EditorState->AtlasWidth,
+            (EditorState->AtlasHeight - EditorState->SelectedTile->Y) / EditorState->AtlasHeight);
+        s32 X, Y;
+        X = Clamp(0, (s32)floor(EditorState->CameraP.x + GameInput->Mouse.x * EditorState->PixelsToMeters), EditorState->LevelWidth - 1);
+        Y = Clamp(0, (s32)floor(EditorState->CameraP.y + GameInput->Mouse.y * EditorState->PixelsToMeters), EditorState->LevelHeight - 1);
+        
+        PushSprite(&EditorState->SpriteVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), UV, vec4(1.0f), 0.0f, vec2(0.0f), 1.0f);
 
-        if(IsCanvasHovered)
+        if(GameInput->Mouse.Left.EndedDown && GameInput->Mouse.Left.HalfTransitionCount == 1)
         {
-            if(ImGui::IsMouseClicked(0))
+            editor_game_tile *Tile = (EditorState->EditLevel + X + (Y * EditorState->LevelWidth));
+            Tile->ID = EditorState->SelectedTile->ID;
+            Tile->Collide = true;
+        }
+    }
+
+    // Draw tile grid
+    for(int X = 0; X <= EditorState->LevelWidth; ++X)
+    {
+        PushDbgLine(&EditorState->DbgLineVertices, vec3((r32)X, 0, 0), vec3((r32)X, (r32)EditorState->LevelHeight, 0), vec4i(1, 1, 1, 1));
+    }
+    for(int Y = 0; Y <= EditorState->LevelHeight; ++Y)
+    {
+        PushDbgLine(&EditorState->DbgLineVertices, vec3(0, (r32)Y, 0), vec3((r32)EditorState->LevelWidth, (r32)Y, 0), vec4i(1, 1, 1, 1));
+    }
+
+    // Draw edit-level
+    for(int X = 0; X < EditorState->LevelWidth; ++X)
+    {
+        for(int Y = 0; Y < EditorState->LevelHeight; ++Y)
+        {
+            editor_game_tile *Tile = (EditorState->EditLevel + X + (Y * EditorState->LevelWidth));
+            if(Tile->ID != U16_MAX)
             {
-                /*
-                EdSelectedTileUV = vec4((HoverTile.x * TileSize.x)/TilesetSize.x,
-                1.0f - (HoverTile.y * TileSize.y)/TilesetSize.y,
-                ((HoverTile.x + 1) * TileSize.x)/TilesetSize.x,
-                1.0f - ((HoverTile.y + 1) * TileSize.y)/TilesetSize.y);
-                */
-                MousePos = ImGui::GetIO().MousePos;;
-                HoveredTile = vec2(floorf((MousePos.x - CanvasPos.x) / TileSize.x), floorf((MousePos.y - CanvasPos.y) / TileSize.y));
-                SelTileUV = vec4((HoveredTile.x * TileSize.x)/TilesetSize.x,
-                    1.0f - ((HoveredTile.y + 1) * TileSize.y)/TilesetSize.y,
-                    ((HoveredTile.x + 1) * TileSize.x)/TilesetSize.x,
-                    1.0f - (HoveredTile.y * TileSize.y)/TilesetSize.y);
+                editor_tile *ETile = &EditorState->EditorTiles[Tile->ID];
+                vec4 UV = vec4(ETile->X / EditorState->AtlasWidth, (EditorState->AtlasHeight - ETile->Y - TileSize.y) / EditorState->AtlasHeight,
+                    (ETile->X + TileSize.x) / EditorState->AtlasWidth, (EditorState->AtlasHeight - ETile->Y) / EditorState->AtlasHeight);
+                PushSprite(&EditorState->SpriteVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), UV, vec4(1.0f), 0.0f, vec2(0.0f), 1.0f);
             }
         }
-
-        ImGui::TextUnformatted("Selected tile:\0");
-        ImGui::SameLine();
-        ImGui::Image(rndr::GetTextureID(GameState->EditorTilesetTexture), ImVec2(32, 32), ImVec2(SelTileUV.x, SelTileUV.w), ImVec2(SelTileUV.z, SelTileUV.y));
-
-        for(r32 X = 0; X <= TilesetSize.x; X += TileSize.x)
-        {
-            DrawList->AddLine(CanvasPos + vec2(X, 0), CanvasPos + vec2(X, TilesetSize.y), 0x7D000000);
-        }
-        for(r32 Y = 0; Y <= TilesetSize.y; Y += TileSize.y)
-        {
-            DrawList->AddLine(CanvasPos + vec2(0, Y), CanvasPos + vec2(TilesetSize.x, Y), 0x7D000000);
-        }
-
     }
-    ImGui::End();
 
-    rect Dest = Rect(10, 4, 1, 1);
-    GameState->WorldVertices.clear();
-    PushSprite(&GameState->WorldVertices, Dest, SelTileUV, vec4i(1, 1, 1, 1), 0.0f, vec2(0.0f), 1.0f);
-    rndr::BufferData(GameState->WorldVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)GameState->WorldVertices.size(), &GameState->WorldVertices.front());
-#endif
-}
+    // Dispatch buffers for rendering 
+    if(!EditorState->SpriteVertices.empty())
+    {
+        rndr::BufferData(EditorState->SpriteVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)EditorState->SpriteVertices.size(), &EditorState->SpriteVertices.front());
 
-void EditorRender(editor_ctx *EditorCtx, game_state *GameState)
-{
+        cmd::draw *WorldDrawCmd = EditorState->SpriteRender->AddCommand<cmd::draw>(0);
+        WorldDrawCmd->VertexBuffer = EditorState->SpriteVertexBuffer;
+        WorldDrawCmd->VertexFormat = vert_format::P1C1UV1;
+        WorldDrawCmd->StartVertex = 0;
+        WorldDrawCmd->VertexCount = (u32)EditorState->SpriteVertices.size();
+        WorldDrawCmd->Textures[0] = EditorState->AtlasTexture;
 
+        EditorState->SpriteVertices.clear();
+
+        EditorState->SpriteRender->Sort();
+        EditorState->SpriteRender->Submit();
+        EditorState->SpriteRender->Flush();
+    }
+    if(!EditorState->DbgLineVertices.empty())
+    {
+        rndr::BufferData(EditorState->DbgLineVertexBuffer, 0, (u32)sizeof(vert_P1C1) * (u32)EditorState->DbgLineVertices.size(), &EditorState->DbgLineVertices.front());
+
+        cmd::draw_debug_lines *DrawDebugLinesCmd = EditorState->DbgLineRender->AddCommand<cmd::draw_debug_lines>(0);
+        DrawDebugLinesCmd->VertexBuffer = EditorState->DbgLineVertexBuffer;
+        DrawDebugLinesCmd->VertexFormat = vert_format::P1C1;
+        DrawDebugLinesCmd->StartVertex = 0;
+        DrawDebugLinesCmd->VertexCount = (u32)EditorState->DbgLineVertices.size();
+
+        EditorState->DbgLineVertices.clear();
+
+        EditorState->DbgLineRender->Sort();
+        EditorState->DbgLineRender->Submit();
+        EditorState->DbgLineRender->Flush();
+    }
 }
