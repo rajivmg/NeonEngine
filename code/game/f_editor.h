@@ -17,11 +17,18 @@ struct editor_game_tile
     bool Collide;
 };
 
+enum editor_edit_mode
+{
+    EditMode_Brush,
+    EditMode_Erase
+};
+
 struct editor_state
 {
     editor_tile *EditorTiles;
     editor_tile *EditorGrid[1024][1024];
-    editor_tile *SelectedTile;
+    editor_tile *BrushTile;
+    editor_edit_mode EditMode;
 
     r32 AtlasWidth, AtlasHeight;
     render_resource AtlasTexture, SRGBAtlasTexture;

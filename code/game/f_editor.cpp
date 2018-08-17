@@ -201,6 +201,9 @@ void InitEditor(editor_state *EditorState)
         }
     }
 
+    EditorState->BrushTile = nullptr;
+    EditorState->EditMode = EditMode_Brush;
+
     // Load tileset file
     file_content FileData = Platform.ReadFile("Tileset.xml");
     ASSERT(FileData.NoError);
@@ -300,20 +303,22 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
     vec2 ScaledTileSize = TileSize * Scale;
     vec2 ScaledAtlasSize = vec2(EditorState->AtlasWidth, EditorState->AtlasHeight) * Scale;
 
-    ImGui::BeginChild("CanvasWindow##editor", vec2i(288, 416), true, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("CanvasWindow##editor", vec2i(288, 288), true, ImGuiWindowFlags_HorizontalScrollbar); // 288, 416
     static ImDrawList *DrawList = ImGui::GetWindowDrawList();
     vec2 CanvasP = ImGui::GetCursorScreenPos();
     DrawList->AddRectFilled(CanvasP, CanvasP + ScaledAtlasSize, IM_COL32(255, 255, 255, 255));
     DrawList->AddImage(rndr::GetTextureID(EditorState->SRGBAtlasTexture), CanvasP, CanvasP + ScaledAtlasSize, vec2i(0, 1), vec2i(1, 0));
     ImGui::InvisibleButton("canvas##editor", ScaledAtlasSize);
 
-    static s32 STileX, STileY;
+    static s32 STileX = 0, STileY = 0;
     if(ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
     {
         vec2 MouseP = ImGui::GetIO().MousePos;
         STileX = (s32)floor((MouseP.x - CanvasP.x) / ScaledTileSize.x);
         STileY = (s32)floor((MouseP.y - CanvasP.y) / ScaledTileSize.y);
     }
+
+    // Draw grid
     for(r32 X = 0; X <= ScaledAtlasSize.x; X += ScaledTileSize.x)
     {
         DrawList->AddLine(CanvasP + vec2(X, 0), CanvasP + vec2(X, ScaledAtlasSize.y), 0x7D000000);
@@ -329,23 +334,37 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
         EditorState->WindowHovered = true;
     }
 
-    ImGui::EndChild();
-    
     if(EditorState->EditorGrid[STileX][STileY] != nullptr)
     {
         editor_tile *Tile = EditorState->EditorGrid[STileX][STileY];
-        ImGui::Text("Name=%s X = %d, Y = %d", Tile->Name, Tile->X, Tile->Y);
-        EditorState->SelectedTile = EditorState->EditorGrid[STileX][STileY];
+        EditorState->BrushTile = EditorState->EditorGrid[STileX][STileY];
+        //ImGui::Text("%s %d,%d", Tile->Name, Tile->X, Tile->Y);
+
+        DrawList->AddLine(CanvasP + vec2i(STileX, STileY) * ScaledTileSize, CanvasP + vec2i(STileX + 1, STileY) * ScaledTileSize, IM_COL32(0, 255, 00, 255));
+        DrawList->AddLine(CanvasP + vec2i(STileX + 1, STileY) * ScaledTileSize, CanvasP + vec2i(STileX + 1, STileY + 1) * ScaledTileSize, IM_COL32(0, 255, 00, 255));
+        DrawList->AddLine(CanvasP + vec2i(STileX + 1, STileY + 1) * ScaledTileSize, CanvasP + vec2i(STileX, STileY + 1) * ScaledTileSize, IM_COL32(0, 255, 00, 255));
+        DrawList->AddLine(CanvasP + vec2i(STileX, STileY + 1) * ScaledTileSize, CanvasP + vec2i(STileX, STileY) * ScaledTileSize, IM_COL32(0, 255, 00, 255));
     }
     else
     {
-        EditorState->SelectedTile = nullptr;
+        EditorState->BrushTile = nullptr;
+        DrawList->AddLine(CanvasP + vec2i(STileX, STileY) * ScaledTileSize, CanvasP + vec2i(STileX + 1, STileY) * ScaledTileSize, IM_COL32(255, 0, 00, 255));
+        DrawList->AddLine(CanvasP + vec2i(STileX + 1, STileY) * ScaledTileSize, CanvasP + vec2i(STileX + 1, STileY + 1) * ScaledTileSize, IM_COL32(255, 0, 00, 255));
+        DrawList->AddLine(CanvasP + vec2i(STileX + 1, STileY + 1) * ScaledTileSize, CanvasP + vec2i(STileX, STileY + 1) * ScaledTileSize, IM_COL32(255, 0, 00, 255));
+        DrawList->AddLine(CanvasP + vec2i(STileX, STileY + 1) * ScaledTileSize, CanvasP + vec2i(STileX, STileY) * ScaledTileSize, IM_COL32(255, 0, 00, 255));
     }
-    
+
+    ImGui::EndChild();
+   
+    ImGui::Spacing();
+    ImGui::Text("Edit Mode");
+    ImGui::RadioButton("Brush", (int *)&EditorState->EditMode, (int)EditMode_Brush); ImGui::SameLine();
+    ImGui::RadioButton("Erase", (int *)&EditorState->EditMode, (int)EditMode_Erase);
+
     ImGui::End(); // End ImGui
 
     // In-Game editor 
-    if(GameInput->Mouse.Right.EndedDown && !EditorState->WindowHovered)
+    if(!EditorState->WindowHovered && GameInput->Mouse.Right.EndedDown)
     {
         EditorState->CameraP.x -= GameInput->Mouse.xrel * EditorState->PixelsToMeters * 1.3f;
         EditorState->CameraP.y -= GameInput->Mouse.yrel * EditorState->PixelsToMeters * 1.3f;
@@ -353,24 +372,46 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
 
     EditorState->ViewMatrix = LookAt(EditorState->CameraP, EditorState->CameraP + vec3i(0, 0, -1), vec3i(0, 1, 0));
 
-    // 
-    if(EditorState->SelectedTile != nullptr && !EditorState->WindowHovered)
+    // Brush
+    if(!EditorState->WindowHovered && EditorState->EditMode == EditMode_Brush && EditorState->BrushTile != nullptr)
     {
-        vec4 UV = vec4(EditorState->SelectedTile->X / EditorState->AtlasWidth,
-            (EditorState->AtlasHeight - EditorState->SelectedTile->Y - TileSize.y) / EditorState->AtlasHeight,
-            (EditorState->SelectedTile->X + TileSize.x) / EditorState->AtlasWidth,
-            (EditorState->AtlasHeight - EditorState->SelectedTile->Y) / EditorState->AtlasHeight);
+        vec4 UV = vec4(EditorState->BrushTile->X / EditorState->AtlasWidth,
+            (EditorState->AtlasHeight - EditorState->BrushTile->Y - TileSize.y) / EditorState->AtlasHeight,
+            (EditorState->BrushTile->X + TileSize.x) / EditorState->AtlasWidth,
+            (EditorState->AtlasHeight - EditorState->BrushTile->Y) / EditorState->AtlasHeight);
         s32 X, Y;
         X = Clamp(0, (s32)floor(EditorState->CameraP.x + GameInput->Mouse.x * EditorState->PixelsToMeters), EditorState->LevelWidth - 1);
         Y = Clamp(0, (s32)floor(EditorState->CameraP.y + GameInput->Mouse.y * EditorState->PixelsToMeters), EditorState->LevelHeight - 1);
         
         PushSprite(&EditorState->SpriteVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), UV, vec4(1.0f), 0.0f, vec2(0.0f), 1.0f);
 
-        if(GameInput->Mouse.Left.EndedDown && GameInput->Mouse.Left.HalfTransitionCount == 1)
+        if(GameInput->Mouse.Left.EndedDown)
         {
             editor_game_tile *Tile = (EditorState->EditLevel + X + (Y * EditorState->LevelWidth));
-            Tile->ID = EditorState->SelectedTile->ID;
-            Tile->Collide = true;
+            if(Tile->ID != EditorState->BrushTile->ID)
+            {
+                Platform.Log("Tile placed at: %d, %d ID: %d", X, Y, EditorState->BrushTile->ID);
+                Tile->ID = EditorState->BrushTile->ID;
+                Tile->Collide = true;
+            }
+        }
+    }
+
+    // Erase
+    if(!EditorState->WindowHovered && EditorState->EditMode == EditMode_Erase)
+    {
+        s32 X, Y;
+        X = Clamp(0, (s32)floor(EditorState->CameraP.x + GameInput->Mouse.x * EditorState->PixelsToMeters), EditorState->LevelWidth - 1);
+        Y = Clamp(0, (s32)floor(EditorState->CameraP.y + GameInput->Mouse.y * EditorState->PixelsToMeters), EditorState->LevelHeight - 1);
+
+        if(GameInput->Mouse.Left.EndedDown)
+        {
+            editor_game_tile *Tile = (EditorState->EditLevel + X + (Y * EditorState->LevelWidth));
+            if(Tile->ID != U16_MAX)
+            {
+                Tile->ID = U16_MAX;
+                Tile->Collide = false;
+            }
         }
     }
 
