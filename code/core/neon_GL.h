@@ -1,9 +1,9 @@
- //#ifndef NEON_GL_H
- //#define NEON_GL_H
+ #ifndef NEON_GL_H
+ #define NEON_GL_H
 
 #ifdef _MSC_VER
-#include "Windows.h"
-#define GLAPI WINAPI
+    #include "Windows.h"
+    #define GLAPI WINAPI
 #endif //_MSC_VER
 
 #define GL_ACTIVE_TEXTURE                 0x84E0
@@ -101,16 +101,11 @@ GLPROC(void,    BlendFuncSeparate, GLenum sfactorRGB, GLenum dfactorRGB, GLenum 
 GLPROC(void,    DeleteVertexArrays, GLsizei n, const GLuint *arrays)\
 GLPROC(void,    DeleteBuffers, GLsizei n, const GLuint *buffers)
 
-
-#ifdef NEON_DEBUG_GL
-    #define GL_Assert(Exp) if(!(Exp)) {*(volatile int *)0 = 0;}
-    #define GL_DEBUG_PROC(Name) void (GLAPI  Name)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam)
-    typedef GL_DEBUG_PROC(*GLDEBUGPROC);
-    #define GLDEBUGPROCLIST \
-    GLPROC(void,    DebugMessageCallback, GLDEBUGPROC callback, void * userParam)
-#else
-    #define GLDEBUGPROCLIST
-#endif
+#define GL_Assert(Exp) if(!(Exp)) {*(volatile int *)0 = 0;}
+#define GL_DEBUG_PROC(Name) void (GLAPI  Name)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam)
+typedef GL_DEBUG_PROC(*GLDEBUGPROC);
+#define GLDEBUGPROCLIST \
+GLPROC(void,    DebugMessageCallback, GLDEBUGPROC callback, void *userParam)
 
 #define GLPROC(Ret, Name, ...) typedef Ret GLAPI gl_type_##Name (__VA_ARGS__); extern gl_type_##Name *gl##Name;
 GLPROCLIST
@@ -118,8 +113,16 @@ GLDEBUGPROCLIST
 #undef GLPROC
 
 // typedef void     GLAPI glUseProgram (GLuint program);
-
 // extern gl_type_UseProgram *glUseProgram;
+#endif //NEON_GL_H
+
+#ifdef NEON_GL_IMPLEMENTATION
+
+// function pointer variables
+#define GLPROC(Ret, Name, ...) gl_type_##Name *gl##Name;
+GLPROCLIST
+GLDEBUGPROCLIST
+#undef GLPROC
 
 #ifdef NEON_DEBUG_GL
 GL_DEBUG_PROC(OpenGLDebugCallback)
@@ -140,18 +143,9 @@ void DisableGLDebug()
 }
 #endif //NEON_DEBUG_GL
 
-bool InitGL();
-
-#ifdef NEON_INIT_GL 
-#define GLPROC(Ret, Name, ...) gl_type_##Name *gl##Name;
-GLPROCLIST
-GLDEBUGPROCLIST
-#undef GLPROC
 bool InitGL()
 {
-
 #ifdef _MSC_VER
-
 #define GLPROC(Ret, Name, ...) gl##Name = (gl_type_##Name *)wglGetProcAddress("gl"#Name); \
     if(gl##Name == 0) \
     { \
@@ -162,7 +156,6 @@ GLDEBUGPROCLIST
 #undef GLPROC
 
 // glUseProgram = (gl_type_UseProgram *)wglGetProcAddress("glUseProgram");
-
 #endif //_MSC_VER
 
 #ifdef NEON_DEBUG_GL
@@ -171,9 +164,8 @@ EnableGLDebug();
 
 return true;
 }
-#endif //NEON_INIT_GL
 
 #undef GLPROCLIST
 #undef GLDEBUGPROCLIST
 
- //#endif //NEON_GL_H
+#endif //NEON_GL_IMPLEMENTATION

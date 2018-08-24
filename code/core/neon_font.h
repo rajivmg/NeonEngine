@@ -14,11 +14,11 @@ struct glyph
 
 struct font
 {
-    font(const char *FontFile);
-    ~font();
-    
-    void Free();
-    glyph *GetGlyph(u32 Codepoint);
+    //font(const char *FontFile);
+    //~font();
+    //
+    //void Free();
+    //glyph *GetGlyph(u32 Codepoint);
 
     u32 LineHeight;
     u32 Base;
@@ -29,4 +29,8 @@ struct font
     u32 GlyphsCount;
     glyph *Glyphs;
 };
+
+void InitFont(font *Font, const char *FontFile);
+void FreeFont(font *Font);
+glyph *FontGetGlyph(font *Font, u32 Codepoint);
 #endif

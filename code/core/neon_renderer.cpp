@@ -14,9 +14,6 @@ dispatch_fn *cmd::draw_debug_lines::DISPATCH_FUNCTION = &rndr::DrawDebugLines;
 
 void rndr::Init()
 {
-    // Initialise opengl function pointers.
-    InitGL();
-
     // Initialise opengl renderer.
     ogl::InitState();
 }
@@ -353,8 +350,7 @@ void PushText(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 La
             continue;
         }
 
-        glyph *Glyph = Font->GetGlyph((u32)*CharCurs);
-        //glyph *Glyph = Font->Glyphs + ((u32)*CharCurs - 32);
+        glyph *Glyph = FontGetGlyph(Font, (u32)*CharCurs);
 
         /*
             x,y                 x+w,y
@@ -367,9 +363,6 @@ void PushText(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 La
         */
         vec4 TexCoord = vec4(Glyph->Rect.x / Font->ScaleW, 1.0f - (Glyph->Rect.y + Glyph->Rect.height) / Font->ScaleH,
                             (Glyph->Rect.x + Glyph->Rect.width) / Font->ScaleW, 1.0f - Glyph->Rect.y / Font->ScaleH);
-
-        /*rect Dest = Rect(Cursor.x + Glyph->XOffset, Cursor.y + Glyph->YOffset, Glyph->Rect.width, Glyph->Rect.height);*/
-        //rect Dest = Rect(Cursor.x + Glyph->XOffset, Cursor.y, Glyph->Rect.width, Glyph->Rect.height);
 
         rect Dest = Rect(Cursor.x + Glyph->XOffset, Cursor.y - Glyph->YOffset - Glyph->Rect.height, Glyph->Rect.width, Glyph->Rect.height);
         

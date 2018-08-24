@@ -1,15 +1,15 @@
 #include "neon_font.h"
 
-#include <rapidxml/rapidxml.hpp>
 #include "neon_renderer.h"
 
+#include <rapidxml/rapidxml.hpp>
 using namespace rapidxml;
 
-font::font(const char *FontFile)
+void InitFont(font *Font, const char *FontFile)
 {
     file_content FileData = Platform.ReadFile(FontFile);
     ASSERT(FileData.NoError);
-    
+
     // Null terminate xml file for parsing
     char *XmlFile = (char *)MALLOC(sizeof(char) * (FileData.Size + 1));
     memcpy(XmlFile, FileData.Content, FileData.Size + 1);
@@ -27,13 +27,13 @@ font::font(const char *FontFile)
     xml_node<> *CommonNode = FontNode->first_node("common");
     ASSERT(CommonNode);
     xml_attribute<> *LineHeightAttr = CommonNode->first_attribute("lineHeight");
-    LineHeight = strtoul(LineHeightAttr->value(), nullptr, 10);
+    Font->LineHeight = strtoul(LineHeightAttr->value(), nullptr, 10);
     xml_attribute<> *BaseAttr = CommonNode->first_attribute("base");
-    Base = strtoul(BaseAttr->value(), nullptr, 10);
+    Font->Base = strtoul(BaseAttr->value(), nullptr, 10);
     xml_attribute<> *ScaleWAttr = CommonNode->first_attribute("scaleW");
-    ScaleW = strtoul(ScaleWAttr->value(), nullptr, 10);
+    Font->ScaleW = strtoul(ScaleWAttr->value(), nullptr, 10);
     xml_attribute<> *ScaleHAttr = CommonNode->first_attribute("scaleH");
-    ScaleH = strtoul(ScaleHAttr->value(), nullptr, 10);
+    Font->ScaleH = strtoul(ScaleHAttr->value(), nullptr, 10);
     xml_attribute<> *PagesAttr = CommonNode->first_attribute("pages");
     u32 Pages = strtoul(PagesAttr->value(), nullptr, 10);
     ASSERT(Pages == 1);
@@ -49,13 +49,13 @@ font::font(const char *FontFile)
     strncat(Page0FilePath, Page0FileAttr->value(), 1023-6);
     //LoadBitmap(&Page0Bitmap, Page0FileAttr->value());
     LoadBitmap(&Page0Bitmap, Page0FilePath);
-    Texture = rndr::MakeTexture(&Page0Bitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
+    Font->Texture = rndr::MakeTexture(&Page0Bitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
     FreeBitmap(&Page0Bitmap);
 
     xml_node<> *CharsNode = FontNode->first_node("chars");
     xml_attribute<> *CharsCountAttr = CharsNode->first_attribute("count");
-    GlyphsCount = strtoul(CharsCountAttr->value(), nullptr, 10);
-    Glyphs = MALLOC_STRUCT(glyph, GlyphsCount);
+    Font->GlyphsCount = strtoul(CharsCountAttr->value(), nullptr, 10);
+    Font->Glyphs = MALLOC_STRUCT(glyph, Font->GlyphsCount);
     xml_node<> *CharFirstNode = CharsNode->first_node("char");
     xml_node<> *CharNode = CharFirstNode;
     u32 GlyphIndex = 0;
@@ -70,54 +70,49 @@ font::font(const char *FontFile)
         xml_attribute<> *CharYOffAttr = CharNode->first_attribute("yoffset");
         xml_attribute<> *CharXAdvanAttr = CharNode->first_attribute("xadvance");
 
-        Glyphs[GlyphIndex].Id = strtoul(CharIdAttr->value(), nullptr, 10); // UInt
-        Glyphs[GlyphIndex].Rect.x = (r32)strtoul(CharXAttr->value(), nullptr, 10); // UInt
-        Glyphs[GlyphIndex].Rect.y = (r32)strtoul(CharYAttr->value(), nullptr, 10); // UInt
-        Glyphs[GlyphIndex].Rect.width = (r32)strtoul(CharWidthAttr->value(), nullptr, 10); // UInt
-        Glyphs[GlyphIndex].Rect.height = (r32)strtoul(CharHeightAttr->value(), nullptr, 10); // UInt
-        Glyphs[GlyphIndex].XOffset = strtol(CharXOffAttr->value(), nullptr, 10); // Int
-        Glyphs[GlyphIndex].YOffset = strtol(CharYOffAttr->value(), nullptr, 10); // Int
-        Glyphs[GlyphIndex].XAdvance = strtol(CharXAdvanAttr->value(), nullptr, 10); // Int
+        Font->Glyphs[GlyphIndex].Id = strtoul(CharIdAttr->value(), nullptr, 10); // UInt
+        Font->Glyphs[GlyphIndex].Rect.x = (r32)strtoul(CharXAttr->value(), nullptr, 10); // UInt
+        Font->Glyphs[GlyphIndex].Rect.y = (r32)strtoul(CharYAttr->value(), nullptr, 10); // UInt
+        Font->Glyphs[GlyphIndex].Rect.width = (r32)strtoul(CharWidthAttr->value(), nullptr, 10); // UInt
+        Font->Glyphs[GlyphIndex].Rect.height = (r32)strtoul(CharHeightAttr->value(), nullptr, 10); // UInt
+        Font->Glyphs[GlyphIndex].XOffset = strtol(CharXOffAttr->value(), nullptr, 10); // Int
+        Font->Glyphs[GlyphIndex].YOffset = strtol(CharYOffAttr->value(), nullptr, 10); // Int
+        Font->Glyphs[GlyphIndex].XAdvance = strtol(CharXAdvanAttr->value(), nullptr, 10); // Int
 
         ++GlyphIndex;
         CharNode = CharNode->next_sibling("char");
     }
-    ASSERT(GlyphIndex == GlyphsCount);
+    ASSERT(GlyphIndex == Font->GlyphsCount);
 
     Doc.clear();
     SAFE_FREE(XmlFile);
 }
 
-font::~font()
+void FreeFont(font *Font)
 {
-    Free();
+    SAFE_FREE(Font->Glyphs);
 }
 
-void font::Free()
-{
-    SAFE_FREE(Glyphs);
-}
-
-glyph *font::GetGlyph(u32 Codepoint)
+glyph *FontGetGlyph(font *Font, u32 Codepoint)
 {
     // Binary search the Glyphs array
-    int Lo = 0, Hi = GlyphsCount - 1;
+    int Lo = 0, Hi = Font->GlyphsCount - 1;
 
     while(Lo <= Hi)
     {
         int Mid = (Lo + Hi) / 2;
 
-        if(Glyphs[Mid].Id < Codepoint)
+        if(Font->Glyphs[Mid].Id < Codepoint)
         {
             Lo = Mid + 1;
         }
-        else if(Glyphs[Mid].Id > Codepoint)
+        else if(Font->Glyphs[Mid].Id > Codepoint)
         {
             Hi = Mid - 1;
         }
         else
         {
-            return &Glyphs[Mid];
+            return &Font->Glyphs[Mid];
         }
     }
 

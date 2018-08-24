@@ -11,6 +11,8 @@ if(WIN32)
 	set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 	set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
+	set(EXECUTABLE_NAME "Neon" CACHE STRING "Output executable name")
+
 	# set include and lib directories
 	#include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/code/dear-imgui)
 	include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/code)
@@ -37,5 +39,6 @@ if(WIN32)
 	target_link_libraries(Neon ${CORE_LIBS})
 	set_target_properties(Neon PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data")
 	set_target_properties(Neon PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
+	set_target_properties(Neon PROPERTIES OUTPUT_NAME ${EXECUTABLE_NAME})
 
 endif()

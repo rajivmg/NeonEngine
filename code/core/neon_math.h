@@ -552,6 +552,11 @@ inline vec4 Linear1ToSRGB255(vec4 C)
     return Result;
 }
 
+inline vec4 RGBAUnpackTo01(u32 Packed)
+{
+    return RGBA255To01(RGBAUnpack4x8(Packed));
+}
+
 struct rect
 {
     r32 x;

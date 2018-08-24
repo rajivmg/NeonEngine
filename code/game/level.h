@@ -1,5 +1,5 @@
-#ifndef F_LEVEL_H
-#define F_LEVEL_H
+#ifndef LEVEL_H
+#define LEVEL_H
 
 #include <core/neon_platform.h>
 /*

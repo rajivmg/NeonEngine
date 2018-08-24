@@ -1,6 +1,6 @@
-#include "f_game.h"
+#include "game.h"
 
-#include "f_editor.h"
+#include "editor.h"
 #include <dear-imgui/imgui.h>
 #include <rapidxml/rapidxml.hpp>
 using namespace rapidxml;
@@ -103,7 +103,7 @@ void GameSetup()
     //mat4 ProjMatrix = Orthographic(-5.0f, 5.0f, 5.0f, 0.0f, -10.0f, 1.0f);
     GameState.EditViewMatrix = LookAt(vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
 
-    GameState.DbgFont = new font("fonts/dbg_font_26.fnt");
+    InitFont(&GameState.DbgFont,"fonts/dbg_font_26.fnt");
 
     bitmap AtlasBitmap;
     LoadBitmap(&AtlasBitmap, "Atlas.tga");
@@ -178,7 +178,7 @@ void GameUpdateAndRender(game_input *Input)
     }
 
     //PushText(&GameState.DbgTextVertices, Rect(600, 720, 1, 1), vec4i(1, 1, 0, 1), 1.0f, GameState.DbgFont, "A quick brown fox: %d\nA quick brown fox: %d\nJoe\nNEON", 1, 2);
-    PushText(&GameState.DbgTextVertices, Rect(900, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
+    PushText(&GameState.DbgTextVertices, Rect(900, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, &GameState.DbgFont, "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
     //PushText(&GameState.DbgTextVertices, Rect(400, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "Time %f", Input->Time);
    
     //PushDbgLine(&GameState.DbgLineVertices, vec3(0, 0, 0), vec3(500, 500, 0), vec4i(1, 0, 0, 1));
@@ -192,7 +192,7 @@ void GameUpdateAndRender(game_input *Input)
         DebugTextCmd->VertexFormat = vert_format::P1C1UV1;
         DebugTextCmd->StartVertex = 0;
         DebugTextCmd->VertexCount = (u32)GameState.DbgTextVertices.size();
-        DebugTextCmd->Textures[0] = GameState.DbgFont->Texture;
+        DebugTextCmd->Textures[0] = GameState.DbgFont.Texture;
 
         GameState.DbgTextVertices.clear();
 

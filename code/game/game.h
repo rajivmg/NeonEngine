@@ -1,5 +1,5 @@
-#ifndef F_GAME_H
-#define F_GAME_H
+#ifndef GAME_H
+#define GAME_H
 
 #include <core/neon_platform.h>
 #include <core/neon_bitmap.h>
@@ -64,7 +64,7 @@ struct game_state
     render_resource SpriteShader;
     render_resource TextShader;
 
-    font *DbgFont;
+    font DbgFont;
     render_resource DbgTextVertexBuffer;
     std::vector<vert_P1C1UV1> DbgTextVertices;
     render_cmd_list *DbgTextRender;

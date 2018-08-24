@@ -4,7 +4,7 @@
 #include "neon_bitmap.h"
 #include <dear-imgui/imgui.h>
 
-#define NEON_INIT_GL
+#define NEON_GL_IMPLEMENTATION
 #define NEON_DEBUG_GL
 #include "neon_GL.h"
 
@@ -12,6 +12,8 @@ static render_state RenderState = {};
 
 void ogl::InitState()
 {
+    InitGL();
+
     RenderState.TextureCurrent = 0;
     RenderState.ShaderProgramCurrent = 0;
 
@@ -42,7 +44,7 @@ void ogl::InitState()
 
     // Set clear color
     //glClearColor(0.07f, 0.07f, 0.08f, 1.0f);
-    vec4 ClearColor = RGBA255To01(RGBAUnpack4x8(0x565656ff));
+    vec4 ClearColor = RGBAUnpackTo01(0xdbdbdbff);
     glClearColor(ClearColor.r, ClearColor.g, ClearColor.b, ClearColor.a);
 
     // Enable multisampling

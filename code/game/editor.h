@@ -1,5 +1,5 @@
-#ifndef F_EDITOR_H
-#define F_EDITOR_H
+#ifndef EDITOR_H
+#define EDITOR_H
 
 #include <core/neon_platform.h>
 #include <core/neon_renderer.h>

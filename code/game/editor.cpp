@@ -1,4 +1,4 @@
-#include "f_editor.h"
+#include "editor.h"
 
 #include <core/neon_bitmap.h>
 #include <dear-imgui/imgui.h>
@@ -6,7 +6,7 @@
 #include <rapidxml/rapidxml.hpp>
 using namespace rapidxml;
 
-#include "f_game.h"
+#include "game.h"
 
 static bool Show_TilesetHelperWindow = false;
 
@@ -306,7 +306,7 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
     ImGui::BeginChild("CanvasWindow##editor", vec2i(288, 288), true, ImGuiWindowFlags_HorizontalScrollbar); // 288, 416
     static ImDrawList *DrawList = ImGui::GetWindowDrawList();
     vec2 CanvasP = ImGui::GetCursorScreenPos();
-    DrawList->AddRectFilled(CanvasP, CanvasP + ScaledAtlasSize, IM_COL32(255, 255, 255, 255));
+    DrawList->AddRectFilled(CanvasP, CanvasP + ScaledAtlasSize, IM_COL32(220, 220, 220, 255));
     DrawList->AddImage(rndr::GetTextureID(EditorState->SRGBAtlasTexture), CanvasP, CanvasP + ScaledAtlasSize, vec2i(0, 1), vec2i(1, 0));
     ImGui::InvisibleButton("canvas##editor", ScaledAtlasSize);
 
@@ -317,17 +317,17 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
         STileX = (s32)floor((MouseP.x - CanvasP.x) / ScaledTileSize.x);
         STileY = (s32)floor((MouseP.y - CanvasP.y) / ScaledTileSize.y);
     }
-
+#if 1
     // Draw grid
     for(r32 X = 0; X <= ScaledAtlasSize.x; X += ScaledTileSize.x)
     {
-        DrawList->AddLine(CanvasP + vec2(X, 0), CanvasP + vec2(X, ScaledAtlasSize.y), 0x7D000000);
+        DrawList->AddLine(CanvasP + vec2(X, 0), CanvasP + vec2(X, ScaledAtlasSize.y), 0x7D777777);
     }
     for(r32 Y = 0; Y <= ScaledAtlasSize.y; Y += ScaledTileSize.y)
     {
-        DrawList->AddLine(CanvasP + vec2(0, Y), CanvasP + vec2(ScaledAtlasSize.x, Y), 0x7D000000);
+        DrawList->AddLine(CanvasP + vec2(0, Y), CanvasP + vec2(ScaledAtlasSize.x, Y), 0x7D777777);
     }
-
+#endif
     // Mouse hover check
     if(ImGui::IsWindowHovered() && !EditorState->WindowHovered)
     {
@@ -418,11 +418,11 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
     // Draw tile grid
     for(int X = 0; X <= EditorState->LevelWidth; ++X)
     {
-        PushDbgLine(&EditorState->DbgLineVertices, vec3((r32)X, 0, 0), vec3((r32)X, (r32)EditorState->LevelHeight, 0), vec4i(1, 1, 1, 1));
+        PushDbgLine(&EditorState->DbgLineVertices, vec3((r32)X, 0, 0), vec3((r32)X, (r32)EditorState->LevelHeight, 0), RGBAUnpackTo01(0x777777ff));
     }
     for(int Y = 0; Y <= EditorState->LevelHeight; ++Y)
     {
-        PushDbgLine(&EditorState->DbgLineVertices, vec3(0, (r32)Y, 0), vec3((r32)EditorState->LevelWidth, (r32)Y, 0), vec4i(1, 1, 1, 1));
+        PushDbgLine(&EditorState->DbgLineVertices, vec3(0, (r32)Y, 0), vec3((r32)EditorState->LevelWidth, (r32)Y, 0), RGBAUnpackTo01(0x777777ff));
     }
 
     // Draw edit-level
