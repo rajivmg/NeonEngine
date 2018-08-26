@@ -89,60 +89,80 @@ void LoadLevels()
 }
 #endif
 
+void DrawText(rect Dest, vec4 Color, r32 Layer, font *Font, char const *Format, ...)
+{
+    u32 StartV, CountV;
+    StartV = (u32)GameState.TextVertices.size();
+    va_list ArgList;
+    va_start(ArgList, Format);
+    va_end(ArgList);
+
+    PushText(&GameState.TextVertices, Dest, Color, Layer, Font, Format, ArgList);
+
+    CountV = (u32)GameState.TextVertices.size() - StartV;
+
+    cmd::draw *TextDrawCmd = GameState.TextRender->AddCommand<cmd::draw>(0);
+    TextDrawCmd->VertexBuffer = GameState.TextVertexBuffer;
+    TextDrawCmd->VertexFormat = vert_format::P1C1UV1;
+    TextDrawCmd->StartVertex = StartV;
+    TextDrawCmd->VertexCount = CountV;
+    TextDrawCmd->Textures[0] = Font->Texture;
+}
+
 void GameSetup()
 {
-    rndr::Init();
+    rndr::Init(); // Important
 
     // GameState
     GameState.MetersToPixels = Platform.WindowWidth / 24.9f; 
     GameState.PixelsToMeters = 1.0f / GameState.MetersToPixels;
 
-    // Screen is 16x9 meters
-    static mat4 ViewMatrix = LookAt(vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
-    static mat4 ProjMatrix = Orthographic(0.0f, 24.9f, 14.0f, 0.0f, -10.0f, 1.0f);
-    //mat4 ProjMatrix = Orthographic(-5.0f, 5.0f, 5.0f, 0.0f, -10.0f, 1.0f);
-    GameState.EditViewMatrix = LookAt(vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
+    // TODO: Setup a 4/3 viewport
+    // 4/3 ratio
+    GameState.GameProjMatrix = Orthographic(0.0f, 20.0f, 15.0f, 0.0f, -10.0f, 1.0f);
+    GameState.GameViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
 
-    InitFont(&GameState.DbgFont,"fonts/dbg_font_26.fnt");
+    // Virtual screen resolution 1280x720
+    GameState.ScreenProjMatrix = Orthographic(0.0f, 1280.0f, 720.0f, 0.0f, -10.0f, 1.0f);
+    GameState.ScreenViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
 
-    bitmap AtlasBitmap;
-    LoadBitmap(&AtlasBitmap, "Atlas.tga");
-    GameState.AtlasTexture = rndr::MakeTexture(&AtlasBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, true);
-    
+    GameState.SpriteShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
+    GameState.TextShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
+    GameState.DbgLineShader = rndr::MakeShaderProgram("shaders/debug_line_vs.glsl", "shaders/debug_line_ps.glsl");
+
+    GameState.DbgTextVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
+    GameState.DbgTextRender = new render_cmd_list(MEGABYTE(1), GameState.TextShader, &GameState.ScreenViewMatrix, &GameState.ScreenProjMatrix);
+
+    GameState.DbgLineVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(5), true);
+    GameState.DbgLineRender = new render_cmd_list(MEGABYTE(1), GameState.DbgLineShader, &GameState.ScreenViewMatrix, &GameState.ScreenProjMatrix);
+
+    GameState.SpriteVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(20), true);
+    GameState.SpriteRender = new render_cmd_list(MEGABYTE(2), GameState.SpriteShader, &GameState.GameViewMatrix, &GameState.GameProjMatrix);
+
+    GameState.TextVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(5), true);
+    GameState.TextRender = new render_cmd_list(MEGABYTE(1), GameState.TextShader, &GameState.ScreenViewMatrix, &GameState.ScreenProjMatrix);
+   
+    //for(int X = 0; X < 20; ++X)
+    //{
+    //    for(int Y = 0; Y < 12; ++Y)
+    //    {
+    //        GameState.Level.Level[X][Y].ID = 65535;
+    //    }
+    //}
+
+    //bitmap AtlasBitmap;
+    //LoadBitmap(&AtlasBitmap, "Atlas.tga");
+    //GameState.AtlasTexture = rndr::MakeTexture(&AtlasBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, true);
+
     bitmap WhiteBitmap;
     LoadBitmap(&WhiteBitmap, "sprites/white_texture.tga");
     GameState.WhiteTexture = rndr::MakeTexture(&WhiteBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
 
-    GameState.SpriteShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
-
-    GameState.TextShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
-    //GameState.TextShader = rndr::MakeShaderProgram("shaders/text_vs.glsl", "shaders/text_ps.glsl");
-
-    static mat4 ScreenProjMatrix = Orthographic(0.0f, (r32)Platform.WindowWidth, (r32)Platform.WindowHeight, 0.0f, -1.0f, 1.0f);
-    static mat4 ScreenViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
-    GameState.DbgTextVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
-    GameState.DbgTextRender = new render_cmd_list(MEGABYTE(1), GameState.TextShader, &ScreenViewMatrix, &ScreenProjMatrix);
-
-    GameState.DbgLineShader = rndr::MakeShaderProgram("shaders/debug_line_vs.glsl", "shaders/debug_line_ps.glsl");
-    GameState.DbgLineVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(5), true);
-    GameState.DbgLineRender = new render_cmd_list(MEGABYTE(1), GameState.DbgLineShader, &GameState.EditViewMatrix, &ProjMatrix);
-
-    GameState.GameRender = new render_cmd_list(MEGABYTE(2), GameState.SpriteShader, &GameState.EditViewMatrix, &ProjMatrix);
-
-    GameState.GameVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(20), true);
-
-    //LoadLevels();
-    for(int X = 0; X < 20; ++X)
-    {
-        for(int Y = 0; Y < 12; ++Y)
-        {
-            GameState.Level.Level[X][Y].ID = 65535;
-        }
-    }
+    InitFont(&GameState.DbgFont,"fonts/dbg_font_26.fnt");
+    InitFont(&GameState.MainFont, "fonts/zorque_42.fnt");
 
     InitEditor(&EditorCtx);
     GameState.GameMode = GameMode_Editor;
-    //vec4 Color = RGBAUnpack4x8(0x0C0C0CFF);
     int a = 0;
 }
 
@@ -159,30 +179,39 @@ void GameUpdateAndRender(game_input *Input)
 
     EditorUpdateAndRender(&EditorCtx, Input);
 
-    if(!GameState.GameVertices.empty())
-    {
-        rndr::BufferData(GameState.GameVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)GameState.GameVertices.size(), &GameState.GameVertices.front());
-        
-        cmd::draw *WorldDrawCmd = GameState.GameRender->AddCommand<cmd::draw>(0);
-        WorldDrawCmd->VertexBuffer = GameState.GameVertexBuffer;
-        WorldDrawCmd->VertexFormat = vert_format::P1C1UV1;
-        WorldDrawCmd->StartVertex = 0;
-        WorldDrawCmd->VertexCount = (u32)GameState.GameVertices.size();
-        WorldDrawCmd->Textures[0] = GameState.AtlasTexture;
-
-        GameState.GameVertices.clear();
-
-        GameState.GameRender->Sort();
-        GameState.GameRender->Submit();
-        GameState.GameRender->Flush();
-    }
-
-    //PushText(&GameState.DbgTextVertices, Rect(600, 720, 1, 1), vec4i(1, 1, 0, 1), 1.0f, GameState.DbgFont, "A quick brown fox: %d\nA quick brown fox: %d\nJoe\nNEON", 1, 2);
     PushText(&GameState.DbgTextVertices, Rect(900, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, &GameState.DbgFont, "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
     //PushText(&GameState.DbgTextVertices, Rect(400, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "Time %f", Input->Time);
-   
     //PushDbgLine(&GameState.DbgLineVertices, vec3(0, 0, 0), vec3(500, 500, 0), vec4i(1, 0, 0, 1));
+    //DrawText(Rect(100, 500, 100, 100), vec4i(0, 0, 0, 1), 1.0f, &GameState.MainFont, "Dream of Cthulhu");
+    
+    // Game rendering commands
+    if(!GameState.SpriteVertices.empty())
+    {
+        rndr::BufferData(GameState.SpriteVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)GameState.SpriteVertices.size(), &GameState.SpriteVertices.front());
 
+        cmd::draw *SpriteDrawCmd = GameState.SpriteRender->AddCommand<cmd::draw>(0);
+        SpriteDrawCmd->VertexBuffer = GameState.SpriteVertexBuffer;
+        SpriteDrawCmd->VertexFormat = vert_format::P1C1UV1;
+        SpriteDrawCmd->StartVertex = 0;
+        SpriteDrawCmd->VertexCount = (u32)GameState.SpriteVertices.size();
+        SpriteDrawCmd->Textures[0] = GameState.AtlasTexture;
+
+        GameState.SpriteVertices.clear();
+
+        GameState.SpriteRender->Sort();
+        GameState.SpriteRender->Submit();
+        GameState.SpriteRender->Flush();
+    }
+    // Game text rendering commands
+    if(!GameState.TextVertices.empty())
+    {
+        rndr::BufferData(GameState.TextVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)GameState.TextVertices.size(), &GameState.TextVertices.front());
+        GameState.TextVertices.clear();
+        GameState.TextRender->Sort();
+        GameState.TextRender->Submit();
+        GameState.TextRender->Flush();
+    }
+    // Debug text rendering command
     if(!GameState.DbgTextVertices.empty())
     {
         rndr::BufferData(GameState.DbgTextVertexBuffer, 0, (u32)sizeof(vert_P1C1UV1) * (u32)GameState.DbgTextVertices.size(), &GameState.DbgTextVertices.front());
@@ -200,7 +229,7 @@ void GameUpdateAndRender(game_input *Input)
         GameState.DbgTextRender->Submit();
         GameState.DbgTextRender->Flush();
     }
-
+    // Debug line rendering command
     if(!GameState.DbgLineVertices.empty())
     {
         rndr::BufferData(GameState.DbgLineVertexBuffer, 0, (u32)sizeof(vert_P1C1) * (u32)GameState.DbgLineVertices.size(), &GameState.DbgLineVertices.front());

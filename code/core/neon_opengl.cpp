@@ -17,8 +17,16 @@ void ogl::InitState()
     RenderState.TextureCurrent = 0;
     RenderState.ShaderProgramCurrent = 0;
 
-    // Set the viewport
-    glViewport(0, 0, Platform.WindowWidth, Platform.WindowHeight);
+    // Set the 4/3 viewport
+    //u32 ViewportWidth, ViewportHeight;
+    //s32 ViewportX, ViewportY;
+
+    //ViewportWidth = (u32)(Platform.WindowWidth * (3.0f / 4.0f));
+    //ViewportHeight = (u32)(Platform.WindowHeight * (4.0f / 3.0f));
+    //ViewportX = (Platform.WindowWidth - ViewportWidth) / 2.0f;
+    //glViewport(ViewportX, 0, ViewportWidth, Platform.WindowHeight);
+
+    glViewport(0, 0, (u32)Platform.WindowWidth, (u32)Platform.WindowHeight);
 
     // Enable depth testing
     glEnable(GL_DEPTH_TEST);
@@ -111,7 +119,7 @@ void ogl::DeleteTexture(render_resource Texture)
     glDeleteTextures(1, &RenderState.Textures[Texture.ResourceHandle]);
 }
 
-void* ogl::GetTextureID(render_resource Texture)
+void *ogl::GetTextureID(render_resource Texture)
 {
     return (void *)(iptr)RenderState.Textures[Texture.ResourceHandle];
 }

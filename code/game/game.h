@@ -25,34 +25,6 @@ struct game_level
     u32 SizeX, SizeY;
 };
 
-enum game_object_type
-{
-    GameObject_Null,
-    GameObject_Wall,
-    GameObject_Crate,
-    GameObject_Player,
-    GameObject_Floor
-};
-
-struct game_object
-{
-    game_object_type Type;
-    s32 X, Y;
-    bool Moving;
-
-    // Rendering info
-    vec2 P; // x, y coords for rendering
-    r32 UV0, UV1, UV2, UV3; // BLx, BLy, TRx, TRy
-};
-
-struct level
-{
-    game_object Objects[8][8][2];
-    vec2 Player;
-    bool EntityMoving;
-};
-#define GET_ENTITY(RoomPtr, X, Y, Z) ((RoomPtr)->Objects[(s32)(Y)][(s32)(X)][(s32)(Z)])
-
 struct game_state
 {
     game_mode GameMode;
@@ -60,11 +32,18 @@ struct game_state
     r32 MetersToPixels;
     r32 PixelsToMeters;
 
+    mat4 ScreenProjMatrix;
+    mat4 ScreenViewMatrix;
+    mat4 GameProjMatrix;
+    mat4 GameViewMatrix;
+
     render_resource WhiteTexture;
     render_resource SpriteShader;
     render_resource TextShader;
 
+    font MainFont;
     font DbgFont;
+
     render_resource DbgTextVertexBuffer;
     std::vector<vert_P1C1UV1> DbgTextVertices;
     render_cmd_list *DbgTextRender;
@@ -74,13 +53,14 @@ struct game_state
     std::vector<vert_P1C1> DbgLineVertices;
     render_cmd_list *DbgLineRender;
 
-    render_resource AtlasTexture;
-    game_level Level;
-    
-    mat4 EditViewMatrix;
+    render_cmd_list *SpriteRender;
+    render_resource SpriteVertexBuffer;
+    std::vector<vert_P1C1UV1> SpriteVertices;
 
-    render_cmd_list *GameRender;
-    render_resource GameVertexBuffer;
-    std::vector<vert_P1C1UV1> GameVertices;
+    render_cmd_list *TextRender;
+    render_resource TextVertexBuffer;
+    std::vector<vert_P1C1UV1> TextVertices;
+
+    render_resource AtlasTexture;
 };
 #endif

@@ -59,7 +59,7 @@ namespace ogl
     void            SetProjectionMatrix(mat4 Matrix);
     render_resource MakeTexture(bitmap *Bitmap, tex_param Type, tex_param Filter, tex_param Wrap, bool HwGammaCorrection);
     void            DeleteTexture(render_resource Texture);
-    void*           GetTextureID(render_resource Texture);
+    void            *GetTextureID(render_resource Texture);
     render_resource MakeBuffer(resource_type Type, u32 Size, bool Dynamic = false);
     void            BufferData(render_resource Buffer, u32 Offset, u32 Size, void const *Data);
     void            DeleteBuffer(render_resource Buffer);

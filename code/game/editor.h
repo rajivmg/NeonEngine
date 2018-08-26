@@ -8,7 +8,6 @@ struct editor_tile
 {
     u32 ID;
     u32 X, Y, W, H;
-    char Name[128];
 };
 
 struct editor_game_tile
@@ -17,10 +16,23 @@ struct editor_game_tile
     bool Collide;
 };
 
+struct editor_level_chunk
+{
+    u16 ID[20][15]; //Tile IDs
+};
+
+struct editor_level
+{
+    char Name[128];
+    s32 ChunkCountX, ChunkCountY;
+    editor_level_chunk Chunks[15][15];
+};
+
 enum editor_edit_mode
 {
     EditMode_Brush,
-    EditMode_Erase
+    EditMode_Erase,
+    EditMode_Move
 };
 
 struct editor_state

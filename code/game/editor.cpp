@@ -146,11 +146,11 @@ static void TilesetHelperWindow(editor_state *EditorState)
 
         ImGui::Spacing();
         static char TileText[768];
-        static char TileName[64] = "dummy";
+        //static char TileName[64] = "dummy";
         static s32  TileID = 0;
         ImGui::InputInt("Tile ID", &TileID);
-        ImGui::InputText("Tile Name", TileName, 64);
-        sprintf(TileText, "<tile id=\"%d\" name=\"%s\" x=\"%d\" y=\"%d\" w=\"%d\" h=\"%d\"/>", TileID, TileName, (s32)SelectedTileP.x, (s32)SelectedTileP.y, (s32)TileSize.x, (s32)TileSize.y);
+        //ImGui::InputText("Tile Name", TileName, 64);
+        sprintf(TileText, "<tile id=\"%d\" x=\"%d\" y=\"%d\" w=\"%d\" h=\"%d\"/>", TileID, (s32)SelectedTileP.x, (s32)SelectedTileP.y, (s32)TileSize.x, (s32)TileSize.y);
         //ImGui::Text("x=%.0f, y=%.0f", SelectedTileP.x, SelectedTileP.y);
         ImGui::TextUnformatted(TileText);
         vec2 Size = ImGui::GetItemRectSize();
@@ -205,7 +205,7 @@ void InitEditor(editor_state *EditorState)
     EditorState->EditMode = EditMode_Brush;
 
     // Load tileset file
-    file_content FileData = Platform.ReadFile("Tileset.xml");
+    file_content FileData = Platform.ReadFile("Data.xml");
     ASSERT(FileData.NoError);
 
     // Null terminate xml file for parsing
@@ -219,7 +219,7 @@ void InitEditor(editor_state *EditorState)
     xml_document<> Doc;
     Doc.parse<0>(EditorState->TilesetXmlFile);
 
-    xml_node<> *TilesetNode = Doc.first_node("tileset");
+    xml_node<> *TilesetNode = Doc.first_node("tiledata");
     xml_attribute<> *TilesetBitmapAttr = TilesetNode->first_attribute("bitmap");
     xml_attribute<> *TilesetCountAttr = TilesetNode->first_attribute("count");
     
@@ -239,14 +239,12 @@ void InitEditor(editor_state *EditorState)
     while(TileNode)
     {
         xml_attribute<> *TileIdAttr = TileNode->first_attribute("id");
-        xml_attribute<> *TileNameAttr = TileNode->first_attribute("name");
         xml_attribute<> *TileXAttr = TileNode->first_attribute("x");
         xml_attribute<> *TileYAttr = TileNode->first_attribute("y");
         xml_attribute<> *TileWAttr = TileNode->first_attribute("w");
         xml_attribute<> *TileHAttr = TileNode->first_attribute("h");
 
         EditorState->EditorTiles[TileCounter].ID = strtoul(TileIdAttr->value(), nullptr, 10);
-        strncpy(EditorState->EditorTiles[TileCounter].Name, TileNameAttr->value(), 128);
         EditorState->EditorTiles[TileCounter].X = strtoul(TileXAttr->value(), nullptr, 10);
         EditorState->EditorTiles[TileCounter].Y = strtoul(TileYAttr->value(), nullptr, 10);
         EditorState->EditorTiles[TileCounter].W = strtoul(TileWAttr->value(), nullptr, 10);
@@ -275,9 +273,23 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
         return;
     }
 
+    bool MenuNewLevel = false;
+    bool MenuOpenLevel = false;
+    bool MenuSaveLevel = false;
+    bool MenuCloseLevel = false;
+
+    static bool LevelOpened = false;
     // Editor Menu Bar
     if(ImGui::BeginMenuBar())
     {
+        if(ImGui::BeginMenu("File"))
+        {
+            if(ImGui::MenuItem("New Level", 0, false, true)) { MenuNewLevel = true; }
+            if(ImGui::MenuItem("Open Level", 0, false, !LevelOpened)) { MenuOpenLevel = true; }
+            if(ImGui::MenuItem("Save Level", 0, false, LevelOpened)) { MenuSaveLevel = true; }
+            if(ImGui::MenuItem("Close Level", 0, false, LevelOpened)) { MenuCloseLevel = true; }
+            ImGui::EndMenu();
+        }
         if(ImGui::BeginMenu("View"))
         {
             ImGui::MenuItem("Tileset Helper", 0, &Show_TilesetHelperWindow);
@@ -285,9 +297,67 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
         }
         ImGui::EndMenuBar();
     }
-    
+
+    if(MenuNewLevel) { ImGui::OpenPopup("New Level"); }
+    if(MenuOpenLevel) { ImGui::OpenPopup("Open Level"); }
+    if(MenuSaveLevel) { ImGui::OpenPopup("Save Level"); }
+    if(MenuCloseLevel) { ImGui::OpenPopup("Close Level"); }
+
+    static char LevelFilename[256];
+    static file_content LevelFileContent;
+    static char *ErrMsg = nullptr;
+
+    if(ImGui::BeginPopupModal("Open Level", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::InputText("File", LevelFilename, 128);
+        if(ErrMsg)
+        {
+            ImGui::Text("%s", ErrMsg);
+        }
+        if(ImGui::Button("OPEN"))
+        {
+            LevelFileContent = Platform.ReadFile(LevelFilename);
+            if(!LevelFileContent.NoError)
+            {
+                ErrMsg = "Error reading file.";
+            }
+            else
+            {
+                LevelOpened = true;
+                ErrMsg = nullptr;
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::SameLine();
+        if(ImGui::Button("CANCEL"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if(ImGui::BeginPopupModal("Close Level", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Are you sure?");
+        if(ImGui::Button("YES"))
+        {
+            ASSERT(LevelOpened);
+
+            LevelFilename[0] = '\0';
+            LevelOpened = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if(ImGui::Button("NO"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
     ImGui::Spacing();
-    
+    ImGui::Text("LEVEL: %s", LevelFilename);
+
     // Mouse hover check
     if(ImGui::IsWindowHovered())
     {
@@ -306,7 +376,7 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
     ImGui::BeginChild("CanvasWindow##editor", vec2i(288, 288), true, ImGuiWindowFlags_HorizontalScrollbar); // 288, 416
     static ImDrawList *DrawList = ImGui::GetWindowDrawList();
     vec2 CanvasP = ImGui::GetCursorScreenPos();
-    DrawList->AddRectFilled(CanvasP, CanvasP + ScaledAtlasSize, IM_COL32(220, 220, 220, 255));
+    DrawList->AddRectFilled(CanvasP, CanvasP + ScaledAtlasSize, IM_COL32(240, 240, 240, 255));
     DrawList->AddImage(rndr::GetTextureID(EditorState->SRGBAtlasTexture), CanvasP, CanvasP + ScaledAtlasSize, vec2i(0, 1), vec2i(1, 0));
     ImGui::InvisibleButton("canvas##editor", ScaledAtlasSize);
 
@@ -362,6 +432,7 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
     ImGui::RadioButton("Erase", (int *)&EditorState->EditMode, (int)EditMode_Erase);
 
     ImGui::End(); // End ImGui
+
 
     // In-Game editor 
     if(!EditorState->WindowHovered && GameInput->Mouse.Right.EndedDown)
