@@ -3,6 +3,7 @@
 #include "editor.h"
 #include <dear-imgui/imgui.h>
 #include <rapidxml/rapidxml.hpp>
+#include <rapidxml/rapidxml_print.hpp>
 using namespace rapidxml;
 
 static game_state GameState = {};
@@ -89,6 +90,34 @@ void LoadLevels()
 }
 #endif
 
+void XMLWriteTest()
+{
+    xml_document<> Doc;
+    xml_node<> *Decl = Doc.allocate_node(node_declaration);
+    Decl->append_attribute(Doc.allocate_attribute("version", "1.0"));
+    Doc.append_node(Decl);
+
+    s32 LevelWidth = 22;
+    char TempIntString[_MAX_ITOSTR_BASE10_COUNT];
+    //char TempUintString[_MAX_ULTOSTR_BASE10_COUNT];
+    xml_node<> *LevelNode = Doc.allocate_node(node_element, "level");
+    LevelNode->append_attribute(Doc.allocate_attribute("name", "Prologue"));
+    //LevelNode->append_attribute(Doc.allocate_attribute("width", "20"));
+    _itoa(LevelWidth, TempIntString, 10);
+    LevelNode->append_attribute(Doc.allocate_attribute("width", Doc.allocate_string(TempIntString)));
+    Doc.append_node(LevelNode);
+
+    xml_node<> *TileNode = Doc.allocate_node(node_element, "tile");
+    TileNode->append_attribute(Doc.allocate_attribute("tid", "7"));
+    LevelNode->append_node(TileNode);
+
+    char Buffer[4096];
+    char *EndOfPrint = rapidxml::print(Buffer, Doc, 0);
+    *EndOfPrint = '\0';
+    Doc.clear();
+    Platform.WriteFile("TestXML.xml", (EndOfPrint - Buffer), Buffer);
+}
+
 void DrawText(rect Dest, vec4 Color, r32 Layer, font *Font, char const *Format, ...)
 {
     u32 StartV, CountV;
@@ -158,12 +187,12 @@ void GameSetup()
     LoadBitmap(&WhiteBitmap, "sprites/white_texture.tga");
     GameState.WhiteTexture = rndr::MakeTexture(&WhiteBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
 
-    InitFont(&GameState.DbgFont,"fonts/dbg_font_26.fnt");
+    InitFont(&GameState.DbgFont,"fonts/inconsolata_26.fnt");
     InitFont(&GameState.MainFont, "fonts/zorque_42.fnt");
 
     InitEditor(&EditorCtx);
     GameState.GameMode = GameMode_Editor;
-    int a = 0;
+    XMLWriteTest();
 }
 
 void GameUpdateAndRender(game_input *Input)
@@ -179,7 +208,7 @@ void GameUpdateAndRender(game_input *Input)
 
     EditorUpdateAndRender(&EditorCtx, Input);
 
-    PushText(&GameState.DbgTextVertices, Rect(900, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, &GameState.DbgFont, "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
+    PushText(&GameState.DbgTextVertices, Rect(0, 720, 1, 1), vec4i(1, 0, 1, 1), 1.0f, &GameState.DbgFont, "%0.2f ms/frame Framerate %ff/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
     //PushText(&GameState.DbgTextVertices, Rect(400, 720, 1, 1), vec4i(1, 1, 1, 1), 1.0f, GameState.DbgFont, "Time %f", Input->Time);
     //PushDbgLine(&GameState.DbgLineVertices, vec3(0, 0, 0), vec3(500, 500, 0), vec4i(1, 0, 0, 1));
     //DrawText(Rect(100, 500, 100, 100), vec4i(0, 0, 0, 1), 1.0f, &GameState.MainFont, "Dream of Cthulhu");

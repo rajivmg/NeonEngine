@@ -50,7 +50,7 @@ typedef intptr_t    iptr;
 static u32 neon__COUNTER__ = 0;
 #define GEN_ID ++neon__COUNTER__
 
-inline void* Neon__Malloc(size_t Size)
+inline void *Neon__Malloc(size_t Size)
 {
     void *Ptr = malloc(Size);
     ASSERT(Ptr);
@@ -118,7 +118,7 @@ typedef PLATFORM_READ_FILE(platform_read_file);
 #define PLATFORM_FREE_FILE_CONTENT(Name) void (Name)(file_content *FileContent)
 typedef PLATFORM_FREE_FILE_CONTENT(platform_free_file_content);
 
-#define PLATFORM_WRITE_FILE(Name) void (Name)(char const *Filename, s32 BytesToWrite, void *Content)
+#define PLATFORM_WRITE_FILE(Name) void (Name)(char const *Filename, u64 BytesToWrite, void *Content)
 typedef PLATFORM_WRITE_FILE(platform_write_file);
 
 #define PLATFORM_LOG(Name) void (Name)(char const *Format, ...)

@@ -4,11 +4,88 @@
 #include <dear-imgui/imgui.h>
 
 #include <rapidxml/rapidxml.hpp>
+#include <rapidxml/rapidxml_print.hpp>
 using namespace rapidxml;
 
 #include "game.h"
 
 static bool Show_TilesetHelperWindow = false;
+
+static void SaveLevel(editor_state *EditorState)
+{
+    xml_document<> Doc;
+    xml_node<> *Decl = Doc.allocate_node(node_declaration);
+    Decl->append_attribute(Doc.allocate_attribute("version", "1.0"));
+    Doc.append_node(Decl);
+
+    char TempIntString[_MAX_ITOSTR_BASE10_COUNT];
+    char TempUintString[_MAX_ULTOSTR_BASE10_COUNT];
+
+    xml_node<> *LevelNode = Doc.allocate_node(node_element, "level");
+    LevelNode->append_attribute(Doc.allocate_attribute("name", EditorState->EditLevel.Name));
+    _itoa(EditorState->EditLevel.Width, TempIntString, 10);
+    LevelNode->append_attribute(Doc.allocate_attribute("width", Doc.allocate_string(TempIntString)));
+    _itoa(EditorState->EditLevel.Height, TempIntString, 10);
+    LevelNode->append_attribute(Doc.allocate_attribute("height", Doc.allocate_string(TempIntString)));
+    Doc.append_node(LevelNode);
+
+    for(int Y = 0; Y < EditorState->EditLevel.Height; ++Y)
+    {
+        for(int X = 0; X < EditorState->EditLevel.Width; ++X)
+        {
+            xml_node<> *TileNode = Doc.allocate_node(node_element, "tile");
+            _ultoa(EditorState->EditLevel.Tiles[X][Y], TempUintString, 10);
+            TileNode->append_attribute(Doc.allocate_attribute("tid", Doc.allocate_string(TempUintString)));
+            LevelNode->append_node(TileNode);
+        }
+    }
+
+    char *Buffer = (char *)MALLOC(MEGABYTE(1));
+    char *EndOfPrint = rapidxml::print(Buffer, Doc, 0);
+    *EndOfPrint = '\0';
+    Doc.clear();
+    Platform.WriteFile(EditorState->EditLevel.Filename, (EndOfPrint - Buffer), Buffer);
+    SAFE_FREE(Buffer);
+}
+
+static void LoadLevel(const char *Filename, editor_state *EditorState)
+{
+    file_content File = Platform.ReadFile(Filename);
+    ASSERT(LevelFile.NoError);
+
+    // Null terminate xml file for parsing
+    char *XmlFile = (char *)MALLOC(sizeof(char) * (File.Size + 1));
+    memcpy(XmlFile, File.Content, File.Size + 1);
+    XmlFile[File.Size] = '\0';
+
+    Platform.FreeFileContent(&File);
+
+    xml_document<> Doc;
+    Doc.parse<0>(XmlFile);
+
+    xml_node<> *LevelNode = Doc.first_node("level");
+    ASSERT(LevelNode);
+    xml_attribute<> *WidthAttr = LevelNode->first_attribute("width");
+    xml_attribute<> *HeightAttr = LevelNode->first_attribute("height");
+    EditorState->EditLevel.Width = strtol(WidthAttr->value(), nullptr, 10);
+    EditorState->EditLevel.Height = strtol(HeightAttr->value(), nullptr, 10);
+    
+    xml_node<> *TileFirstNode = LevelNode->first_node("tile");
+    xml_node<> *TileNode = TileFirstNode;
+
+    for(int Y = 0; Y < EditorState->EditLevel.Height; ++Y)
+    {
+        for(int X = 0; X < EditorState->EditLevel.Width; ++X)
+        {
+            xml_attribute<> *TIDAttr = TileNode->first_attribute("tid");
+            EditorState->EditLevel.Tiles[X][Y] = (u16)strtoul(TIDAttr->value(), nullptr, 10);
+            TileNode = TileNode->next_sibling("tile");
+        }
+    }
+
+    Doc.clear();
+    SAFE_FREE(XmlFile);
+}
 
 static void TilesetHelperWindow(editor_state *EditorState)
 {
@@ -188,19 +265,23 @@ void InitEditor(editor_state *EditorState)
     EditorState->SpriteVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(16), true);
     EditorState->SpriteRender = new render_cmd_list(MEGABYTE(5), EditorState->SpriteShader, &EditorState->ViewMatrix, &EditorState->ProjMatrix);
 
-    EditorState->LevelWidth = 24; EditorState->LevelHeight = 14;
-    EditorState->EditLevel = (editor_game_tile *)MALLOC(sizeof(editor_game_tile) * EditorState->LevelWidth * EditorState->LevelHeight);
+    //EditorState->LevelWidth = 24; EditorState->LevelHeight = 14;
+    //EditorState->EditLevel = (editor_game_tile *)MALLOC(sizeof(editor_game_tile) * EditorState->LevelWidth * EditorState->LevelHeight);
 
-    for(int X = 0; X < EditorState->LevelWidth; ++X)
-    {
-        for(int Y = 0; Y < EditorState->LevelHeight; ++Y)
-        {
-            editor_game_tile *Tile = (EditorState->EditLevel + X + (Y * EditorState->LevelWidth));
-            Tile->ID = U16_MAX;
-            Tile->Collide = false;
-        }
-    }
+    //for(int X = 0; X < EditorState->LevelWidth; ++X)
+    //{
+    //    for(int Y = 0; Y < EditorState->LevelHeight; ++Y)
+    //    {
+    //        editor_game_tile *Tile = (EditorState->EditLevel + X + (Y * EditorState->LevelWidth));
+    //        Tile->ID = U16_MAX;
+    //        Tile->Collide = false;
+    //    }
+    //}
 
+    memset(&EditorState->EditLevel, 0, sizeof(editor_level));
+    EditorState->EditLevel.Width = 20; EditorState->EditLevel.Height= 15;
+    strcpy(EditorState->EditLevel.Name, "Prologue");
+    strcpy(EditorState->EditLevel.Filename, "Prologue.xml");
     EditorState->BrushTile = nullptr;
     EditorState->EditMode = EditMode_Brush;
 
@@ -266,8 +347,9 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
     // Begin ImGui
     if(Show_TilesetHelperWindow) { TilesetHelperWindow(EditorState); }
 
-    ImGui::SetNextWindowSize(ImVec2(350, 560), ImGuiCond_FirstUseEver);
-    if(!ImGui::Begin("Editor", 0, ImGuiWindowFlags_MenuBar))
+    ImGui::SetNextWindowSize(ImVec2(305, 720), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2((r32)Platform.WindowWidth - 305, 0), ImGuiCond_Always);
+    if(!ImGui::Begin("Editor", 0, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse))
     {
         ImGui::End();
         return;
@@ -355,6 +437,13 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
 
         ImGui::EndPopup();
     }
+
+    if(MenuSaveLevel)
+    {
+        ASSERT(LevelOpened);
+
+    }
+
     ImGui::Spacing();
     ImGui::Text("LEVEL: %s", LevelFilename);
 
@@ -398,8 +487,9 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
         DrawList->AddLine(CanvasP + vec2(0, Y), CanvasP + vec2(ScaledAtlasSize.x, Y), 0x7D777777);
     }
 #endif
+    // TODO: Fix bug, when window is hovered tile brush still paints sometimes
     // Mouse hover check
-    if(ImGui::IsWindowHovered() && !EditorState->WindowHovered)
+    if(!EditorState->WindowHovered && ImGui::IsWindowHovered())
     {
         EditorState->WindowHovered = true;
     }
@@ -425,11 +515,21 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
     }
 
     ImGui::EndChild();
-   
+
     ImGui::Spacing();
     ImGui::Text("Edit Mode");
     ImGui::RadioButton("Brush", (int *)&EditorState->EditMode, (int)EditMode_Brush); ImGui::SameLine();
     ImGui::RadioButton("Erase", (int *)&EditorState->EditMode, (int)EditMode_Erase);
+
+    if(ImGui::Button("Save Level"))
+    {
+        SaveLevel(EditorState);
+    }
+
+    if(ImGui::Button("Load Level"))
+    {
+        LoadLevel("Prologue.xml", EditorState);
+    }
 
     ImGui::End(); // End ImGui
 
@@ -437,8 +537,8 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
     // In-Game editor 
     if(!EditorState->WindowHovered && GameInput->Mouse.Right.EndedDown)
     {
-        EditorState->CameraP.x -= GameInput->Mouse.xrel * EditorState->PixelsToMeters * 1.3f;
-        EditorState->CameraP.y -= GameInput->Mouse.yrel * EditorState->PixelsToMeters * 1.3f;
+        EditorState->CameraP.x -= GameInput->Mouse.xrel * EditorState->PixelsToMeters * 1.0f;
+        EditorState->CameraP.y -= GameInput->Mouse.yrel * EditorState->PixelsToMeters * 1.0f;
     }
 
     EditorState->ViewMatrix = LookAt(EditorState->CameraP, EditorState->CameraP + vec3i(0, 0, -1), vec3i(0, 1, 0));
@@ -451,19 +551,16 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
             (EditorState->BrushTile->X + TileSize.x) / EditorState->AtlasWidth,
             (EditorState->AtlasHeight - EditorState->BrushTile->Y) / EditorState->AtlasHeight);
         s32 X, Y;
-        X = Clamp(0, (s32)floor(EditorState->CameraP.x + GameInput->Mouse.x * EditorState->PixelsToMeters), EditorState->LevelWidth - 1);
-        Y = Clamp(0, (s32)floor(EditorState->CameraP.y + GameInput->Mouse.y * EditorState->PixelsToMeters), EditorState->LevelHeight - 1);
-        
+        X = Clamp(0, (s32)floor(EditorState->CameraP.x + GameInput->Mouse.x * EditorState->PixelsToMeters), EditorState->EditLevel.Width - 1);
+        Y = Clamp(0, (s32)floor(EditorState->CameraP.y + GameInput->Mouse.y * EditorState->PixelsToMeters), EditorState->EditLevel.Height - 1);
+
         PushSprite(&EditorState->SpriteVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), UV, vec4(1.0f), 0.0f, vec2(0.0f), 1.0f);
 
         if(GameInput->Mouse.Left.EndedDown)
         {
-            editor_game_tile *Tile = (EditorState->EditLevel + X + (Y * EditorState->LevelWidth));
-            if(Tile->ID != EditorState->BrushTile->ID)
+            if(EditorState->EditLevel.Tiles[X][Y] != EditorState->BrushTile->ID)
             {
-                Platform.Log("Tile placed at: %d, %d ID: %d", X, Y, EditorState->BrushTile->ID);
-                Tile->ID = EditorState->BrushTile->ID;
-                Tile->Collide = true;
+                EditorState->EditLevel.Tiles[X][Y] = EditorState->BrushTile->ID;
             }
         }
     }
@@ -472,41 +569,39 @@ void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
     if(!EditorState->WindowHovered && EditorState->EditMode == EditMode_Erase)
     {
         s32 X, Y;
-        X = Clamp(0, (s32)floor(EditorState->CameraP.x + GameInput->Mouse.x * EditorState->PixelsToMeters), EditorState->LevelWidth - 1);
-        Y = Clamp(0, (s32)floor(EditorState->CameraP.y + GameInput->Mouse.y * EditorState->PixelsToMeters), EditorState->LevelHeight - 1);
+        X = Clamp(0, (s32)floor(EditorState->CameraP.x + GameInput->Mouse.x * EditorState->PixelsToMeters), EditorState->EditLevel.Width - 1);
+        Y = Clamp(0, (s32)floor(EditorState->CameraP.y + GameInput->Mouse.y * EditorState->PixelsToMeters), EditorState->EditLevel.Height - 1);
 
         if(GameInput->Mouse.Left.EndedDown)
         {
-            editor_game_tile *Tile = (EditorState->EditLevel + X + (Y * EditorState->LevelWidth));
-            if(Tile->ID != U16_MAX)
+            if(EditorState->EditLevel.Tiles[X][Y] != 0)
             {
-                Tile->ID = U16_MAX;
-                Tile->Collide = false;
+                EditorState->EditLevel.Tiles[X][Y] = 0;
             }
         }
     }
 
     // Draw tile grid
-    for(int X = 0; X <= EditorState->LevelWidth; ++X)
+    for(int X = 0; X <= EditorState->EditLevel.Width; ++X)
     {
-        PushDbgLine(&EditorState->DbgLineVertices, vec3((r32)X, 0, 0), vec3((r32)X, (r32)EditorState->LevelHeight, 0), RGBAUnpackTo01(0x777777ff));
+        PushDbgLine(&EditorState->DbgLineVertices, vec3((r32)X, 0, 0), vec3((r32)X, (r32)EditorState->EditLevel.Height, 0), RGBAUnpackTo01(0x777777ff));
     }
-    for(int Y = 0; Y <= EditorState->LevelHeight; ++Y)
+    for(int Y = 0; Y <= EditorState->EditLevel.Height; ++Y)
     {
-        PushDbgLine(&EditorState->DbgLineVertices, vec3(0, (r32)Y, 0), vec3((r32)EditorState->LevelWidth, (r32)Y, 0), RGBAUnpackTo01(0x777777ff));
+        PushDbgLine(&EditorState->DbgLineVertices, vec3(0, (r32)Y, 0), vec3((r32)EditorState->EditLevel.Width, (r32)Y, 0), RGBAUnpackTo01(0x777777ff));
     }
 
     // Draw edit-level
-    for(int X = 0; X < EditorState->LevelWidth; ++X)
+    for(int Y = 0; Y < EditorState->EditLevel.Height; ++Y)
     {
-        for(int Y = 0; Y < EditorState->LevelHeight; ++Y)
+        for(int X = 0; X < EditorState->EditLevel.Width; ++X)
         {
-            editor_game_tile *Tile = (EditorState->EditLevel + X + (Y * EditorState->LevelWidth));
-            if(Tile->ID != U16_MAX)
+            u16 TID = EditorState->EditLevel.Tiles[X][Y];
+            if(TID != 0)
             {
-                editor_tile *ETile = &EditorState->EditorTiles[Tile->ID];
-                vec4 UV = vec4(ETile->X / EditorState->AtlasWidth, (EditorState->AtlasHeight - ETile->Y - TileSize.y) / EditorState->AtlasHeight,
-                    (ETile->X + TileSize.x) / EditorState->AtlasWidth, (EditorState->AtlasHeight - ETile->Y) / EditorState->AtlasHeight);
+                editor_tile *Tile = &EditorState->EditorTiles[TID - 1];
+                vec4 UV = vec4(Tile->X / EditorState->AtlasWidth, (EditorState->AtlasHeight - Tile->Y - TileSize.y) / EditorState->AtlasHeight,
+                    (Tile->X + TileSize.x) / EditorState->AtlasWidth, (EditorState->AtlasHeight - Tile->Y) / EditorState->AtlasHeight);
                 PushSprite(&EditorState->SpriteVertices, Rect((r32)X, (r32)Y, 1.0f, 1.0f), UV, vec4(1.0f), 0.0f, vec2(0.0f), 1.0f);
             }
         }

@@ -16,16 +16,12 @@ struct editor_game_tile
     bool Collide;
 };
 
-struct editor_level_chunk
-{
-    u16 ID[20][15]; //Tile IDs
-};
-
 struct editor_level
 {
+    char Filename[256];
     char Name[128];
-    s32 ChunkCountX, ChunkCountY;
-    editor_level_chunk Chunks[15][15];
+    s32 Width, Height;
+    u16 Tiles[1024][1024];
 };
 
 enum editor_edit_mode
@@ -47,8 +43,7 @@ struct editor_state
 
     bool WindowHovered;
 
-    s32 LevelWidth, LevelHeight;
-    editor_game_tile *EditLevel;
+    editor_level EditLevel;
 
     // Internal
     char *TilesetXmlFile;
