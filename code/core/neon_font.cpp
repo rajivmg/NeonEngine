@@ -47,7 +47,6 @@ void InitFont(font *Font, const char *FontFile)
     bitmap Page0Bitmap;
     char Page0FilePath[1024] = "fonts/";
     strncat(Page0FilePath, Page0FileAttr->value(), 1023-6);
-    //LoadBitmap(&Page0Bitmap, Page0FileAttr->value());
     LoadBitmap(&Page0Bitmap, Page0FilePath);
     Font->Texture = rndr::MakeTexture(&Page0Bitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
     FreeBitmap(&Page0Bitmap);

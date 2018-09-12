@@ -339,6 +339,19 @@ void ogl::Draw(cmd::draw *Cmd)
         glDisableVertexAttribArray(1);
         glDisableVertexAttribArray(2);
     }
+    else if(Cmd->VertexFormat == vert_format::P1C1)
+    {
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1C1), (void *)OFFSET_OF(vert_P1C1, Position));
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(vert_P1C1), (void *)OFFSET_OF(vert_P1C1, Color));
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+
+        glDrawArrays(GL_TRIANGLES, Cmd->StartVertex, Cmd->VertexCount);
+
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+    }
 }
 
 void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
@@ -373,7 +386,7 @@ void ogl::DrawIndexed(cmd::draw_indexed *Cmd)
         glDisableVertexAttribArray(1);
         glDisableVertexAttribArray(2);
     }
-    else if(Cmd->VertexFormat == vert_format::P1N1UV1)
+    else if(Cmd->VertexFormat == vert_format::P1N1UV1) // TODO: This is no longer required
     {
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1N1UV1), (void *)OFFSET_OF(vert_P1C1UV1, Position));
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vert_P1N1UV1), (void *)OFFSET_OF(vert_P1N1UV1, Normal));

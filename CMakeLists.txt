@@ -27,9 +27,10 @@ if(WIN32)
 	file(GLOB DLL_FILES "lib/x64/*.dll")
 	file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR}/Release NO_SOURCE_PERMISSIONS)
 	file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR}/Debug NO_SOURCE_PERMISSIONS)
+	file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR}/RelWithDebInfo NO_SOURCE_PERMISSIONS)
 
 	# set libs to link
-	set(CORE_LIBS general SDL2main SDL2 opengl32 assimp-vc140-mt)
+	set(CORE_LIBS general SDL2main SDL2 opengl32 assimp-vc140-mt debug Box2DMTd optimized Box2DMT)
 
 	file(GLOB IMGUI_SRC "code/dear-imgui/imgui.cpp" "code/dear-imgui/imgui_draw.cpp" "code/dear-imgui/imgui_demo.cpp")
 	file(GLOB CORE_SRC "code/core/neon_*.cpp" "code/core/neon_*.h")

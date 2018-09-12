@@ -292,4 +292,5 @@ void PushText(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 La
 //-----------------------------------------------------------------------------
 
 void PushDbgLine(std::vector<vert_P1C1> *Vertices, vec3 FromP, vec3 ToP, vec4 Color);
+void PushDbgRect(std::vector<vert_P1C1> *Vertices, rect Dest, vec4 Color, r32 Layer);
 #endif

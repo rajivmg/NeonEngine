@@ -4,38 +4,21 @@
 #include <core/neon_platform.h>
 #include <core/neon_bitmap.h>
 #include <core/neon_font.h>
+
 #include <vector>
 
-enum game_mode
-{
-    GameMode_Editor,
-    GameMode_Play,
-    GameMode_Pause
-};
-
-struct game_tile
-{
-    u16 ID;
-    vec4 UV;
-};
-
-struct game_level
-{
-    game_tile Level[50][50];
-    u32 SizeX, SizeY;
-};
+#include "asset.h"
+#include "world.h"
 
 struct game_state
 {
-    game_mode GameMode;
-
     r32 MetersToPixels;
     r32 PixelsToMeters;
 
     mat4 ScreenProjMatrix;
     mat4 ScreenViewMatrix;
-    mat4 GameProjMatrix;
-    mat4 GameViewMatrix;
+    mat4 ProjMatrix;
+    mat4 ViewMatrix;
 
     render_resource WhiteTexture;
     render_resource SpriteShader;
@@ -52,6 +35,11 @@ struct game_state
     render_resource DbgLineVertexBuffer;
     std::vector<vert_P1C1> DbgLineVertices;
     render_cmd_list *DbgLineRender;
+
+    render_resource DbgRectShader;
+    render_resource DbgRectVertexBuffer;
+    std::vector<vert_P1C1> DbgRectVertices;
+    render_cmd_list *DbgRectRender;
 
     render_cmd_list *SpriteRender;
     render_resource SpriteVertexBuffer;

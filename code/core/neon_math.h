@@ -114,6 +114,12 @@ FORCE_INLINE vec2& operator/=(vec2 &A, r32 Scalar) { A = A / Scalar; return A; }
 
 FORCE_INLINE vec2 operator-(vec2 const &A) { return 0.0f - A; }
 
+FORCE_INLINE r32 Sum(vec2 const &A) { return A.x + A.y; }
+FORCE_INLINE r32 Dot(vec2 const &A, vec2 const &B) { return Sum(A * B); }
+FORCE_INLINE r32 Length(vec2 const &A) { return sqrtf(Dot(A, A)); }
+FORCE_INLINE r32 LengthSq(vec2 const &A) { return Dot(A, A); }
+FORCE_INLINE vec2 Normalize(vec2 const &A) { return A / Length(A); }
+
 struct vec3
 {
     union
@@ -573,5 +579,81 @@ FORCE_INLINE rect Rect(r32 _x, r32 _y, r32 _width, r32 _height)
     R.width = _width;
     R.height = _height;
     return R;
+}
+
+struct aabb2
+{
+    vec2 Min;
+    vec2 Max;
+};
+
+inline aabb2 AABBMinMax(vec2 _Min, vec2 _Max)
+{
+    aabb2 R;
+    R.Min = _Min;
+    R.Max = _Max;
+    return R;
+}
+
+inline aabb2 AABBMinDim(vec2 _Min, vec2 Dim)
+{
+    aabb2 R;
+    R.Min = _Min;
+    R.Max = _Min + Dim;
+    return R;
+}
+
+inline aabb2 AABBRect(rect Rect)
+{
+    aabb2 R;
+    R.Min = vec2(Rect.x, Rect.y);
+    R.Max = vec2(Rect.x + Rect.width, Rect.y + Rect.height);
+    return R;
+}
+
+inline bool IntersectAABBAABB(aabb2 A, aabb2 B)
+{
+    // NOTE: Exit with no intersection if seperated along an axis
+    if(A.Max.x < B.Min.x || A.Min.x > B.Max.x) return false;
+    if(A.Max.y < B.Min.y || A.Min.y > B.Max.y) return false;
+
+    // NOTE: Overlapping on all axes means AABBs are intersecting
+    return true;
+}
+
+inline bool IntersectMovingAABBAABB(aabb2 A, aabb2 B, vec2 VA, vec2 VB, r32 &TFirst, r32 &TLast)
+{
+    // NOTE: Early exit if A and B are initially overlapping
+    if(IntersectAABBAABB(A, B))
+    {
+        TFirst = TLast = 0.0;
+        return true;
+    }
+
+    // NOTE: Relative velocity in normalized 
+    vec2 V = VB - VA;
+    TFirst = 0.0f;
+    TLast = 1.0f;
+
+    // NOTE: Determine the time of first and last contact along both axes
+    for(u32 I = 0; I < 2; ++I)
+    {
+        if(V.Elements[I] < 0.0f)
+        {
+            if(B.Max.Elements[I] < A.Min.Elements[I]) { return false; } // NOTE: Nonintersecting and moving apart
+            if(A.Max.Elements[I] < B.Min.Elements[I]) { TFirst = MAX((A.Max.Elements[I] - B.Min.Elements[I]) / V.Elements[I], TFirst); }
+            if(B.Max.Elements[I] > A.Min.Elements[I]) { TLast = MIN((A.Min.Elements[I] - B.Max.Elements[I]) / V.Elements[I], TLast); }
+        }
+        if(V.Elements[I] > 0.0f)
+        {
+            if(B.Min.Elements[I] > A.Max.Elements[I]) { return false; } // NOTE: Nonintersecting and moving apart
+            if(B.Max.Elements[I] < A.Min.Elements[I]) { TFirst = MAX((A.Min.Elements[I] - B.Max.Elements[I]) / V.Elements[I], TFirst); }
+            if(A.Max.Elements[I] > B.Min.Elements[I]) { TLast = MIN((A.Max.Elements[I] - B.Min.Elements[I]) / V.Elements[I], TLast); }
+        }
+
+        // NOTE: No overlap possible if time of first contact occurs after time of last contact
+        if(TFirst > TLast) { return false; }
+    }
+    return true;
 }
 #endif

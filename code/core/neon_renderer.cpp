@@ -379,13 +379,44 @@ void PushText(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 La
 
 void PushDbgLine(std::vector<vert_P1C1> *Vertices, vec3 FromP, vec3 ToP, vec4 Color)
 {
-    vert_P1C1 Vertex;
+    vert_P1C1 V1, V2;
 
-    Vertex.Position = FromP;
-    Vertex.Color = Color;
-    Vertices->push_back(Vertex);
+    V1.Position = FromP;
+    V1.Color = Color;
+    V2.Position = ToP;
+    V2.Color = Color;
 
-    Vertex.Position = ToP;
-    Vertex.Color = Color;
-    Vertices->push_back(Vertex);
+    Vertices->push_back(V1); Vertices->push_back(V2);
+}
+
+void PushDbgRect(std::vector<vert_P1C1> *Vertices, rect Dest, vec4 Color, r32 Layer)
+{
+    /*
+    0,1         1,1
+    D-----------C
+    |        /  |
+    |      /    |
+    |    /      |
+    |  /        |
+    A-----------B
+    0,0         1,0
+    (ACD)(ABC)
+    */
+
+    vert_P1C1 A, B, C, D;
+
+    A.Position = vec3(Dest.x, Dest.y, Layer);
+    A.Color = Color;
+
+    B.Position = vec3(Dest.x + Dest.width, Dest.y, Layer);
+    B.Color = Color;
+
+    C.Position = vec3(Dest.x + Dest.width, Dest.y + Dest.height, Layer);
+    C.Color = Color;
+
+    D.Position = vec3(Dest.x, Dest.y + Dest.height, Layer);
+    D.Color = Color;
+
+    Vertices->push_back(A); Vertices->push_back(C); Vertices->push_back(D);
+    Vertices->push_back(A); Vertices->push_back(B); Vertices->push_back(C);
 }

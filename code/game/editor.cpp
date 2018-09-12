@@ -51,7 +51,7 @@ static void SaveLevel(editor_state *EditorState)
 static void LoadLevel(const char *Filename, editor_state *EditorState)
 {
     file_content File = Platform.ReadFile(Filename);
-    ASSERT(LevelFile.NoError);
+    ASSERT(File.NoError);
 
     // Null terminate xml file for parsing
     char *XmlFile = (char *)MALLOC(sizeof(char) * (File.Size + 1));
@@ -286,7 +286,7 @@ void InitEditor(editor_state *EditorState)
     EditorState->EditMode = EditMode_Brush;
 
     // Load tileset file
-    file_content FileData = Platform.ReadFile("Data.xml");
+    file_content FileData = Platform.ReadFile("Assets.xml");
     ASSERT(FileData.NoError);
 
     // Null terminate xml file for parsing
@@ -340,6 +340,8 @@ void InitEditor(editor_state *EditorState)
     }
 
     //ASSERT(TileCount == TileCounter);
+    Doc.clear();
+    SAFE_FREE(EditorState->TilesetXmlFile);
 }
 
 void EditorUpdateAndRender(editor_state *EditorState, game_input *GameInput)
