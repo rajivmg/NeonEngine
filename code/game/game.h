@@ -24,23 +24,6 @@ struct game_state
     render_resource SpriteShader;
     render_resource TextShader;
 
-    font MainFont;
-    font DbgFont;
-
-    render_resource DbgTextVertexBuffer;
-    std::vector<vert_P1C1UV1> DbgTextVertices;
-    render_cmd_list *DbgTextRender;
-
-    render_resource DbgLineShader;
-    render_resource DbgLineVertexBuffer;
-    std::vector<vert_P1C1> DbgLineVertices;
-    render_cmd_list *DbgLineRender;
-
-    render_resource DbgRectShader;
-    render_resource DbgRectVertexBuffer;
-    std::vector<vert_P1C1> DbgRectVertices;
-    render_cmd_list *DbgRectRender;
-
     render_cmd_list *SpriteRender;
     render_resource SpriteVertexBuffer;
     std::vector<vert_P1C1UV1> SpriteVertices;

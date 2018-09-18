@@ -1,13 +1,7 @@
 <?xml version="1.0"?>
-<level name="Prologue" chunkcountx="2" chunkcounty="2">
-<chunk x="0" y="0">
-<tile tid="1"/>
-</chunk>
-<chunk x="1" y="0">
-</chunk>
-<chunk x="0" y="1">
-</chunk>
-<chunk x="1" y="1">
-</chunk>
+<level name="Prologue" width="20" height="15">
+	<tile tid="4"/>
+	<tile tid="7"/>
+</level>
 
 <entity eid="3" x="4" y="24"/>

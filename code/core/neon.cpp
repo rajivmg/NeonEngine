@@ -350,6 +350,11 @@ static void SDLProcessEvents(SDL_Event *Event, game_input *Input)
                         SDLProcessButtonState(&Controller->Right, IsDown);
                     } break;
 
+                    case SDLK_SPACE:
+                    {
+                        SDLProcessButtonState(&Controller->Jump, IsDown);
+                    } break;
+
                     case SDLK_ESCAPE:
                     {
                         SDL_Event QuitEvent;

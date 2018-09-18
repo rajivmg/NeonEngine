@@ -281,52 +281,6 @@ void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Co
     PushSprite(Vertices, Dest, UV, Color, Rotation, Origin, vec2(1.0f), Layer);
 }
 
-#if 0
-void PushText(std::vector<vert_P1C1UV1> *Vertices, font *Font, vec3 P, vec4 Color, char const *Format, ...)
-{
-    // NOTE: P is top left point.
-
-    char Text[8192];
-
-    va_list ArgList;
-    va_start(ArgList, Format);
-    vsnprintf(Text, 8192, Format, ArgList);
-    va_end(ArgList);
-
-    vec3 Pen = P;
-    Pen.y -= Font->Height;
-
-    u32 CharCount = 0;
-    int Index = 0;
-    while(Text[Index] != 0)
-    {
-        // If the character is new line.
-        if((int)Text[Index] == 10)
-        {
-            Pen.x = P.x;
-            Pen.y -= Font->Height;
-            ++Index;
-            continue;
-        }
-
-        // If the character is other than a new line
-        glyph *CharGlyph = Font->Glyphs + ((int)Text[Index] - 32);
-        vec4 TexCoords = vec4(CharGlyph->Coords.x, CharGlyph->Coords.y,
-            CharGlyph->Coords.z, CharGlyph->Coords.w);
-        vec3 CharOrigin = vec3(Pen.x + CharGlyph->HoriBearingX, Pen.y + CharGlyph->Hang, Pen.z);
-
-        PushSprite(Vertices, Rect(CharOrigin.x, CharOrigin.y, (r32)CharGlyph->Width, (r32)CharGlyph->Height),
-            TexCoords, Color, 0.0f, vec2(0.0f, 0.0f), CharOrigin.z);
-
-        ++CharCount;
-
-        Pen.x += CharGlyph->HoriAdvance;
-
-        ++Index;
-    }
-}
-#endif
-
 void PushText(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 Layer, font *Font, char const *Format, ...)
 {
     char Text[8192];
@@ -368,6 +322,49 @@ void PushText(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 La
         
         PushSprite(Vertices, Dest, TexCoord, Color, 0.0f, vec2(0.0f), Layer);
         
+        ++CharCurs;
+        Cursor.x = Cursor.x + Glyph->XAdvance;
+    }
+}
+
+void PushTextV(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 Layer, font *Font, char const *Format, va_list ArgList)
+{
+    char Text[8192];
+
+    vsnprintf(Text, 8192, Format, ArgList);
+
+    vec2 Cursor = vec2(Dest.x, Dest.y);
+
+    char *CharCurs = Text;
+
+    while(*CharCurs != '\0')
+    {
+        if((u32)*CharCurs == 10) /* new line */
+        {
+            Cursor.x = Dest.x;
+            Cursor.y = Cursor.y - Font->LineHeight;
+            ++CharCurs;
+            continue;
+        }
+
+        glyph *Glyph = FontGetGlyph(Font, (u32)*CharCurs);
+
+        /*
+        x,y                 x+w,y
+        ---------------------
+        -                   -
+        -                   -
+        -                   -
+        --------------------- 
+        x,y+h              x+w,y+h
+        */
+        vec4 TexCoord = vec4(Glyph->Rect.x / Font->ScaleW, 1.0f - (Glyph->Rect.y + Glyph->Rect.height) / Font->ScaleH,
+            (Glyph->Rect.x + Glyph->Rect.width) / Font->ScaleW, 1.0f - Glyph->Rect.y / Font->ScaleH);
+
+        rect Dest = Rect(Cursor.x + Glyph->XOffset, Cursor.y - Glyph->YOffset - Glyph->Rect.height, Glyph->Rect.width, Glyph->Rect.height);
+
+        PushSprite(Vertices, Dest, TexCoord, Color, 0.0f, vec2(0.0f), Layer);
+
         ++CharCurs;
         Cursor.x = Cursor.x + Glyph->XAdvance;
     }

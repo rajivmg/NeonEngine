@@ -17,15 +17,6 @@ void ogl::InitState()
     RenderState.TextureCurrent = 0;
     RenderState.ShaderProgramCurrent = 0;
 
-    // Set the 4/3 viewport
-    //u32 ViewportWidth, ViewportHeight;
-    //s32 ViewportX, ViewportY;
-
-    //ViewportWidth = (u32)(Platform.WindowWidth * (3.0f / 4.0f));
-    //ViewportHeight = (u32)(Platform.WindowHeight * (4.0f / 3.0f));
-    //ViewportX = (Platform.WindowWidth - ViewportWidth) / 2.0f;
-    //glViewport(ViewportX, 0, ViewportWidth, Platform.WindowHeight);
-
     glViewport(0, 0, (u32)Platform.WindowWidth, (u32)Platform.WindowHeight);
 
     // Enable depth testing
@@ -52,7 +43,7 @@ void ogl::InitState()
 
     // Set clear color
     //glClearColor(0.07f, 0.07f, 0.08f, 1.0f);
-    vec4 ClearColor = RGBAUnpackTo01(0xdbdbdbff);
+    vec4 ClearColor = RGBAUnpackTo01(0x111119ff);
     glClearColor(ClearColor.r, ClearColor.g, ClearColor.b, ClearColor.a);
 
     // Enable multisampling

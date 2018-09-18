@@ -286,6 +286,7 @@ void PushSprite(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 UV, vec4 Co
 
 // Destination rectangle starts top left and height goes down.
 void PushText(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 Layer, font *Font, char const *Format, ...);
+void PushTextV(std::vector<vert_P1C1UV1> *Vertices, rect Dest, vec4 Color, r32 Layer, font *Font, char const *Format, va_list ArgList);
 
 //-----------------------------------------------------------------------------
 // Debugging
