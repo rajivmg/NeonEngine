@@ -1,17 +1,21 @@
-#ifndef GAME_H
-#define GAME_H
+#ifndef GAMESTATE_H
+#define GAMESTATE_H
 
 #include <core/neon_platform.h>
-#include <core/neon_bitmap.h>
-#include <core/neon_font.h>
+#include <core/neon_renderer.h>
+#include <core/neon_allocator.h>
+
+#include "assetsystem.h"
+#include "entitysystem.h"
 
 #include <vector>
 
-#include "asset.h"
-#include "world.h"
-
 struct game_state
 {
+    stack_allocator StackAllocator;
+    asset_manager AssetManager;
+    entity_manager EntityManager;
+    
     r32 MetersToPixels;
     r32 PixelsToMeters;
 
@@ -34,4 +38,5 @@ struct game_state
 
     render_resource AtlasTexture;
 };
+extern game_state *GameState;
 #endif

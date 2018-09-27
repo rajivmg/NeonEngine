@@ -7,7 +7,7 @@
 #include <rapidxml/rapidxml_print.hpp>
 using namespace rapidxml;
 
-#include "game.h"
+#include "gamestate.h"
 
 static bool Show_TilesetHelperWindow = false;
 

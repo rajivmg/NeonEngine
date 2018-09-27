@@ -29,6 +29,7 @@ typedef int8_t      s8;
 typedef float       r32;
 typedef double      r64;
 typedef intptr_t    iptr;
+typedef uintptr_t   uptr;
 
 #define ASSERT(Exp) assert(Exp)
 #define ARRAY_COUNT(Array) (sizeof(Array)/sizeof((Array)[0]))
