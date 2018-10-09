@@ -40,7 +40,7 @@ typedef uintptr_t   uptr;
 #define OFFSET_OF(TYPE, MEMBER) ((uintptr_t)&(((TYPE *)0)->MEMBER))
 #define MALLOC(Size) Neon__Malloc((Size))
 #define MALLOC_STRUCT(Type, Count) ((Type*)(MALLOC(sizeof(Type)*(Count))))
-#define SAFE_FREE(x) { if(x) { free(x); (x) = nullptr; } }
+#define SAFE_FREE(x) { if(x) { free(x); (x) = NULL; } }
 #define SAFE_DELETE(x) { delete (x);    (x) = nullptr; }
 #define SAFE_DELETEA(x) { delete[] (x); (x) = nullptr; }
 #define INVALID_CODE_PATH ASSERT(!"Invalid code path!")

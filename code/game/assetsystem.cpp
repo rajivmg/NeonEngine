@@ -15,7 +15,7 @@ void asset_manager::Init()
 
     // NOTE: Copy file content into a null-terminated string
     char *NullTerminatedFile = (char *)MALLOC((AssetsXMLFile.Size + 1) * sizeof(char));
-    memcpy(NullTerminatedFile, AssetsXMLFile.Content, AssetsXMLFile.Size + 1);
+    memcpy(NullTerminatedFile, AssetsXMLFile.Content, AssetsXMLFile.Size);
     NullTerminatedFile[AssetsXMLFile.Size] = '\0';
 
     // NOTE: Free FileContent
@@ -39,7 +39,7 @@ void asset_manager::Init()
         TileCount = strtoul(TileDataCountAttr->value(), nullptr, 10);
         ASSERT(TileCount <= TileCapacity);
         xml_node<> *TileNode = TileDataNode->first_node("tile");
-        u32 TileSize = 16, TileIndex = 0;
+        u32 TileSize = 32, TileIndex = 0; // TODO: Make TileSize dynamic
         while(TileNode)
         {
             xml_attribute<> *TileIdAttr = TileNode->first_attribute("id");

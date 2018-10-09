@@ -16,7 +16,12 @@ void stack_allocator::Shutdown()
 
 void *stack_allocator::Allocate(u64 _Size)
 {
-    // Unaligned version
+    // NOTE: If size is 0, return null
+    if(_Size == 0)
+    {
+        return nullptr;
+    }
+    // NOTE: Unaligned version
     u64 TotalReqSize = _Size;
     ASSERT((Marker - (marker)Buffer + TotalReqSize) <= BufferSize);
     void *Mem = (void *)Marker;
@@ -26,7 +31,13 @@ void *stack_allocator::Allocate(u64 _Size)
 
 void *stack_allocator::Allocate(u64 _Size, u32 _Alignment)
 {
-    // Aligned version
+    // NOTE: If size is 0, return null
+    if(_Size == 0)
+    {
+        return nullptr;
+    }
+    // NOTE: Aligned version
+    ASSERT(_Alignment != 0);
     u64 TotalReqSize = _Size + _Alignment;
     ASSERT((Marker - (marker)Buffer + TotalReqSize) <= BufferSize);
     void *RawMem = (void *)Marker;

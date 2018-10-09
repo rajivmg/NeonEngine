@@ -7,13 +7,13 @@
 
 #include "assetsystem.h"
 #include "entitysystem.h"
+#include "mapdata.h"
 
 #include <vector>
 
 struct game_state
 {
     stack_allocator StackAllocator;
-    asset_manager AssetManager;
     entity_manager EntityManager;
     
     r32 MetersToPixels;
@@ -35,8 +35,6 @@ struct game_state
     render_cmd_list *TextRender;
     render_resource TextVertexBuffer;
     std::vector<vert_P1C1UV1> TextVertices;
-
-    render_resource AtlasTexture;
 };
 extern game_state *GameState;
 #endif

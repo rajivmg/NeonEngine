@@ -55,7 +55,7 @@ static void LoadLevel(const char *Filename, editor_state *EditorState)
 
     // Null terminate xml file for parsing
     char *XmlFile = (char *)MALLOC(sizeof(char) * (File.Size + 1));
-    memcpy(XmlFile, File.Content, File.Size + 1);
+    memcpy(XmlFile, File.Content, File.Size);
     XmlFile[File.Size] = '\0';
 
     Platform.FreeFileContent(&File);

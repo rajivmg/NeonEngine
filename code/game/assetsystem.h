@@ -12,7 +12,6 @@ struct game_tile
     vec4 UV;
 };
 
-// TODO: Change name
 struct asset_manager
 {
     game_tile *Tiles;

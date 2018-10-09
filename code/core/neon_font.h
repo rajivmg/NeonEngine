@@ -14,12 +14,6 @@ struct glyph
 
 struct font
 {
-    //font(const char *FontFile);
-    //~font();
-    //
-    //void Free();
-    //glyph *GetGlyph(u32 Codepoint);
-
     u32 LineHeight;
     u32 Base;
     u32 ScaleW;
