@@ -15,7 +15,7 @@ struct base_entity
     static u32 NextTypeID();
 
     virtual ~base_entity() {}
-    virtual void Update(game_input *Input) {}
+    virtual void Update() {}
     virtual void Draw() {}
 };
 
@@ -44,7 +44,7 @@ struct entity_manager
     void DeleteEntity(u32 ID);
     void Clear();
 
-    void Update(game_input *Input);
+    void Update();
     void Draw();
 };
 

@@ -1,100 +1,143 @@
 #include "assetsystem.h"
 
+#include <core/neon_bitmap.h>
 #include <rapidxml/rapidxml.hpp>
-using namespace rapidxml;
+
+#include "gamestate.h"
+
 #include <string.h>
 
-void asset_manager::Init()
+using namespace rapidxml;
+
+void game_tileset::Init(const char *Filename)
 {
-    TileCapacity = 512;
-    Tiles = (game_tile *)MALLOC(TileCapacity * sizeof(game_tile));
+    file_content TilesetFile = Platform.ReadFile(Filename);
+    ASSERT(TilesetFile.NoError);
 
-    // NOTE: Load Assets
-    file_content AssetsXMLFile = Platform.ReadFile("Assets.xml");
-    ASSERT(AssetsXMLFile.NoError);
+    char *NullTermTilesetFile = (char *)MALLOC((TilesetFile.Size + 1) * sizeof(char));
+    memcpy(NullTermTilesetFile, TilesetFile.Content, TilesetFile.Size);
+    NullTermTilesetFile[TilesetFile.Size] = '\0';
+    Platform.FreeFileContent(&TilesetFile);
 
-    // NOTE: Copy file content into a null-terminated string
-    char *NullTerminatedFile = (char *)MALLOC((AssetsXMLFile.Size + 1) * sizeof(char));
-    memcpy(NullTerminatedFile, AssetsXMLFile.Content, AssetsXMLFile.Size);
-    NullTerminatedFile[AssetsXMLFile.Size] = '\0';
+    // NOTE: Parse null-terminated Tileset file
+    xml_document<> TilesetDoc;
+    TilesetDoc.parse<0>(NullTermTilesetFile);
 
-    // NOTE: Free FileContent
-    Platform.FreeFileContent(&AssetsXMLFile);
+    xml_node<> *TilesetNode = TilesetDoc.first_node("tileset");
+    xml_attribute<> *TilesetTileWidth = TilesetNode->first_attribute("tilewidth");
+    xml_attribute<> *TilesetTileHeight = TilesetNode->first_attribute("tileheight");
+    xml_attribute<> *TilesetTileCount = TilesetNode->first_attribute("tilecount");
+    xml_attribute<> *TilesetColumns = TilesetNode->first_attribute("columns");
 
-    // NOTE: Parse XML doc
-    xml_document<> Doc;
-    Doc.parse<0>(NullTerminatedFile);
+    u32 TileWidth = strtoul(TilesetTileWidth->value(), nullptr, 10);
+    u32 TileHeight = strtoul(TilesetTileHeight->value(), nullptr, 10);
+    u32 Columns = strtoul(TilesetColumns->value(), nullptr, 10);
 
-    // NOTE: Load Tiledata
-    xml_node<> *TileDataNode = Doc.first_node("tiledata");
-    while(TileDataNode)
+    TileCount = strtoul(TilesetTileCount->value(), nullptr, 10);
+
+    xml_node<> *TilesetImageNode = TilesetNode->first_node("image");
+    xml_attribute<> *TilesetImageSource = TilesetImageNode->first_attribute("source");
+
+    // NOTE: Extract bitmap's absolute path
+    char *TilesetBitmapFilename = TilesetImageSource->value();
+    while(*TilesetBitmapFilename != '/') { ++TilesetBitmapFilename; } ++TilesetBitmapFilename;
+
+    // NOTE: Generate texture
+    bitmap TilesetBitmap;
+    LoadBitmap(&TilesetBitmap, TilesetBitmapFilename);
+    Texture = rndr::MakeTexture(&TilesetBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, true);
+    FreeBitmap(&TilesetBitmap);
+
+    u32 TileIndex = 0;
+    u32 TilesetWidth = TileWidth * Columns;
+    u32 TilesetHeight = TileHeight * (TileCount / Columns);
+    Tiles = (game_tile *)MALLOC(TileCount * sizeof(game_tile));
+
+    // NOTE: Generate ID and UV for all tiles in the tileset image
+    for(u32 Row = 0; Row < (TileCount / Columns); ++Row)
     {
-        xml_attribute<> *TileDataBitmapAttr = TileDataNode->first_attribute("bitmap");
-        xml_attribute<> *TileDataBitmapWAttr = TileDataNode->first_attribute("bitmapwidth");
-        xml_attribute<> *TileDataBitmapHAttr = TileDataNode->first_attribute("bitmapheight");
-        xml_attribute<> *TileDataCountAttr = TileDataNode->first_attribute("count");
-
-        u32 BitmapWidth = strtoul(TileDataBitmapWAttr->value(), nullptr, 10);
-        u32 BitmapHeight = strtoul(TileDataBitmapHAttr->value(), nullptr, 10);
-        TileCount = strtoul(TileDataCountAttr->value(), nullptr, 10);
-        ASSERT(TileCount <= TileCapacity);
-        xml_node<> *TileNode = TileDataNode->first_node("tile");
-        u32 TileSize = 32, TileIndex = 0; // TODO: Make TileSize dynamic
-        while(TileNode)
+        for(u32 Col = 0; Col < Columns; ++Col)
         {
-            xml_attribute<> *TileIdAttr = TileNode->first_attribute("id");
-            xml_attribute<> *TileXAttr = TileNode->first_attribute("x");
-            xml_attribute<> *TileYAttr = TileNode->first_attribute("y");
-
-            u32 X = strtoul(TileXAttr->value(), nullptr, 10);
-            u32 Y = strtoul(TileYAttr->value(), nullptr, 10);
-
-            game_tile *Tile = Tiles + TileIndex;
-            Tile->ID = (u16)strtoul(TileIdAttr->value(), nullptr, 10);
-            Tile->UV.x = X / (r32)BitmapWidth;
-            Tile->UV.y = (BitmapHeight - Y - TileSize) / (r32)BitmapHeight;
-            Tile->UV.z = (X + TileSize) / (r32)BitmapWidth;
-            Tile->UV.w = (BitmapHeight - Y) / (r32)BitmapHeight;
-
+            game_tile *Tile = &Tiles[TileIndex];
+            Tile->ID = TileIndex;
+            vec4 UV;
+            UV.x = (Col * TileWidth) / (r32)TilesetWidth;
+            UV.y = 1.0f - (((Row * TileHeight) + TileHeight) / (r32)TilesetHeight);
+            UV.z = ((Col * TileWidth) + TileWidth) / (r32)TilesetWidth;
+            UV.w = 1.0f - ((Row * TileHeight) / (r32)TilesetHeight);
+            Tile->UV[0] = UV;
+            Tile->FrameCount = 1;
+            Tile->FrameDuration = 0;
             ++TileIndex;
-            TileNode = TileNode->next_sibling("tile");
         }
-        TileDataNode = TileDataNode->next_sibling("tiledata");
     }
 
-    // NOTE: Free Doc and NullTerminatedFile
-    Doc.clear();
-    SAFE_FREE(NullTerminatedFile);
-}
-
-void asset_manager::Shutdown()
-{
-    TileCapacity = 0;
-    TileCount = 0;
-    SAFE_FREE(Tiles);
-}
-
-game_tile *asset_manager::GetTileByID(u16 ID)
-{
-    // NOTE: Binary search the Tiles array
-    u32 Lo = 0, Hi = TileCount - 1, Mid;
-    while(Lo <= Hi)
+    // NOTE: Process animated tiles in the tileset
+    xml_node<> *TilesetTileNode = TilesetNode->first_node("tile");
+    while(TilesetTileNode)
     {
-        Mid = (Lo + Hi) / 2;
-        if(Tiles[Mid].ID < ID)
+        xml_node<> *TileAnimationNode = TilesetTileNode->first_node("animation");
+        if(TileAnimationNode)
         {
-            Lo = Mid + 1;
+            xml_attribute<> *TileID = TilesetTileNode->first_attribute("id");
+            u32 Index = strtoul(TileID->value(), nullptr, 10);
+            game_tile *Tile = &Tiles[Index];
+            ASSERT(Tile->ID == Index);
+
+            Tile->FrameCount = 0;
+            xml_node<> *AnimFrameNode = TileAnimationNode->first_node("frame");
+            while(AnimFrameNode)
+            {
+                xml_attribute<> *AnimFrameTileID = AnimFrameNode->first_attribute("tileid");
+                xml_attribute<> *AnimFrameDuration = AnimFrameNode->first_attribute("duration");
+
+                u32 FrameTileIndex = strtoul(AnimFrameTileID->value(), nullptr, 10);
+                u32 FrameDuration = strtoul(AnimFrameDuration->value(), nullptr, 10);
+
+                Tile->UV[Tile->FrameCount] = Tiles[FrameTileIndex].UV[0];
+                Tile->FrameDuration = FrameDuration;
+
+                ++Tile->FrameCount;
+                AnimFrameNode = AnimFrameNode->next_sibling("frame");
+            }
         }
-        else if(Tiles[Mid].ID > ID)
-        {
-            Hi = Mid - 1;
-        }
-        else
-        {
-            return &Tiles[Mid];
-        }
+        TilesetTileNode = TilesetTileNode->next_sibling("tile");
     }
-    ASSERT(!"Tile not found!");
-    return nullptr;
+
+    // NOTE: Free resources
+    TilesetDoc.clear();
+    SAFE_FREE(NullTermTilesetFile);
+
+    // NOTE: Generate vertex buffer
+    VertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(5), true);
 }
 
+void game_tileset::Shutdown()
+{
+    SAFE_FREE(Tiles);
+    rndr::DeleteTexture(Texture);
+    rndr::DeleteBuffer(VertexBuffer);
+}
+
+game_tile *game_tileset::GetTileByID(u32 ID)
+{
+    ASSERT(ID < TileCount);
+    return &Tiles[ID];
+}
+
+void game_tileset::Render()
+{
+    u32 VertexBufferSize = (u32)Vertices.size() * sizeof(vert_P1C1UV1);
+    if(VertexBufferSize > 0)
+    {
+        rndr::BufferData(VertexBuffer, 0, VertexBufferSize, &Vertices.front());
+        Vertices.clear();
+
+        cmd::draw *DrawCmd = GameState->SpriteRender->AddCommand<cmd::draw>(1);
+        DrawCmd->VertexBuffer = VertexBuffer;
+        DrawCmd->VertexFormat = vert_format::P1C1UV1;
+        DrawCmd->StartVertex = 0;
+        DrawCmd->VertexCount = VertexBufferSize;
+        DrawCmd->Textures[0] = Texture;
+    }
+}

@@ -70,40 +70,57 @@ void map::Init(map_data *MapData)
         memcpy(TileLayer->GIDs, MapDataTileLayer->Tiles, Width * Height * sizeof(u32));
     }
 
-    //
-}
-
-void map::PrepareStaticBuffer()
-{
-    // NOTE: Returns tileset* that contains the given GID data
-    auto GetTilesetByGID = [this](u32 GID) -> map_tileset *
+    //NOTE: Generate tile collision map
+    CollisionLayer.Colliders = (u32 *)MALLOC(Width * Height * sizeof(u32));
+    for(u32 TileLayerIndex = 0; TileLayerIndex < TileLayerCount; ++TileLayerIndex)
     {
-        for(u32 Index = 0; Index < TilesetCount; ++Index)
+        tile_layer *MapDataTileLayer = MapData->TileLayers[TileLayerIndex];
+        if(MapDataTileLayer->Collide)
         {
-            map_tileset *CurrTileset = &Tilesets[Index];
-            if(CurrTileset->FirstGID <= GID)
+            for(u32 Y = 0; Y < Height; ++Y)
             {
-                if((Index + 1) >= TilesetCount)
+                for(u32 X = 0; X < Width; ++X)
                 {
-                    return CurrTileset;
-                }
-
-                map_tileset *NextTileset = &Tilesets[Index + 1];
-                if(NextTileset->FirstGID < GID)
-                {
-                    continue;
-                }
-                else
-                {
-                    return CurrTileset;
+                    CollisionLayer.Colliders[X + (Y * Width)] = MapDataTileLayer->Tiles[X + (Y * Width)] != 0 ? 1 : 0;
                 }
             }
         }
+    }
+}
 
-        INVALID_CODE_PATH;
-        return nullptr;
-    };
+void map::Shutdown()
+{
+}
 
+map_tileset *map::GetTilesetByGID(u32 GID)
+{
+    for(u32 Index = 0; Index < TilesetCount; ++Index)
+    {
+        map_tileset *CurrTileset = &Tilesets[Index];
+        if(CurrTileset->FirstGID <= GID)
+        {
+            if((Index + 1) >= TilesetCount)
+            {
+                return CurrTileset;
+            }
+
+            map_tileset *NextTileset = &Tilesets[Index + 1];
+            if(NextTileset->FirstGID < GID)
+            {
+                continue;
+            }
+            else
+            {
+                return CurrTileset;
+            }
+        }
+    }
+    INVALID_CODE_PATH;
+    return nullptr;
+}
+
+void map::GenerateStaticBuffer()
+{
     // NOTE: Generate static vertices for all the tiles in every tile-layers in the map
     for(u32 LayerIndex = 0; LayerIndex < TileLayerCount; ++LayerIndex)
     {
@@ -130,9 +147,7 @@ void map::PrepareStaticBuffer()
     for(u32 TilesetIndex = 0; TilesetIndex < TilesetCount; ++TilesetIndex)
     {
         map_tileset *Tileset = &Tilesets[TilesetIndex];
-
         u32 BufferSize = (u32)Tileset->StaticVertices.size() * sizeof(vert_P1C1UV1);
-
         if(BufferSize > 0)
         {
             Tileset->StaticVB = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, BufferSize, false);
@@ -141,37 +156,8 @@ void map::PrepareStaticBuffer()
     }
 }
 
-void map::UpdateDynamicBuffer(game_input *Input)
+void map::UpdateDynamicBuffer()
 {
-    // NOTE: Returns tileset* that contains the given GID data
-    auto GetTilesetByGID = [this](u32 GID) -> map_tileset *
-    {
-        for(u32 Index = 0; Index < TilesetCount; ++Index)
-        {
-            map_tileset *CurrTileset = &Tilesets[Index];
-            if(CurrTileset->FirstGID <= GID)
-            {
-                if((Index + 1) >= TilesetCount)
-                {
-                    return CurrTileset;
-                }
-
-                map_tileset *NextTileset = &Tilesets[Index + 1];
-                if(NextTileset->FirstGID < GID)
-                {
-                    continue;
-                }
-                else
-                {
-                    return CurrTileset;
-                }
-            }
-        }
-
-        INVALID_CODE_PATH;
-        return nullptr;
-    };
-
     // NOTE: Animate tiles
     for(u32 TilesetIndex = 0; TilesetIndex < TilesetCount; ++TilesetIndex)
     {
@@ -181,9 +167,9 @@ void map::UpdateDynamicBuffer(game_input *Input)
         for(u32 AnimTileIndex = 0; AnimTileIndex < Tileset->AnimatedTileCount; ++AnimTileIndex)
         {
             map_tile *Tile = Tileset->AnimatedTiles[AnimTileIndex];
-            if((Input->Time - Tile->LastFrameChangeTime) * 1000.0 > (r64)Tile->FrameDuration)
+            if((GameState->Time - Tile->LastFrameChangeTime) * 1000.0 >= (r64)Tile->FrameDuration)
             {
-                Tile->LastFrameChangeTime = Input->Time;
+                Tile->LastFrameChangeTime = GameState->Time;
                 Tile->CurrFrameIndex = (Tile->CurrFrameIndex + 1) % ARRAY_COUNT(map_tile::UV);
             }
         }
@@ -232,8 +218,10 @@ void map::UpdateDynamicBuffer(game_input *Input)
     }
 }
 
-void map::Render()
+void map::UpdateAndRender()
 {
+    UpdateDynamicBuffer();
+
     for(u32 TilesetIndex = 0; TilesetIndex < TilesetCount; ++TilesetIndex)
     {
         map_tileset *Tileset = &Tilesets[TilesetIndex];

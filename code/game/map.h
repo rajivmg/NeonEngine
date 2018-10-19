@@ -32,6 +32,11 @@ struct map_tile_layer
     u32 *GIDs;
 };
 
+struct map_collision_layer
+{
+    u32 *Colliders;
+};
+
 struct map
 {
     u32 Width, Height;
@@ -41,14 +46,20 @@ struct map
     u32 TilesetCount;
     map_tile_layer *TileLayers;
     u32 TileLayerCount;
+
+    map_collision_layer CollisionLayer;
     // tile_collider
     // static_collider { manifold, void(*Callback)(void *Data) }
     // entity_collider { manifold, entity *}
     
     void Init(map_data *MapData);
-    void PrepareStaticBuffer();
-    void UpdateDynamicBuffer(game_input *Input);
-    void Render();
+    void Shutdown();
+
+    map_tileset *GetTilesetByGID(u32 GID);
+
+    void GenerateStaticBuffer();
+    void UpdateDynamicBuffer();
+    void UpdateAndRender();
 };
 
 #endif

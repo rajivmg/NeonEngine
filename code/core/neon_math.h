@@ -118,7 +118,9 @@ FORCE_INLINE r32 Sum(vec2 const &A) { return A.x + A.y; }
 FORCE_INLINE r32 Dot(vec2 const &A, vec2 const &B) { return Sum(A * B); }
 FORCE_INLINE r32 Length(vec2 const &A) { return sqrtf(Dot(A, A)); }
 FORCE_INLINE r32 LengthSq(vec2 const &A) { return Dot(A, A); }
-FORCE_INLINE vec2 Normalize(vec2 const &A) { return A / Length(A); }
+FORCE_INLINE vec2 Normalize(vec2 const &A) { r32 VecLength = Length(A); if(VecLength != 0.0f) { return A / VecLength; } else { return vec2(0.0f); } }
+
+inline vec2 Lerp(vec2 A, r32 t, vec2 B) { vec2 Result = (1.0f - t) * A + t * B; return Result; }
 
 struct vec3
 {
@@ -140,6 +142,7 @@ struct vec3
     FORCE_INLINE explicit vec3(r32 const *e) { x = e[0]; y = e[1]; z = e[2]; }
     FORCE_INLINE explicit vec3(r32 _x, r32 _y, r32 _z) { x = _x; y = _y; z = _z; }
     FORCE_INLINE explicit vec3(r32 xyz) { x = xyz; y = xyz; z = xyz; }
+    FORCE_INLINE explicit vec3(vec2 v2, r32 _z) { x = v2.x; y = v2.y; z = _z; }
 };
 
 FORCE_INLINE vec3 vec3i(s32 _x, s32 _y, s32 _z) { return vec3((r32)_x, (r32)_y, (r32)_z); }
@@ -176,8 +179,7 @@ FORCE_INLINE r32 Sum(vec3 const &A) { return A.x + A.y + A.z; }
 FORCE_INLINE r32 Dot(vec3 const &A, vec3 const &B) { return Sum(A * B); }
 FORCE_INLINE r32 Length(vec3 const &A) { return sqrtf(Dot(A, A)); }
 FORCE_INLINE r32 LengthSq(vec3 const &A) { return Dot(A, A); }
-FORCE_INLINE vec3 Normalize(vec3 const &A) { return A * (1.0f / Length(A)); }
-FORCE_INLINE vec3 Lerp(vec3 const &A, vec3 const &B, r32 T) { return A + (B - A) * T; }
+FORCE_INLINE vec3 Normalize(vec3 const &A) { r32 VecLength = Length(A); if(VecLength != 0.0f) { return A / VecLength; } else { return vec3(0.0f); } }
 
 inline vec3 Lerp(vec3 A, r32 t, vec3 B) { vec3 Result = (1.0f - t) * A + t * B; return Result; }
 

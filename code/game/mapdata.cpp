@@ -40,9 +40,6 @@ void map_data::Init(const char *Filename)
     {
         ASSERT(TilesetCount < ARRAY_COUNT(map_data::Tilesets));
         
-        //void *TilesetAddress = GameState->StackAllocator.Allocate(sizeof(tileset), 8);
-        //Tilesets[TilesetCount] = new(TilesetAddress) tileset();
-        //Tilesets[TilesetCount] = new tileset();
         Tilesets[TilesetCount] = (tileset *)MALLOC(sizeof(tileset));
         tileset *Tileset = Tilesets[TilesetCount];
 
@@ -78,23 +75,16 @@ void map_data::Init(const char *Filename)
         xml_node<> *TilesetImageNode = TSXTilesetNode->first_node("image");
         xml_attribute<> *TilesetImageSource = TilesetImageNode->first_attribute("source");
         char *TilesetBitmapFilename = TilesetImageSource->value();
-        while(*TilesetBitmapFilename != '/') { ++TilesetBitmapFilename; }
-        ++TilesetBitmapFilename;
+        while(*TilesetBitmapFilename != '/') { ++TilesetBitmapFilename; } ++TilesetBitmapFilename;
        
         strncpy(Tileset->BitmapFilename, TilesetBitmapFilename, 128); Tileset->BitmapFilename[127] = '\0';
-
-        //bitmap TilesetBitmap;
-        //LoadBitmap(&TilesetBitmap, TilesetBitmapFilename);
-        //Tileset->Texture = rndr::MakeTexture(&TilesetBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, true);
-        //FreeBitmap(&TilesetBitmap);
         
-        //NOTE: Process tiles
         u32 TileIndex = 0;
         u32 TilesetWidth = TileWidth * Tileset->Columns;
         u32 TilesetHeight = TileHeight * (Tileset->TileCount / Tileset->Columns);
-        //Tileset->Tiles = (tile *)GameState->StackAllocator.Allocate(Tileset->TileCount * sizeof(tile), 8);
         Tileset->Tiles = (tile *)MALLOC(Tileset->TileCount * sizeof(tile));
 
+        // NOTE: Generate ID and UV for all tiles in the tileset image
         for(u32 Row = 0; Row < (Tileset->TileCount / Tileset->Columns); ++Row)
         {
             for(u32 Col = 0; Col < Tileset->Columns; ++Col)
@@ -163,8 +153,7 @@ void map_data::Init(const char *Filename)
     while(LayerNode)
     {
         ASSERT(TileLayerCount < ARRAY_COUNT(map_data::TileLayers));
-        
-        //TileLayers[TileLayerCount] = (tile_layer *)GameState->StackAllocator.Allocate(sizeof(tile_layer), 8);
+       
         TileLayers[TileLayerCount] = (tile_layer *)MALLOC(sizeof(tile_layer));
         tile_layer *Layer = TileLayers[TileLayerCount];
         
@@ -172,7 +161,17 @@ void map_data::Init(const char *Filename)
         xml_attribute<> *LayerName = LayerNode->first_attribute("name");
         Layer->ID = strtoul(LayerID->value(), nullptr, 10);
         strncpy(Layer->Name, LayerName->value(), 64); Layer->Name[63] = '\0';
-        //Layer->Tiles = (u32 *)GameState->StackAllocator.Allocate(Width * Height * sizeof(u32), 8);
+
+        // NOTE: Check tile layer collision property
+        if(!strncmp("[C]", Layer->Name, 3))
+        {
+            Layer->Collide = true;
+        }
+        else
+        {
+            Layer->Collide = false;
+        }
+
         Layer->Tiles = (u32 *)MALLOC(Width * Height * sizeof(u32));
 
         xml_node<> *DataNode = LayerNode->first_node("data");
@@ -207,9 +206,6 @@ void map_data::Init(const char *Filename)
     {
         ASSERT(ObjectLayerCount < ARRAY_COUNT(ObjectLayers));
 
-        //void *ObjectLayerAddress = GameState->StackAllocator.Allocate(sizeof(object_layer), 8);
-        //ObjectLayers[ObjectLayerCount] = new(ObjectLayerAddress) object_layer();
-        //ObjectLayers[ObjectLayerCount] = new object_layer();
         ObjectLayers[ObjectLayerCount] = (object_layer *)MALLOC(sizeof(object_layer));
 
         object_layer *ObjectLayer = ObjectLayers[ObjectLayerCount];
@@ -229,9 +225,6 @@ void map_data::Init(const char *Filename)
         }
 
         // NOTE: Read object data
-        //void *ObjectsAddress = GameState->StackAllocator.Allocate(sizeof(object) * ObjectLayer->ObjectCount, 8);
-        //ObjectLayer->Objects = new(ObjectsAddress)object[ObjectLayer->ObjectCount]();
-        //ObjectLayer->Objects = new object[ObjectLayer->ObjectCount]();
         ObjectLayer->Objects = (object *)MALLOC(ObjectLayer->ObjectCount * sizeof(object));
 
         u32 ObjectIndex = 0;
@@ -289,7 +282,6 @@ void map_data::Shutdown()
     for(u32 TilesetIndex = 0; TilesetIndex < TilesetCount; ++TilesetIndex)
     {
         SAFE_FREE(Tilesets[TilesetIndex]->Tiles);
-        //delete Tilesets[TilesetIndex];
         SAFE_FREE(Tilesets[TilesetIndex]);
     }
 
@@ -301,8 +293,6 @@ void map_data::Shutdown()
 
     for(u32 ObjectLayerIndex = 0; ObjectLayerIndex < ObjectLayerCount; ++ObjectLayerIndex)
     {
-        //delete[] ObjectLayers[ObjectLayerIndex]->Objects;
-        //delete ObjectLayers[ObjectLayerIndex];
         SAFE_FREE(ObjectLayers[ObjectLayerIndex]->Objects);
         SAFE_FREE(ObjectLayers[ObjectLayerIndex]);
     }

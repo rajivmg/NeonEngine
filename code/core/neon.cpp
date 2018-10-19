@@ -418,6 +418,8 @@ int main(int argc, char **argv)
     Platform.LogError = &LogError;
     Platform.WindowWidth = 1280;
     Platform.WindowHeight = 720;
+    //Platform.WindowWidth = 1920;
+    //Platform.WindowHeight = 1080;
 
     if(SDL_Init(SDL_INIT_VIDEO) == 0)
     {
@@ -430,8 +432,10 @@ int main(int argc, char **argv)
         SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 2);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+
+        // NOTE: Anti-aliasing cause black lines around tiles and it's not needed in a pixel art game.
+        //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
         // Request SRGB enabled framebuffer
         // NOTE: Enabling this affect multisampling on Intel HD4000, make sure to
@@ -472,7 +476,7 @@ int main(int argc, char **argv)
                 SDL_Event Event;
                 bool ShouldQuit = false;
 
-                r32 Time = 0;
+                //r32 Time = 0;
                 r64 FrameTime = 0;
 
                 u64 PrevCounter, CurrentCounter, CounterFrequency;

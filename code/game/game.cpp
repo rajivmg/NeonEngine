@@ -7,7 +7,6 @@
 #include "editor.h"
 #include "debugdraw.h"
 #include "gamestate.h"
-#include "map.h"
 
 debug_draw *DebugDraw = nullptr; // NOTE: Global DebugDraw object pointer
 game_state *GameState = nullptr;
@@ -34,8 +33,6 @@ void DrawText(rect Dest, vec4 Color, r32 Layer, font *Font, char const *Format, 
     TextDrawCmd->Textures[0] = Font->Texture;
 }
 
-static map_data Area1 = {};
-static map Map = {};
 void GameSetup()
 {
     rndr::Init(); // NOTE: Initialize renderer
@@ -43,80 +40,114 @@ void GameSetup()
     GameState = new game_state(); // NOTE: Construct global GameState object
     DebugDraw = new debug_draw(); // NOTE: Construct global DebugDraw object
 
-    GameState->StackAllocator.Init(MEGABYTE(128));
+    GameState->StackAllocator.Init(MEGABYTE(64));
     GameState->EntityManager.Init();
 
-    // TODO: Remove this
-    GameState->MetersToPixels = Platform.WindowWidth / 32.0f; 
+    // NOTE: Set timer variables
+    GameState->Time = 0.0;
+    GameState->DeltaTime = 0.0;
+
+    // NOTE: Set pixel-meter conversion variables
+    //GameState->MetersToPixels = Platform.WindowWidth / 32.0f; 
+    GameState->MetersToPixels = Platform.WindowWidth / 30.0f; 
     GameState->PixelsToMeters = 1.0f / GameState->MetersToPixels;
 
     // NOTE: Game projection and view matrices
-    //GameState->ProjMatrix = Orthographic(0.0f, 10.6666667f, 6.0f, 0.0f, -10.0f, 1.0f);
-    GameState->ProjMatrix = Orthographic(0.0f, 32.0f, 18.0f, 0.0f, -10.0f, 1.0f);
+    //GameState->ProjMatrix = Orthographic(0.0f, 32.0f, 18.0f, 0.0f, -10.0f, 1.0f);
+    GameState->ProjMatrix = Orthographic(0.0f, 30.0f, 16.875f, 0.0f, -10.0f, 1.0f);
     GameState->ViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
 
     // NOTE: Virtual screen resolution 1280x720
     GameState->ScreenProjMatrix = Orthographic(0.0f, 1280.0f, 720.0f, 0.0f, -10.0f, 1.0f);
     GameState->ScreenViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
 
+    GameState->CameraP = vec2(0.0f);
+
     // NOTE: Make shaders
     GameState->SpriteShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
     GameState->TextShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
 
     // NOTE: Make Vertex buffers
-    GameState->SpriteVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(20), true);
+    //GameState->EntityVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(32), true);
     GameState->SpriteRender = new render_cmd_list(MEGABYTE(2), GameState->SpriteShader, &GameState->ViewMatrix, &GameState->ProjMatrix);
     GameState->TextVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(5), true);
     GameState->TextRender = new render_cmd_list(MEGABYTE(1), GameState->TextShader, &GameState->ScreenViewMatrix, &GameState->ScreenProjMatrix);
 
+    // NOTE: Make white texture
     bitmap WhiteBitmap;
     LoadBitmap(&WhiteBitmap, "sprites/white_texture.tga");
     GameState->WhiteTexture = rndr::MakeTexture(&WhiteBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
 
-    InitEditor(&EditorCtx);
+    //InitEditor(&EditorCtx);
+    map_data VillageMap;
+    VillageMap.Init("map/Village.tmx");
 
-    Area1.Init("map/Village.tmx");
-    //Area1.PrepareStaticBuffers();
+    GameState->Map.Init(&VillageMap);
+    VillageMap.Shutdown();
+    GameState->Map.GenerateStaticBuffer();
 
-    Map.Init(&Area1);
-    Area1.Shutdown();
-    Map.PrepareStaticBuffer();
-    int a = 0;
+    GameState->CharacterTileset.Init("tileset/Character_Tileset.tsx");
+
+    void *M = GameState->StackAllocator.Allocate(sizeof(player_entity), 8);
+    GameState->PlayerEntity = GameState->EntityManager.AddEntity<player_entity>(M);
+
+    M = GameState->StackAllocator.Allocate(sizeof(follow_camera_entity), 8);
+    GameState->EntityManager.AddEntity<follow_camera_entity>(M);
 }
 
 void GameUpdateAndRender(game_input *Input)
 {
-    GameState->EntityManager.Update(Input);
-    GameState->EntityManager.Draw();
-    
-    //Area1.Render();
-    Map.UpdateDynamicBuffer(Input);  // TODO: Move timer in GameState with pause functionality
-    Map.Render();
+    static bool GamePaused = false;
 
-    static vec3 CameraP = vec3(0, 0, 0);
-    if(Input->Mouse.Left.EndedDown)
+    ImGui::Begin("Game Debug");
+    ImGui::Checkbox("Pause Game?", &GamePaused);
+    ImGui::End();
+
+    // NOTE: Set game input pointer
+    GameState->Input = Input;
+
+    // NOTE: Update GameState timer when the game is not paused
+    static r64 PrevGameStateTime = 0.0;
+    if(!GamePaused)
     {
-        CameraP.x -= Input->Mouse.xrel * GameState->PixelsToMeters * 1.0f;
-        CameraP.y -= Input->Mouse.yrel * GameState->PixelsToMeters * 1.0f;
+        GameState->Time += Input->DeltaTime;
+        GameState->DeltaTime = GameState->Time - PrevGameStateTime;
+        PrevGameStateTime = GameState->Time;
+
+        // NOTE: Test GameState time with Input time
+        //r32 InputFrameRate = 1 / Input->DeltaTime;
+        //r32 InputMSFrame = 1000.0 * Input->DeltaTime;
+        //r32 GameFrameRate = 1 / GameState->DeltaTime;
+        //r32 GameMSFrame = 1000.0 * GameState->DeltaTime;
+        //ASSERT(InputFrameRate == GameFrameRate);
+        //ASSERT(InputMSFrame == GameMSFrame);
     }
 
-    GameState->ViewMatrix = LookAt(CameraP, CameraP + vec3i(0, 0, -1), vec3i(0, 1, 0));
+    GameState->EntityManager.Update();
+    GameState->EntityManager.Draw();
+    GameState->CharacterTileset.Render();
+    
+    GameState->Map.UpdateAndRender();
+
+    if(Input->Mouse.Left.EndedDown)
+    {
+        GameState->CameraP.x -= Input->Mouse.xrel * GameState->PixelsToMeters * 1.0f;
+        GameState->CameraP.y -= Input->Mouse.yrel * GameState->PixelsToMeters * 1.0f;
+    }
+
+    GameState->ViewMatrix = LookAt(vec3(GameState->CameraP, 0.0f), vec3(GameState->CameraP, 0.0f) + vec3i(0, 0, -1), vec3i(0, 1, 0));
     
     // NOTE: FPS Counter
     DebugDraw->Text(Rect(0, 720, 1, 1), RGBAUnpackTo01(0xa3f736ff), 10.0f, "%0.2f ms/frame Framerate %0.2f/s", 1000.0 * Input->DeltaTime, 1 / Input->DeltaTime);
+    //DebugDraw->Text(Rect(400, 720, 1, 1), RGBAUnpackTo01(0xa3f736ff), 10.0f, "GameTime: %0.6f GameDeltaTime: %0.6f", GameState->Time, GameState->DeltaTime);
     
     rndr::Clear(); // NOTE: Clear all framebuffers
- 
-    // NOTE: Sprite rendering commands
-    //if(!GameState->SpriteVertices.empty())
-    //{
-    //    //GameState->SpriteVertices.clear();
 
-        GameState->SpriteRender->Sort();
-        GameState->SpriteRender->Submit();
-        GameState->SpriteRender->Flush();
-    //}
-    
+    // NOTE: Sprite rendering
+    GameState->SpriteRender->Sort();
+    GameState->SpriteRender->Submit();
+    GameState->SpriteRender->Flush();
+
     // NOTE: Text rendering commands
     if(!GameState->TextVertices.empty())
     {

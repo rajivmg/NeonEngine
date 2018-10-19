@@ -2,32 +2,28 @@
 #define PLAYER_H
 
 #include "entitysystem.h"
+#include "cute_c2.h"
 
 struct player_entity : entity<player_entity>
 {
-    bool Jumping;
-    char *Name;
+    vec2 P;
+    r32 Speed;
 
-    void Update(game_input *Input);
-    void Draw() { Platform.Log("Drawing %s", Name); }
+    c2AABB Collider;
+
+    player_entity();
+    
+    void Update();
+    void Draw();
 };
 
-struct snake_entity : entity<snake_entity>
+struct follow_camera_entity : entity<follow_camera_entity>
 {
-    bool Poisonous;
+    vec2 Offset;
+    r32 Speed;
 
-    snake_entity() { Platform.Log("snake_entity() called"); }
-    ~snake_entity() { Platform.Log("~snake_entity() called"); }
-    void Update(game_input *Input) { Platform.Log("Snake is Poisonous: %d", Poisonous); }
-    void Draw() { Platform.Log("Drawing Snake Entity"); }
-};
-
-struct kermit_entity : entity<kermit_entity>
-{
-    char *Says;
-    u32 Times;
-
-    void Update(game_input *Input);
-    void Draw() { Platform.Log("Drawing Kermit Entity"); }
+    follow_camera_entity();
+    
+    void Update();
 };
 #endif

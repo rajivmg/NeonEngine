@@ -22,11 +22,6 @@ struct tileset
     u32 Columns;
     tile *Tiles;
     u32 AnimatedTileCount;
-
-    // tileset_render_data
-    //render_resource Texture;
-    //render_resource VertexBuffer;
-    //std::vector<vert_P1C1UV1> Vertices;
 };
 
 struct tile_layer
@@ -34,6 +29,7 @@ struct tile_layer
     u32 ID;
     char Name[64];
     u32 *Tiles;
+    bool Collide;
 };
 
 struct object
@@ -75,13 +71,6 @@ struct map_data
 
     void Init(const char *Filename);
     void Shutdown();
-
-    //tileset *GetTilesetByGID(u32 GID);
-    //object_layer *GetObjectLayerByName(const char *Name);
-    //object *GetObjectByName(object_layer *ObjectLayer, const char *Name);
-    
-    //void PrepareStaticBuffers();
-    //void Render();
 };
 
 #endif

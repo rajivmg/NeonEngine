@@ -42,13 +42,13 @@ void entity_manager::Clear()
     EntityCurrent = 0;
 }
 
-void entity_manager::Update(game_input *Input)
+void entity_manager::Update()
 {
     for(u32 I = 0; I < EntityCurrent; ++I)
     {
         if(!Entities[I]->DELETED)
         {
-            Entities[I]->Update(Input);
+            Entities[I]->Update();
         }
     }
 }
