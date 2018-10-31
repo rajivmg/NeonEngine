@@ -48,10 +48,10 @@ void map_data::Init(const char *Filename)
         Tileset->FirstGID = strtoul(TilesetFirstGID->value(), nullptr, 10);
 
         // NOTE: Parse tsx file
-        char TSXFilename[512];
-        strcpy(TSXFilename, "map/");
-        strncat(TSXFilename, TilesetSource->value(), TilesetSource->value_size());
-        file_content TSXFile = Platform.ReadFile(TSXFilename);
+        char *TilesetFilename = TilesetSource->value();
+        while(*TilesetFilename != '/') { ++TilesetFilename; } ++TilesetFilename;
+        file_content TSXFile = Platform.ReadFile(TilesetFilename);
+
         ASSERT(TSXFile.NoError);
         char *NullTermTSXFile = (char *)MALLOC((TSXFile.Size + 1) * sizeof(char));
         memcpy(NullTermTSXFile, TSXFile.Content, TSXFile.Size);
@@ -74,8 +74,10 @@ void map_data::Init(const char *Filename)
 
         xml_node<> *TilesetImageNode = TSXTilesetNode->first_node("image");
         xml_attribute<> *TilesetImageSource = TilesetImageNode->first_attribute("source");
-        char *TilesetBitmapFilename = TilesetImageSource->value();
-        while(*TilesetBitmapFilename != '/') { ++TilesetBitmapFilename; } ++TilesetBitmapFilename;
+
+        char TilesetBitmapFilename[512];
+        strcpy(TilesetBitmapFilename, "tileset/");
+        strncat(TilesetBitmapFilename, TilesetImageSource->value(), TilesetImageSource->value_size());
        
         strncpy(Tileset->BitmapFilename, TilesetBitmapFilename, 128); Tileset->BitmapFilename[127] = '\0';
         
@@ -248,8 +250,11 @@ void map_data::Init(const char *Filename)
                 Object->Rectangle = false;
                 r32 X = strtof(ObjectX->value(), nullptr);
                 r32 Y = strtof(ObjectY->value(), nullptr);
-                Object->x = X;
-                Object->y = (Height * TileHeight) - Y; // NOTE: Convert from top-left to bottom-left origin
+                //Object->x = X;
+                //Object->y = (Height * TileHeight) - Y; // NOTE: Convert from top-left to bottom-left origin
+                // TODO: Simplify this
+                Object->x = X / TileWidth; //(X / (Width * TileWidth)) * Width;
+                Object->y = ((Height * TileHeight) - Y) / TileHeight; //(((Height * TileHeight) - Y) / (Height * TileHeight)) * Height; // NOTE: Convert from top-left to bottom-left origin
             }
             else
             {
@@ -259,10 +264,14 @@ void map_data::Init(const char *Filename)
                 r32 Y = strtof(ObjectY->value(), nullptr);
                 r32 W = strtof(ObjectWidth->value(), nullptr);
                 r32 H = strtof(ObjectHeight->value(), nullptr);
-                Object->Rect.x = X;
-                Object->Rect.y =  (Height * TileHeight) - (Y + H); // NOTE: Convert from top-left to bottom-left origin
-                Object->Rect.width = W;
-                Object->Rect.height = H;
+                //Object->Rect.x = X;
+                //Object->Rect.y =  (Height * TileHeight) - (Y + H); // NOTE: Convert from top-left to bottom-left origin
+                //Object->Rect.width = W;
+                //Object->Rect.height = H;
+                Object->Rect.x = X / TileWidth;
+                Object->Rect.y = ((Height * TileHeight) - (Y + H)) / TileHeight; // NOTE: Convert from top-left to bottom-left origin
+                Object->Rect.width = W / TileWidth;
+                Object->Rect.height = H / TileHeight;
             }
 
             ++ObjectIndex;

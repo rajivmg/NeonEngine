@@ -3,6 +3,7 @@
 #include <core/neon_bitmap.h>
 
 #include "gamestate.h"
+#include "debugdraw.h"
 
 void map::Init(map_data *MapData)
 {
@@ -70,7 +71,28 @@ void map::Init(map_data *MapData)
         memcpy(TileLayer->GIDs, MapDataTileLayer->Tiles, Width * Height * sizeof(u32));
     }
 
-    //NOTE: Generate tile collision map
+    // NOTE: Copy objects
+    ObjectCount = MapData->ObjectLayers[0]->ObjectCount;
+    Objects = (map_object *)MALLOC(ObjectCount * sizeof(map_object));
+    for(u32 ObjectIndex = 0; ObjectIndex < ObjectCount; ++ObjectIndex)
+    {
+        map_object *Object = &Objects[ObjectIndex];
+        object *MapDataObject = &MapData->ObjectLayers[0]->Objects[ObjectIndex];
+        Object->ID = MapDataObject->ID;
+        strncpy(Object->Name, MapDataObject->Name, ARRAY_COUNT(object::Name));
+        if(MapDataObject->Point)
+        {
+            Object->Type = map_object::POINT;
+            Object->x = MapDataObject->x; Object->y = MapDataObject->y;
+        }
+        if(MapDataObject->Rectangle)
+        {
+            Object->Type = map_object::RECTANGLE;
+            Object->Rect = MapDataObject->Rect;
+        }
+    }
+
+    // NOTE: Generate tile collision map
     CollisionLayer.Colliders = (u32 *)MALLOC(Width * Height * sizeof(u32));
     for(u32 TileLayerIndex = 0; TileLayerIndex < TileLayerCount; ++TileLayerIndex)
     {
@@ -85,6 +107,25 @@ void map::Init(map_data *MapData)
                 }
             }
         }
+    }
+
+    // NOTE: Generate farm map
+    FarmCount = 0;
+    map_object *FarmableLandObject = GetNextObjectByName("FarmableLand", nullptr);
+    while(FarmableLandObject)
+    {
+        ++FarmCount;
+        FarmableLandObject = GetNextObjectByName("FarmableLand", FarmableLandObject);
+    }
+
+    FarmableLandObject = GetNextObjectByName("FarmableLand", nullptr);
+    Farms = (map_farm *)MALLOC(FarmCount * sizeof(map_farm));
+    for(u32 FarmIndex = 0; FarmIndex < FarmCount; ++FarmIndex)
+    {
+        Farms[FarmIndex].Area = FarmableLandObject->Rect;
+        Farms[FarmIndex].Items = (item *)MALLOC((u32)Farms[FarmIndex].Area.width * (u32)Farms[FarmIndex].Area.height * sizeof(item));
+        memset(Farms[FarmIndex].Items, 0, (u32)Farms[FarmIndex].Area.width * (u32)Farms[FarmIndex].Area.height * sizeof(item));
+        FarmableLandObject = GetNextObjectByName("FarmableLand", FarmableLandObject);
     }
 }
 
@@ -105,7 +146,7 @@ map_tileset *map::GetTilesetByGID(u32 GID)
             }
 
             map_tileset *NextTileset = &Tilesets[Index + 1];
-            if(NextTileset->FirstGID < GID)
+            if(NextTileset->FirstGID <= GID)
             {
                 continue;
             }
@@ -117,6 +158,91 @@ map_tileset *map::GetTilesetByGID(u32 GID)
     }
     INVALID_CODE_PATH;
     return nullptr;
+}
+
+map_object *map::GetNextObjectByName(const char *_Name, map_object *_Object)
+{
+    u32 ObjectIndex = 0;
+    
+    // NOTE: Move ObjectIndex to next object after _Object
+    if(_Object != nullptr)
+    {
+        bool _ObjectFound = false;
+        for(ObjectIndex = 0; ObjectIndex < ObjectCount; ++ObjectIndex)
+        {
+            if(&Objects[ObjectIndex] == _Object)
+            {
+                _ObjectFound = true;
+                if(ObjectIndex == (ObjectCount - 1))
+                {
+                    return nullptr; // NOTE: Last object, next object with name _Name not found; return null;
+                }
+
+                ObjectIndex++;
+                break;
+            }
+        }
+
+        if(!_ObjectFound)
+        {
+            INVALID_CODE_PATH;
+        }
+    }
+
+    // NOTE: Search for next object with _Name
+    for(; ObjectIndex < ObjectCount; ++ObjectIndex)
+    {
+        if(!strncmp(Objects[ObjectIndex].Name, _Name, 64))
+        {
+            return &Objects[ObjectIndex];
+        }
+    }
+
+    return nullptr; // NOTE: Next object with name _Name not found; return null
+}
+
+bool map::CanFarm(u32 X, u32 Y, map_farm **_Farm)
+{
+    for(u32 FarmIndex = 0; FarmIndex < FarmCount; ++FarmIndex)
+    {
+        rect *Area = &Farms[FarmIndex].Area;
+        if((Area->x <= X) && (Area->x + Area->width > X)
+            && (Area->y <= Y) && (Area->y + Area->height > Y))
+        {
+            if(_Farm != nullptr)
+            {
+                *_Farm = &Farms[FarmIndex];
+            }
+            return true;
+        }
+    }
+
+    if(_Farm != nullptr)
+    {
+        *_Farm = nullptr;
+    }
+    return false;
+}
+
+item *map::FarmPut(u32 X, u32 Y, map_farm *_Farm, item::type ItemType)
+{
+    // NOTE: Coordinates relative to farm position
+    u32 RelX = X - (u32)_Farm->Area.x;
+    u32 RelY = Y - (u32)_Farm->Area.y;
+    
+    item *Item = &_Farm->Items[RelX + (RelY * (u32)_Farm->Area.width)];
+    Item->Type = ItemType;
+
+    switch(Item->Type)
+    {
+        case item::FENCE:
+        {
+            CollisionLayer.Colliders[X + Y * Width] = 1;
+        } break;
+
+        INVALID_DEFAULT_CASE;
+    }
+    return Item;
 }
 
 void map::GenerateStaticBuffer()
@@ -216,6 +342,32 @@ void map::UpdateDynamicBuffer()
             rndr::BufferData(Tileset->DynamicVB, 0, BufferSize, &Tileset->DynamicVertices.front());
         }
     }
+
+    // NOTE: Update ItemTileset vertex buffer
+    for(u32 FarmIndex = 0; FarmIndex < FarmCount; ++FarmIndex)
+    {
+        map_farm *Farm = &Farms[FarmIndex];
+        for(u32 Y = 0; Y < (u32)Farm->Area.height; ++Y)
+        {
+            for(u32 X = 0; X < (u32)Farm->Area.width; ++X)
+            {
+                item *Item = &Farm->Items[X + Y * (u32)Farm->Area.width];
+                if(Item->Type == item::FENCE)
+                {
+                    game_tile *ItemTile = GameState->ItemTileset.GetTileByID(Item->Type);
+                    PushSprite(&GameState->ItemTileset.Vertices, Rect((r32)X + Farm->Area.x, (r32)Y + Farm->Area.y, 1.0f, 1.0f), ItemTile->UV[0], vec4(1.0f), 0.0f, vec2(0.0f), 8.0f);
+                }
+            }
+        }
+    }
+
+#if 0
+    // NOTE: Highlight farmable tiles
+    for(u32 FarmIndex = 0; FarmIndex < FarmCount; ++FarmIndex)
+    {
+        DebugDraw->Rect(Farms[FarmIndex].Area, RGBAUnpackTo01(0x7c34ad55), 7.0f);
+    }
+#endif
 }
 
 void map::UpdateAndRender()

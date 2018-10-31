@@ -5,7 +5,7 @@
 #include <core/neon_renderer.h>
 #include <core/neon_allocator.h>
 
-#include "assetsystem.h"
+#include "tileset.h"
 #include "entitysystem.h"
 #include "mapdata.h"
 #include "map.h"
@@ -36,9 +36,6 @@ struct game_state
     
     render_cmd_list *SpriteRender;
 
-    //render_resource EntityVertexBuffer;
-    //std::vector<vert_P1C1UV1> EntityVertices;
-
     render_cmd_list *TextRender;
     render_resource TextVertexBuffer;
     std::vector<vert_P1C1UV1> TextVertices;
@@ -48,6 +45,7 @@ struct game_state
 
     map Map;
     game_tileset CharacterTileset;
+    game_tileset ItemTileset;
 
     player_entity *PlayerEntity;
 };

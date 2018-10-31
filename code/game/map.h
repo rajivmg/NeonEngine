@@ -5,6 +5,7 @@
 #include <core/neon_math.h>
 
 #include "mapdata.h"
+#include "item.h"
 
 struct map_tile
 {
@@ -37,6 +38,29 @@ struct map_collision_layer
     u32 *Colliders;
 };
 
+struct map_object
+{
+    enum type { NONE, POINT, RECTANGLE };
+
+    u32 ID;
+    char Name[64];
+    type Type;
+    union
+    {
+        struct
+        { 
+            r32 x, y;
+        };
+        rect Rect;
+    };
+};
+
+struct map_farm
+{
+    rect Area;
+    item *Items;
+};
+
 struct map
 {
     u32 Width, Height;
@@ -48,14 +72,26 @@ struct map
     u32 TileLayerCount;
 
     map_collision_layer CollisionLayer;
-    // tile_collider
+
+    map_object *Objects;
+    u32 ObjectCount;
+
+    map_farm *Farms;
+    u32 FarmCount;
+
+    // tile_collider [done]
+    // entity_collider { AABB, manifold, *entity->Collided }
     // static_collider { manifold, void(*Callback)(void *Data) }
-    // entity_collider { manifold, entity *}
     
     void Init(map_data *MapData);
     void Shutdown();
 
     map_tileset *GetTilesetByGID(u32 GID);
+    map_object *GetNextObjectByName(const char *_Name, map_object *_Object);
+    bool CanFarm(u32 X, u32 Y, map_farm **_Farm);
+    item *FarmGet(u32 X, u32 Y, map_farm *_Farm);
+    item *FarmPut(u32 X, u32 Y, map_farm *_Farm, item::type ItemType);
+    void FarmRemove(u32 X, u32 Y);
 
     void GenerateStaticBuffer();
     void UpdateDynamicBuffer();

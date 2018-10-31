@@ -64,8 +64,8 @@ void GameSetup()
     GameState->CameraP = vec2(0.0f);
 
     // NOTE: Make shaders
-    GameState->SpriteShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
-    GameState->TextShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
+    GameState->SpriteShader = rndr::MakeShaderProgram("shader/sprite_vs.glsl", "shader/sprite_ps.glsl");
+    GameState->TextShader = rndr::MakeShaderProgram("shader/sprite_vs.glsl", "shader/sprite_ps.glsl");
 
     // NOTE: Make Vertex buffers
     //GameState->EntityVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(32), true);
@@ -75,7 +75,7 @@ void GameSetup()
 
     // NOTE: Make white texture
     bitmap WhiteBitmap;
-    LoadBitmap(&WhiteBitmap, "sprites/white_texture.tga");
+    LoadBitmap(&WhiteBitmap, "sprite/white_texture.tga");
     GameState->WhiteTexture = rndr::MakeTexture(&WhiteBitmap, tex_param::TEX2D, tex_param::NEAREST, tex_param::CLAMP, false);
 
     //InitEditor(&EditorCtx);
@@ -86,7 +86,8 @@ void GameSetup()
     VillageMap.Shutdown();
     GameState->Map.GenerateStaticBuffer();
 
-    GameState->CharacterTileset.Init("tileset/Character_Tileset.tsx");
+    GameState->CharacterTileset.Init("tileset/CharacterTileset.tsx");
+    GameState->ItemTileset.Init("tileset/ItemTileset.tsx");
 
     void *M = GameState->StackAllocator.Allocate(sizeof(player_entity), 8);
     GameState->PlayerEntity = GameState->EntityManager.AddEntity<player_entity>(M);
@@ -125,9 +126,11 @@ void GameUpdateAndRender(game_input *Input)
 
     GameState->EntityManager.Update();
     GameState->EntityManager.Draw();
-    GameState->CharacterTileset.Render();
     
     GameState->Map.UpdateAndRender();
+
+    GameState->CharacterTileset.Render();
+    GameState->ItemTileset.Render();
 
     if(Input->Mouse.Left.EndedDown)
     {

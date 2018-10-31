@@ -40,7 +40,10 @@ struct object
     bool Rectangle;
     union
     {
-        r32 x, y;
+        struct
+        {
+            r32 x, y;
+        };
         rect Rect;
     };
 };

@@ -1,24 +1,25 @@
 #include "debugdraw.h"
 
+#include "gamestate.h"
 #include <stdarg.h>
 
 debug_draw::debug_draw()
 {
-    ScreenProjMatrix = Orthographic(0.0f, 1280.0f, 720.0f, 0.0f, -10.0f, 1.0f);
-    ScreenViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
+    //ScreenProjMatrix = Orthographic(0.0f, 1280.0f, 720.0f, 0.0f, -10.0f, 1.0f);
+    //ScreenViewMatrix = LookAt(vec3(0.0f), vec3i(0, 0, -1), vec3i(0, 1, 0));
 
-    DbgRectShader = rndr::MakeShaderProgram("shaders/debug_rect_vs.glsl", "shaders/debug_rect_ps.glsl");
+    DbgRectShader = rndr::MakeShaderProgram("shader/debug_rect_vs.glsl", "shader/debug_rect_ps.glsl");
     DbgRectVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
-    DbgRectRender = new render_cmd_list(MEGABYTE(1), DbgRectShader, &ScreenViewMatrix, &ScreenProjMatrix);
+    DbgRectRender = new render_cmd_list(MEGABYTE(1), DbgRectShader, &GameState->ViewMatrix, &GameState->ProjMatrix);
 
-    InitFont(&DbgFont, "fonts/inconsolata_26.fnt");
-    DbgTextShader = rndr::MakeShaderProgram("shaders/sprite_vs.glsl", "shaders/sprite_ps.glsl");
+    InitFont(&DbgFont, "font/inconsolata_26.fnt");
+    DbgTextShader = rndr::MakeShaderProgram("shader/sprite_vs.glsl", "shader/sprite_ps.glsl");
     DbgTextVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(1), true);
-    DbgTextRender = new render_cmd_list(MEGABYTE(1), DbgTextShader, &ScreenViewMatrix, &ScreenProjMatrix);
+    DbgTextRender = new render_cmd_list(MEGABYTE(1), DbgTextShader, &GameState->ScreenViewMatrix, &GameState->ScreenProjMatrix);
 
-    DbgLineShader = rndr::MakeShaderProgram("shaders/debug_line_vs.glsl", "shaders/debug_line_ps.glsl");
+    DbgLineShader = rndr::MakeShaderProgram("shader/debug_line_vs.glsl", "shader/debug_line_ps.glsl");
     DbgLineVertexBuffer = rndr::MakeBuffer(resource_type::VERTEX_BUFFER, MEGABYTE(5), true);
-    DbgLineRender = new render_cmd_list(MEGABYTE(1), DbgLineShader, &ScreenViewMatrix, &ScreenProjMatrix);
+    DbgLineRender = new render_cmd_list(MEGABYTE(1), DbgLineShader, &GameState->ViewMatrix, &GameState->ProjMatrix);
 }
 
 debug_draw::~debug_draw()

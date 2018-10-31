@@ -544,7 +544,7 @@ static void ImGui_CreateFontsTexture()
     // TODO: If even wanted to reload game dll then pass font texture atlas from main app for performance
     // Build texture atlas
     ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 16);
+    io.Fonts->AddFontFromFileTTF("font/DroidSans.ttf", 16);
 
     unsigned char* pixels;
     int width, height;

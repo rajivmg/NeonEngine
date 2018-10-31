@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<level name="Prologue" width="20" height="15">
-	<tile tid="4"/>
-	<tile tid="7"/>
-</level>
-
-<entity eid="3" x="4" y="24"/>
