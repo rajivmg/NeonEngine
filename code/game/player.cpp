@@ -97,14 +97,19 @@ void player_entity::Update()
     map_farm *Farmo;
     if(GameState->Map.CanFarm(CursorX, CursorY, &Farmo))
     {
-        DebugDraw->Text(Rect(0, 600, 0, 1), vec4(1.0f), 5.0f, "Farm Tile X: %d, Y: %d", CursorX - (u32)Farmo->Area.x, CursorY - (u32)Farmo->Area.y);
+        //DebugDraw->Text(Rect(0, 600, 0, 1), vec4(1.0f), 5.0f, "Farm Tile X: %d, Y: %d", CursorX - (u32)Farmo->Area.x, CursorY - (u32)Farmo->Area.y);
         DebugDraw->Rect(Rect((r32)CursorX, (r32)CursorY, 1.0f, 1.0f), vec4(0.6f, 0.7f, 0.0f, 0.5f), 7.0f);
     }
     else
     {
         DebugDraw->Rect(Rect((r32)CursorX, (r32)CursorY, 1.0f, 1.0f), vec4(0.9f, 0.0f, 0.0f, 0.5f), 7.0f);
+        item *Item = GameState->Map.FarmGet(CursorX, CursorY, Farmo);
+        if(Item)
+        {
+            DebugDraw->Text(Rect(0, 600, 0, 1), vec4(1.0f), 5.0f, "Item Type: %d", Item->Type);
+        }
     }
-    DebugDraw->Text(Rect(0.0f, 700.0f, 1.0f, 1.0f), vec4(1.0f), 7.0f, "Cursor X, Y: %d %d", CursorX, CursorY);
+    //DebugDraw->Text(Rect(0.0f, 700.0f, 1.0f, 1.0f), vec4(1.0f), 7.0f, "Cursor X, Y: %d %d", CursorX, CursorY);
     
     map_farm *Farm;
     if(GameState->Input->Mouse.Left.EndedDown && GameState->Input->Mouse.Left.HalfTransitionCount == 1)
@@ -114,12 +119,6 @@ void player_entity::Update()
             GameState->Map.FarmPut(CursorX, CursorY, Farm, item::FENCE);
         }
     }
-
-    /*
-    bool GameState->Map.IsFarmable(tile)
-    if(Editable)
-        GameState->Map.FarmPut(Item, tile)
-    */
 
 #if 0
     // NOTE: Highlight tiles that are checked for collision
@@ -143,7 +142,9 @@ void player_entity::Update()
 void player_entity::Draw()
 {
     game_tile *CharacterTile = GameState->CharacterTileset.GetTileByID(0);
-    PushSprite(&GameState->CharacterTileset.Vertices, Rect(P.x, P.y, 1.0f, 1.0f), CharacterTile->UV[0], vec4(1.0f), 0.0f, vec2(0.0f), 5.0f);
+    r32 Width = GameState->CharacterTileset.TileWidthMeters;
+    r32 Height = GameState->CharacterTileset.TileHeightMeters;
+    PushSprite(&GameState->CharacterTileset.Vertices, Rect(P.x, P.y, Width, Height), CharacterTile->UV[0], vec4(1.0f), 0.0f, vec2(0.0f), 5.0f);
 }
 
 
@@ -152,7 +153,7 @@ follow_camera_entity::follow_camera_entity()
 {
     GameState->CameraP = GameState->PlayerEntity->P - vec2(15.0f, 8.4375f) + vec2(0.5f);
     Offset = GameState->CameraP - GameState->PlayerEntity->P;
-    Speed = 2.0f;
+    Speed = 2.3f;
 }
 
 void follow_camera_entity::Update()

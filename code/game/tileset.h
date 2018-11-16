@@ -19,6 +19,8 @@ struct game_tileset
 {
     game_tile *Tiles;
     u32 TileCount;
+    r32 TileWidthMeters;
+    r32 TileHeightMeters;
 
     std::vector<vert_P1C1UV1> Vertices;
     render_resource VertexBuffer, Texture;

@@ -33,6 +33,10 @@ void game_tileset::Init(const char *Filename)
     u32 TileHeight = strtoul(TilesetTileHeight->value(), nullptr, 10);
     u32 Columns = strtoul(TilesetColumns->value(), nullptr, 10);
 
+    r32 PixelsInMeter = 16.0f;
+    TileWidthMeters = TileWidth / PixelsInMeter;
+    TileHeightMeters = TileHeight / PixelsInMeter;
+
     TileCount = strtoul(TilesetTileCount->value(), nullptr, 10);
 
     xml_node<> *TilesetImageNode = TilesetNode->first_node("image");

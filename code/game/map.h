@@ -88,6 +88,7 @@ struct map
 
     map_tileset *GetTilesetByGID(u32 GID);
     map_object *GetNextObjectByName(const char *_Name, map_object *_Object);
+    // NOTE: Return false when Tile at XY is not in a farmable area or it's already occupied 
     bool CanFarm(u32 X, u32 Y, map_farm **_Farm);
     item *FarmGet(u32 X, u32 Y, map_farm *_Farm);
     item *FarmPut(u32 X, u32 Y, map_farm *_Farm, item::type ItemType);

@@ -80,13 +80,13 @@ void GameSetup()
 
     //InitEditor(&EditorCtx);
     map_data VillageMap;
-    VillageMap.Init("map/Village.tmx");
+    VillageMap.Init("map/ExampleMap.tmx");
 
     GameState->Map.Init(&VillageMap);
     VillageMap.Shutdown();
     GameState->Map.GenerateStaticBuffer();
 
-    GameState->CharacterTileset.Init("tileset/CharacterTileset.tsx");
+    GameState->CharacterTileset.Init("tileset/MainCharacterTileset.tsx");
     GameState->ItemTileset.Init("tileset/ItemTileset.tsx");
 
     void *M = GameState->StackAllocator.Allocate(sizeof(player_entity), 8);

@@ -72,23 +72,26 @@ void map::Init(map_data *MapData)
     }
 
     // NOTE: Copy objects
-    ObjectCount = MapData->ObjectLayers[0]->ObjectCount;
-    Objects = (map_object *)MALLOC(ObjectCount * sizeof(map_object));
-    for(u32 ObjectIndex = 0; ObjectIndex < ObjectCount; ++ObjectIndex)
+    if(MapData->ObjectLayerCount > 0)
     {
-        map_object *Object = &Objects[ObjectIndex];
-        object *MapDataObject = &MapData->ObjectLayers[0]->Objects[ObjectIndex];
-        Object->ID = MapDataObject->ID;
-        strncpy(Object->Name, MapDataObject->Name, ARRAY_COUNT(object::Name));
-        if(MapDataObject->Point)
+        ObjectCount = MapData->ObjectLayers[0]->ObjectCount;
+        Objects = (map_object *)MALLOC(ObjectCount * sizeof(map_object));
+        for(u32 ObjectIndex = 0; ObjectIndex < ObjectCount; ++ObjectIndex)
         {
-            Object->Type = map_object::POINT;
-            Object->x = MapDataObject->x; Object->y = MapDataObject->y;
-        }
-        if(MapDataObject->Rectangle)
-        {
-            Object->Type = map_object::RECTANGLE;
-            Object->Rect = MapDataObject->Rect;
+            map_object *Object = &Objects[ObjectIndex];
+            object *MapDataObject = &MapData->ObjectLayers[0]->Objects[ObjectIndex];
+            Object->ID = MapDataObject->ID;
+            strncpy(Object->Name, MapDataObject->Name, ARRAY_COUNT(object::Name));
+            if(MapDataObject->Point)
+            {
+                Object->Type = map_object::POINT;
+                Object->x = MapDataObject->x; Object->y = MapDataObject->y;
+            }
+            if(MapDataObject->Rectangle)
+            {
+                Object->Type = map_object::RECTANGLE;
+                Object->Rect = MapDataObject->Rect;
+            }
         }
     }
 
@@ -203,25 +206,54 @@ map_object *map::GetNextObjectByName(const char *_Name, map_object *_Object)
 
 bool map::CanFarm(u32 X, u32 Y, map_farm **_Farm)
 {
+    // NOTE: Loop through all farms in the map to check if the given tile lies inside a farm
     for(u32 FarmIndex = 0; FarmIndex < FarmCount; ++FarmIndex)
     {
         rect *Area = &Farms[FarmIndex].Area;
         if((Area->x <= X) && (Area->x + Area->width > X)
             && (Area->y <= Y) && (Area->y + Area->height > Y))
         {
+            // NOTE: If the given tile lies in a farm, point _Farm to that farm
             if(_Farm != nullptr)
             {
                 *_Farm = &Farms[FarmIndex];
             }
-            return true;
+
+            // NOTE: Return true if the given tile is empty
+            map_farm *Farm = &Farms[FarmIndex];
+            u32 RelX = X - (u32)Farm->Area.x;
+            u32 RelY = Y - (u32)Farm->Area.y;
+            item *Item = &Farm->Items[RelX + RelY * (u32)Farm->Area.width];
+            if(Item->Type == item::NONE)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 
+    // NOTE: Given tile doesn't lie in any of the farms
     if(_Farm != nullptr)
     {
         *_Farm = nullptr;
     }
     return false;
+}
+
+item *map::FarmGet(u32 X, u32 Y, map_farm *_Farm)
+{
+    if(_Farm == nullptr)
+    {
+        return nullptr;
+    }
+
+    u32 RelX = X - (u32)_Farm->Area.x;
+    u32 RelY = Y - (u32)_Farm->Area.y;
+    item *Item = &_Farm->Items[RelX + RelY * (u32)_Farm->Area.width];
+    return Item;
 }
 
 item *map::FarmPut(u32 X, u32 Y, map_farm *_Farm, item::type ItemType)
